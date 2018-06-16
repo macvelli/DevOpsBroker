@@ -31,12 +31,6 @@ tcp_lp
 # Load Fair Queuing Controlled Delay (FQ_Codel) Scheduler
 sch_fq_codel
 
-# Load Datagram Congestion Control Protocol (DCCP) Module
-dccp
-
-# Load Congestion Control IDentifier-2 (CCID-2) Module
-dccp_ccid2
-
 # Load Kyber I/O Scheduler
 kyber-iosched
 
