@@ -1,0 +1,34 @@
+#
+# 60-io-schedulers.rules - DevOpsBroker configuration for disk I/O schedulers
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# In order for both kyber and bfq to work:
+#   o scsi_mod.use_blk_mq=1 is set on the GRUB_CMDLINE_LINUX_DEFAULT setting
+#     in /etc/default/grub
+#   o The kyber-iosched and bfq modules are loaded in /etc/modules
+# -----------------------------------------------------------------------------
+#
+
+# Use kyber I/O scheduler for non-rotating disks
+ACTION=="add|change", KERNEL=="sd[a-z]|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
+
+# Use bfq I/O scheduler for rotating disks
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+

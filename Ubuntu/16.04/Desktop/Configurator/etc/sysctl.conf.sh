@@ -317,6 +317,9 @@ net.ipv6.conf.default.forwarding = 0
 # Enable Path MTU Discovery
 net.ipv4.ip_no_pmtu_disc = 0
 
+# Increase the total port range for both TCP and UDP connections
+net.ipv4.ip_local_port_range = 1500 65001
+
 # Use TCP-LP Congestion Control Algorithm
 net.ipv4.tcp_congestion_control = lp
 
@@ -391,18 +394,6 @@ net.ipv4.route.min_pmtu = 552
 
 # Set the IPv4 Minimum Advertised MSS
 net.ipv4.route.min_adv_mss = 512
-
-# Enable Netfilter Conntrack TCP Strict Policy
-net.netfilter.nf_conntrack_tcp_loose = 0
-
-# Optimize Netfilter Conntrack TCP Established Timeout
-net.netfilter.nf_conntrack_tcp_timeout_established = 1800
-
-# Optimize Netfilter Conntrack TCP FIN_WAIT Timeout
-net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
-
-# Optimize Netfilter Conntrack TCP TIME_WAIT Timeout
-net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 
 #
 # Virtual Memory Kernel Tuning Configuration

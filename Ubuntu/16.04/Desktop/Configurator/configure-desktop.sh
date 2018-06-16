@@ -437,23 +437,44 @@ if [ ! -f /etc/network/ip6tables.rules ] || \
   echo
 fi
 
-## Tune Default NIC Interface
+## Install iface-preup-config.sh script
 
-$SHELL -c "$configNic" "$DEFAULT_NIC"
+ifacePreUpDir="etc/network/if-pre-up.d"
+if [ ! -f /etc/network/if-pre-up.d/iface-preup-config.sh ]; then
 
-## Configure /etc/network/interfaces
-if ! grep -Fq "$DEFAULT_NIC" /etc/network/interfaces; then
-  echo "o Configuring /etc/network/interfaces..."
+  printInfo "Installing /etc/network/if-pre-up.d/iface-preup-config.sh"
+
+  # Install as root:root with rwxr-xr-x privileges
+  install -o root -g root -m 755 "$SCRIPT_DIR/$ifacePreUpDir/iface-preup-config.sh" /$ifacePreUpDir
+
+elif [ "$SCRIPT_DIR/$ifacePreUpDir/iface-preup-config.sh" -nt "/$ifacePreUpDir/iface-preup-config.sh" ]; then
+
+  printInfo "Updating /etc/network/if-pre-up.d/iface-preup-config.sh"
+
+  # Install as root:root with rwxr-xr-x privileges
+  install -b --suffix .bak -o root -g root -m 755 "$SCRIPT_DIR/$ifacePreUpDir/iface-preup-config.sh" /$ifacePreUpDir
+
+fi
+
+if [ ! -z "$DEFAULT_NIC" ]; then
+
+  ## Tune Default NIC Interface
+
+  $SHELL -c "$configNic" "$DEFAULT_NIC"
+
+  ## Configure /etc/network/interfaces
+  if ! grep -Fq "$DEFAULT_NIC" /etc/network/interfaces; then
+    echo "o Configuring /etc/network/interfaces..."
 
   echo "
 # $DEFAULT_NIC
 auto $DEFAULT_NIC
 iface $DEFAULT_NIC inet dhcp
-  pre-up iptables-restore < /etc/network/iptables.rules
-  pre-up ip6tables-restore < /etc/network/ip6tables.rules
+  pre-up /etc/network/if-pre-up.d/iface-preup-config.sh
   post-up /etc/network/if-up.d/tune-$DEFAULT_NIC.sh" >> /etc/network/interfaces
 
-  echo
+    echo
+  fi
 fi
 
 
