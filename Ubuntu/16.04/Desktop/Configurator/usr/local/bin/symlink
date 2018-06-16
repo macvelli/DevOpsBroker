@@ -1,0 +1,70 @@
+#!/bin/bash
+
+#
+# symlink - DevOpsBroker utility for creating symbolic links
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Create symbolic links between files.
+#
+# Parameters:
+#   $1: Symbolic link name
+#   $2: Target file or directory referenced by the link
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if incorrect parameters given
+if [ -z "$1" ] || [ -z "$2" ]; then
+  printUsage "symlink LINK_NAME TARGET"
+
+  exit 1
+fi
+
+# Display error if target not valid file or directory
+if [ ! -f "$2" ] && [ ! -d "$2" ]; then
+  printError "symlink" "Invalid target $2: No such file or directory"
+  echo
+  printUsage "symlink $1 TARGET"
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+ln -s "$2" "$1"
+
+exit 0
+

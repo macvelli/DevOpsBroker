@@ -1,0 +1,74 @@
+#!/bin/bash
+
+#
+# showFileFormat - DevOpsBroker utility for printing the format of a file
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Simply executes 'cat -A filename' which does the following:
+#   o Display $ at end of each line
+#   o Display TAB characters as ^I
+#   o Display all other nonprinting characters
+#
+# Examples:
+# ¯¯¯¯¯¯¯¯¯
+# o Check the format of a makefile
+# showFileFormat makefile
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  printUsage "showFileFormat FILENAME"
+
+  exit 1
+fi
+
+# Display error if filename parameter is invalid
+if [ ! -f "$1" ]; then
+  printError "showFileFormat" "Invalid filename $1"
+  echo
+  printUsage "showFileFormat FILENAME"
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+cat -A "$1"
+
+exit 0
+

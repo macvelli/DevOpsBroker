@@ -1,0 +1,81 @@
+#!/bin/bash
+
+#
+# public-ip - DevOpsBroker utility for displaying either the IPv4 or IPv6
+#	      Internet-facing public IP address
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Displays either the IPv4 or IPv6 Internet-facing public IP address.
+#
+# Options:
+#   -4: IPv4 Address (Default)
+#   -6: IPv6 Address
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## Options
+ipv4=true
+
+# Process parameter, if present
+if [ ! -z "$1" ]; then
+  if [ "$1" == "-6" ]; then
+    ipv4=false
+  elif [ "$1" != "-4" ]; then
+    # Display error and usage if option parameter is not valid
+    printError "public-ip" "Invalid option $1"
+    echo
+    printUsage "public-ip [OPTION]"
+    echo
+    echo -e "$(bold)Valid Options:$(reset)"
+    echo -e "$(bold padua)  -4$(reset)	Use IPv4 only"
+    echo -e "$(bold padua)  -6$(reset)	Use IPv6 only"
+
+    exit 1
+  fi
+fi
+
+
+################################### Actions ###################################
+
+if [ "$ipv4" = true ]; then
+  dig -4 +short myip.opendns.com @208.67.222.222	# Use OpenDNS
+else
+  ipv6Addr=$(ip -6 addr | awk '/scope global/{ print $2 }')
+  echo "${ipv6Addr::-3}"
+fi
+
+exit 0
+

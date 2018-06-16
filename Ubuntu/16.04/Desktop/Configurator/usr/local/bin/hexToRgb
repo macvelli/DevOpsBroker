@@ -1,0 +1,85 @@
+#!/bin/bash
+
+#
+# hexToRgb - DevOpsBroker utility for converting a Hex color code to an RGB
+#	     color code
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Note: The # symbol needs to be escaped on the command line, if present, as
+#	Bash interprets it as the beginning of a comment otherwise.
+#
+# Parameters:
+#   $1: Hex color code
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  printUsage "hexToRgb HEX_CODE"
+
+  exit 1
+fi
+
+# Display error if parameter is not a valid hex color code
+if [[ ! "$1" =~ ^\#?[a-fA-F0-9]{6}$ ]]; then
+  printError "hexToRgb" "Invalid hex color code $1"
+  echo
+  printUsage "hexToRgb HEX_CODE"
+
+  exit 1
+fi
+
+
+################################## Variables ##################################
+
+# Define $hexCode variable. Remove hash character, if present
+if [ ${#1} -eq 7 ]; then
+  hexCode="${1:1:6}"
+else
+  hexCode="$1"
+fi
+
+
+################################### Actions ###################################
+
+red=$((16#${hexCode:0:2}))
+green=$((16#${hexCode:2:2}))
+blue=$((16#${hexCode:4:2}))
+
+echo -e "$(bold)#$hexCode -> $(reset)$(rgb $red $green $blue)rgb($red, $green, $blue)$(reset)"
+
+exit 0
+

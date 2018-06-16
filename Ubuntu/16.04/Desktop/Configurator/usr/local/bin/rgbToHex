@@ -1,0 +1,79 @@
+#!/bin/bash
+
+#
+# rgbToHex - DevOpsBroker utility for converting an RGB color code to a Hex
+#	     color code
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Convert RGB color codes to hexadecimal color codes.
+#
+# Parameters:
+#   $1: Red color code
+#   $2: Green color code
+#   $3: Blue color code
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+  printUsage "rgbToHex RED GREEN BLUE"
+
+  exit 1
+fi
+
+# Display error if parameter is not a valid RGB color
+if [[ ! "$1" =~ ^[0-9]{1,3}$ ]] || [ "$1" -gt 255 ] || \
+     [[ ! "$2" =~ ^[0-9]{1,3}$ ]] || [ "$2" -gt 255 ] || \
+     [[ ! "$3" =~ ^[0-9]{1,3}$ ]] || [ "$3" -gt 255 ]; then
+  printError "rgbToHex" "Invalid RGB color $1 $2 $3"
+  echo
+  printUsage "rgbToHex RED GREEN BLUE"
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+hexCode=$( printf "%x" $1 )
+hexCode=$hexCode$( printf "%x" $2 )
+hexCode=$hexCode$( printf "%x" $3 )
+hexCode="${hexCode^^}"
+
+echo -e "$(bold)rgb($1, $2, $3) -> $(reset)$(rgb $1 $2 $3)#$hexCode$(reset)"
+
+exit 0
+

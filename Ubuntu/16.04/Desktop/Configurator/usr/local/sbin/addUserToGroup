@@ -1,0 +1,90 @@
+#!/bin/bash
+
+#
+# addUserToGroup - DevOpsBroker utility for adding an existing user to an
+#		   existing group
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Adds the user to the group.
+#
+# Parameters:
+#   $1: Username
+#   $2: Group name
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display error if not running as root
+if [ "$EUID" -ne 0 ]; then
+  echo -e "\033[1maddUserToGroup: \033[38;5;203mPermission denied (you must be root)\033[0m"
+
+  exit 1
+fi
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Diplay usage if incorrect number of parameters passed
+if [ $# -ne 2 ]; then
+  printUsage "addUserToGroup USER GROUP"
+
+  exit 1
+fi
+
+nsswitch="$(getent passwd $1)"
+
+# Ensure the first parameter is a valid username
+if [ ${#nsswitch} -eq 0 ]; then
+  printError "addUserToGroup" "Invalid username $1"
+  echo
+  printUsage "addUserToGroup USER GROUP"
+
+  exit 1
+fi
+
+# Ensure the second parameter is a valid group
+if ! grep -q "^$2:" /etc/group; then
+  printError "addUserToGroup" "Invalid group name $2"
+  echo
+  printUsage "addUserToGroup $1 GROUP"
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+# Add user to group
+/usr/sbin/adduser $1 $2
+
+exit 0
+

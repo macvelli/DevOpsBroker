@@ -1,0 +1,97 @@
+#!/bin/bash
+
+#
+# hypotenuse - DevOpsBroker utility for calculating the hypotenuse of a right
+#	       triangle
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Use good ol' c² = a² + b² to calculate the hypotenuse of a right triangle.
+#
+# Parameters:
+#   $1: Length of right triangle
+#   $2: Width of right triangle
+#   $3: Scale of the result (optional)
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+# Display usage if no parameters given
+if [ -z "$1" ] || [ -z "$2" ]; then
+  printUsage "hypotenuse LENGTH WIDTH [SCALE]"
+
+  exit 1
+fi
+
+# Display error if parameter is not a valid length
+if [[ ! "$1" =~ ^[0-9]+$ ]]; then
+  printError "hypotenuse" "Invalid length $1"
+  echo
+  printUsage "hypotenuse LENGTH WIDTH [SCALE]"
+
+  exit 1
+fi
+
+# Display error if parameter is not a valid width
+if [[ ! "$2" =~ ^[0-9]+$ ]]; then
+  printError "hypotenuse" "Invalid width $2"
+  echo
+  printUsage "hypotenuse LENGTH WIDTH [SCALE]"
+
+  exit 1
+fi
+
+if [ -z "$3" ]; then
+  scale=2;
+else
+  # Display error if parameter is not a valid scale
+  if [[ ! "$3" =~ ^[0-9]+$ ]]; then
+    printError "hypotenuse" "Invalid scale $3"
+    echo
+    printUsage "hypotenuse LENGTH WIDTH SCALE"
+
+    exit 1
+  fi
+
+  scale="$3"
+fi
+
+## Length and width parameters
+length="$1"
+width="$2"
+
+
+################################### Actions ###################################
+
+echo "scale=$scale; sqrt(($length^2)+($width^2))" | bc
+
+exit 0
+

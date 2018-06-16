@@ -1,0 +1,280 @@
+#!/bin/bash
+
+#
+# firewall - Administrative tool for managing iptables/ip6tables
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# The philosophy behind this script is to allow the user easy access to all
+# relevant information regarding firewall settings on his or her machine.
+#
+# The options provided allow the user to sharpen the focus of their work while
+# utilizing this script.
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+# Sudo and valid command lists
+sudoCommands=("list")
+validCommands=("list" "log")
+
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	showHelp
+# Description:	Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+  # BEGIN showHelp function
+
+  printUsage "sudo firewall [OPTION] list [raw|mangle|nat|filter] [CHAIN_NAME]"
+  printUsage "false" "firewall log"
+  echo
+  echo -e "$(bold)Valid Options:$(reset)"
+  echo -e "$(bold padua)  -4$(reset)	Restrict command to iptables only"
+  echo -e "$(bold padua)  -6$(reset)	Restrict command to ip6tables only"
+  echo
+  echo -e "$(bold)Valid Commands:$(reset)"
+  echo -e "$(bold padua)  list$(reset)	List firewall rules"
+  echo -e "$(bold padua)  log$(reset)	Display unique message of each packet blocked"
+
+  # END showHelp function
+}
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display help if no parameters given
+if [ -z "$1" ]; then
+  showHelp
+
+  exit 1
+fi
+
+## Options
+ipv4=false
+ipv6=false
+table=""
+
+# Process command-line options, if present
+if [[ $1 =~ ^- ]]; then
+
+  if [ $1 = "-4" ]; then
+    ipv4=true
+  elif [ $1 = "-6" ]; then
+    ipv6=true
+  else
+    # Display usage and error if option parameter is not valid
+    printError "firewall" "Invalid option $1"
+    echo
+    showHelp
+
+    exit 1
+  fi
+
+  shift
+else
+  ## OPTION Defaults
+  ipv4=true
+  ipv6=true
+fi
+
+# Ensure the first parameter is a valid command
+if [ $(containsElement "$1" "${validCommands[@]}") != "0" ]; then
+  printError "firewall" "Invalid command $1"
+  echo
+  showHelp
+
+  exit 1
+fi
+
+# Display error if not running as root
+if [ $(containsElement "$1" "${sudoCommands[@]}") == "0" ] && [ "$EUID" -ne 0 ]; then
+  echo -e "\033[1mfirewall: \033[38;5;203mPermission denied (you must be root)\033[0m"
+
+  exit 1
+fi
+
+## Command
+command="$1"
+
+################################## Variables ##################################
+
+IPTABLES=/sbin/iptables
+IP6TABLES=/sbin/ip6tables
+
+################################### Actions ###################################
+
+if [ $command = "list" ]; then
+  # BEGIN list Command
+
+  # Always define an empty chain
+  chain=""
+
+  # Process table/chain parameters
+  if [ ! -z "$2" ]; then
+    table="${2,,}"	# Convert input to lower case
+
+    # Display usage and error if table parameter is not valid
+    if [[ ! "$table" =~ ^raw|mangle|nat|filter$ ]]; then
+      printError "firewall" "Invalid table $2"
+      echo
+      printUsage "firewall list [raw|mangle|nat|filter] [CHAIN_NAME]"
+
+      exit 1
+    fi
+
+    if [ ! -z "$3" ]; then
+      chain=$3
+    fi
+  fi
+
+  if [ "$ipv4" = true ]; then
+    # BEGIN iptables list
+
+    echo -e $(bold padua)
+    echo "┌─────────────────────────┐"
+    echo "│ iptables firewall rules │"
+    echo "└─────────────────────────┘"
+    echo
+
+    if [ -z $table ] || [ "$table" == "raw" ]; then
+      echo -e -n $(darkOrange)
+      echo "iptables RAW table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IPTABLES -t raw --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    if [ -z $table ] || [ "$table" == "mangle" ]; then
+      echo -e -n $(darkOrange)
+      echo "iptables MANGLE table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IPTABLES -t mangle --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    if [ -z $table ] || [ "$table" == "nat" ]; then
+      echo -e -n $(darkOrange)
+      echo "iptables NAT table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IPTABLES -t nat --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    if [ -z $table ] || [ "$table" == "filter" ]; then
+      echo -e -n $(darkOrange)
+      echo "iptables FILTER table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IPTABLES -t filter --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    # END iptables list
+  fi
+
+  if [ "$ipv6" = true ]; then
+    # BEGIN ip6tables list
+
+    if [ "$ipv4" = true ]; then
+      echo -e -n $(bold padua)
+    else
+      echo -e $(bold padua)
+    fi
+
+    echo "┌──────────────────────────┐"
+    echo "│ ip6tables firewall rules │"
+    echo "└──────────────────────────┘"
+    echo
+
+    if [ -z $table ] || [ $table = "raw" ]; then
+      echo -e -n $(darkOrange)
+      echo "ip6tables RAW table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IP6TABLES -t raw --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    if [ -z $table ] || [ $table = "mangle" ]; then
+      echo -e -n $(darkOrange)
+      echo "ip6tables MANGLE table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IP6TABLES -t mangle --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    if [ -z $table ] || [ $table = "nat" ]; then
+      echo -e -n $(darkOrange)
+      echo "ip6tables NAT table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IP6TABLES -t nat --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    if [ -z $table ] || [ $table = "filter" ]; then
+      echo -e -n $(darkOrange)
+      echo "ip6tables FILTER table"
+      echo "¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯"
+      echo -e -n $(white)
+
+      $IP6TABLES -t filter --line-numbers -n -v -L $chain
+      echo
+    fi
+
+    # END ip6tables list
+  fi
+
+  # END list Command
+elif [ $command = "log" ]; then
+  # BEGIN log Command
+
+  dmesg -t | firelog
+
+  # END list Command
+fi
+
+exit 0
+

@@ -1,0 +1,70 @@
+#!/bin/bash
+
+#
+# reverse-dns - DevOpsBroker utility for performing a reverse DNS lookup of an
+#		IP address
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Perfoms a simple reverse DNS lookup of an IP address.
+#
+# Parameters:
+#   $1: The IP address
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  printUsage "reverse-dns IP_ADDR"
+
+  exit 1
+fi
+
+# Display error if IP address is invalid
+if ! verifyip "$1"; then
+  printError "reverse-dns" "Invalid IP Address $1"
+  echo
+  printUsage "reverse-dns IP_ADDR"
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+dig -x "$1"
+
+exit 0
+

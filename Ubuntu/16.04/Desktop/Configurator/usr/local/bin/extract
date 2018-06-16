@@ -1,0 +1,102 @@
+#!/bin/bash
+
+#
+# extract - DevOpsBroker utility for decompressing just about any compressed
+#	    file format
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# See https://www.digitalocean.com/community/tutorials/an-introduction-to-useful-bash-aliases-and-functions
+# for more information regarding this utility.
+#
+# Parameters:
+#   $1: Name of compressed file to extract
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  printUsage "extract FILE..."
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+for file in "$@"; do
+
+  # Display error if file does not exist
+  if [ ! -f "$file" ]; then
+    printError "extract" "$file does not exist"
+
+    exit 1
+  fi
+
+  case "$file" in
+	*.tar.gz | *.tgz)
+	  tar xvzf "$file"    ;;
+	*.tar)
+	  tar xvf "$file"     ;;
+	*.tar.bz2 | *.tbz2)
+	  tar xvjf "$file"    ;;
+	*.tar.xz | *.txz)
+	  tar xvJf "$file"    ;;
+	*.zip)
+	  unzip "$file"       ;;
+	*.gz)
+	  gunzip -k "$file"   ;;
+	*.z)
+	  uncompress "$file"  ;;
+	*.exe)
+	  cabextract "$file"  ;;
+	*.7z | *.arj | *.cab | *.chm | *.deb | *.dmg | *.iso | *.lzh | *.msi | *.rpm | *.udf | *.wim | *.xar)
+	  7z x "$file"        ;;
+	*.rar)
+	  unrar x -ad "$file" ;;
+	*.lzma)
+	  unlzma "$file"      ;;
+	*.bz2)
+	  bunzip2 "$file"     ;;
+	*.xz)
+	  unxz "$file"        ;;
+	*)
+	  # Display error if archive type is unknown
+	  printError "extract" "Unknown archive type $file"
+	  exit 1
+	  ;;
+  esac
+
+done
+
+exit 0
+

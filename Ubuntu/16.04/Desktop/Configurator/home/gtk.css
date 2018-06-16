@@ -1,0 +1,69 @@
+/*
+ * gtk.css - DevOpsBroker GTK 3.0 personal configuration file
+ *
+ * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ----------------------------------------------------------------------------
+ * Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+ *
+ * NOTE: This file overrides settings found in the Ambiance theme located at
+ * /usr/share/themes/Ambiance/gtk-3.0/gtk-widgets.css
+ *
+ * Increases the scrollbar width from the default. Adjust to your liking.
+ * ----------------------------------------------------------------------------
+ */
+
+* {
+    -GtkRange-slider-width: 21px;
+}
+
+GtkScale {
+    -GtkRange-slider-width: 21px;
+}
+
+.scrollbar {
+    -GtkRange-slider-width: 21px;
+}
+
+.scrollbar.vertical:hover:dir(ltr),
+.scrollbar.vertical.dragging:dir(ltr) {
+    margin-left: 0px;
+}
+
+.scrollbar.vertical:hover:dir(rtl),
+.scrollbar.vertical.dragging:dir(rtl) {
+    margin-right: 0px;
+}
+
+.scrollbar.horizontal:hover,
+.scrollbar.horizontal.dragging,
+.scrollbar.horizontal.slider:hover,
+.scrollbar.horizontal.slider.dragging {
+    margin-top: 0px;
+}
+
+.scrollbar.slider.vertical:dir(ltr):not(:hover):not(.dragging) {
+    margin-left: 0px;
+}
+
+.scrollbar.slider.vertical:dir(rtl):not(:hover):not(.dragging) {
+    margin-right: 0px;
+}
+
+.scrollbar.slider.horizontal:not(:hover):not(.dragging) {
+    margin-top: 0px;
+}
+

@@ -1,0 +1,466 @@
+#!/bin/bash
+
+#
+# venture - DevOpsBroker utility for managing software projects including
+#	    project creation, compile, build, test, and deploy
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# TODO: new - Create new files (.h/.s/.cpp/.whatever)
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+createUsageMsg="venture create [-d directory] PROJECT_NAME"
+newUsageMsg="venture new [-d directory] SOURCE_FILE"
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  printUsage "$createUsageMsg"
+  printUsage "false" "$newUsageMsg"
+
+  exit 1
+fi
+
+# Display error if first parameter is invalid
+if [[ ! "$1" =~ ^(create|new)$ ]]; then
+  printError "venture" "Invalid command $1"
+  echo
+  printUsage "$createUsageMsg"
+  printUsage "false" "$newUsageMsg"
+
+  exit 1
+fi
+
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	createDirectory
+# Description:	Creates a directory
+#
+# Parameter $1: The base directory
+# Parameter $2: The name of the directory to create within the base directory
+# -----------------------------------------------------------------------------
+function createDirectory() {
+  # BEGIN Create directory function
+
+  if [ ! -d "$1/$2" ]; then
+    printInfo "Creating $1/$2 directory"
+    mkdir -p "$1/$2"
+  fi
+
+  # END Create directory function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	createNewMakefile
+# Description:	Creates a new makefile
+#
+# Parameter $1: The directory to put the makefile
+# Parameter $2: The name of the project being created
+# -----------------------------------------------------------------------------
+function createNewMakefile() {
+  # BEGIN Create new makefile function
+
+  local ubuntuRelease=$(lsb_release -d | awk -F ":" '{ print $2 }' | tr -d '\t')
+  local kernelVersion=$(cat /proc/sys/kernel/osrelease | sed -E 's/(.*)-generic/\1/')
+
+echo "#
+# makefile - Description goes here
+#
+# Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+#
+# -----------------------------------------------------------------------------
+#
+
+CC=gcc
+CFLAGS=-Wall -g
+
+all: $2
+
+.PHONY: all clean
+
+bin/$2.o: src/$2.c
+	\$(CC) \$(CFLAGS) -c src/$2.c -o bin/$2.o
+
+$2: bin/$2.o
+	\$(CC) bin/$2.o -o $2
+
+clean:
+	rm -f $2 bin/$2.o
+" > "$1/makefile"
+
+  # END Create new makefile function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	createNewShellScript
+# Description:	Creates a new Bash shell script
+#
+# Parameter $1: The directory to put the shell script file
+# Parameter $2: The name of the shell script being created
+# -----------------------------------------------------------------------------
+function createNewShellScript() {
+  # BEGIN Create new shell script function
+
+  local ubuntuRelease=$(lsb_release -d | awk -F ":" '{ print $2 }' | tr -d '\t')
+  local kernelVersion=$(cat /proc/sys/kernel/osrelease | sed -E 's/(.*)-generic/\1/')
+
+echo "#!/bin/bash
+
+#
+# $2 - Description goes here
+#
+# Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+#
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+################################## Functions ##################################
+
+
+################################## Variables ##################################
+
+
+################################### Actions ###################################
+
+
+exit 0
+" > "$1/$2"
+
+  # END Create new shell script function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	createNewSourceFile
+# Description:	Creates a new C source file
+#
+# Parameter $1: The directory to put the source file
+# Parameter $2: The name of the source file to create
+# -----------------------------------------------------------------------------
+function createNewSourceFile() {
+  # BEGIN Create new source file function
+
+  local ubuntuRelease=$(lsb_release -d | awk -F ":" '{ print $2 }' | tr -d '\t')
+  local kernelVersion=$(cat /proc/sys/kernel/osrelease | sed -E 's/(.*)-generic/\1/')
+
+echo "/*
+ * $2 - Description goes here
+ *
+ * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * -----------------------------------------------------------------------------
+ * Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+ *
+ * -----------------------------------------------------------------------------
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// ═══════════════════════════════ Preprocessor ═══════════════════════════════
+
+
+// ═════════════════════════════════ Typedefs ═════════════════════════════════
+
+
+// ════════════════════════════════ Structures ════════════════════════════════
+
+
+// ═══════════════════════════ Function Declarations ══════════════════════════
+
+
+// ═════════════════════════════ Global Variables ═════════════════════════════
+
+
+// ══════════════════════════════════ main() ══════════════════════════════════
+
+int main(int argc, char *argv[]) {
+
+  for (int i=0; i < argc; i++) {
+    printf(\"%s\n\", argv[i]);
+  }
+
+  // Exit with success
+  exit(EXIT_SUCCESS);
+}
+
+// ═════════════════════════ Function Implementations ═════════════════════════
+
+" > "$1/$2"
+
+  # END Create new source file function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	isValidDirectory
+# Description:	Verifies whether the command-line option is valid and is a
+#		valid directory
+#
+# Parameter $1: The command-line option parameter
+# Parameter $2: The command-line directory parameter
+# Parameter $3: The usage message to print
+# -----------------------------------------------------------------------------
+function isValidDirectory() {
+  # BEGIN Is valid directory function
+
+  # Display error if invalid option parameter given
+  if [ "$1" != "-d" ]; then
+    printError "venture" "Invalid option $1"
+    echo
+    printUsage "$3"
+
+    exit 1
+  fi
+
+  # Display error if no directory parameter given
+  if [ -z "$2" ]; then
+    printError "venture" "No directory specified"
+    echo
+    printUsage "$3"
+
+    exit 1
+  fi
+
+  # Display error if invalid directory parameter given
+  if [ ! -d "$2" ]; then
+    printError "venture" "Invalid directory $2"
+    echo
+    printUsage "$3"
+
+    exit 1
+  fi
+
+  # END Is valid directory function
+}
+
+
+################################### Actions ###################################
+
+if [ "$1" == "create" ]; then
+  # BEGIN Create new project
+
+  # Display usage if no project name parameter given
+  if [ -z "$2" ]; then
+    printUsage "$createUsageMsg"
+
+    exit 1
+  fi
+
+  if [[ "$2" == -* ]]; then
+
+    isValidDirectory "$2" "$3" "$createUsageMsg"
+
+    # Display error if no project name parameter given
+    if [ -z "$4" ]; then
+      printError "venture" "No project name specified"
+      echo
+      printUsage "$createUsageMsg"
+
+      exit 1
+    fi
+
+    # projectDir is the third command-line parameter
+    projectDir="$3"
+
+    # Align the project name parameter with the second parameter
+    shift 2
+
+  else
+
+    # projectDir defaults to current directory
+    projectDir="$(pwd)"
+
+  fi
+
+  printBanner "Creating new project $2"
+
+  createDirectory "$projectDir/$2" "bin"
+  createDirectory "$projectDir/$2" "doc"
+  createDirectory "$projectDir/$2" "lib"
+  createDirectory "$projectDir/$2" "res"
+  createDirectory "$projectDir/$2" "src"
+  createDirectory "$projectDir/$2" "test"
+
+  # Create new makefile
+  printInfo "Creating $projectDir/$2/makefile"
+  createNewMakefile "$projectDir/$2" "$2"
+
+  # Create a new C source file
+  sourceFile="${2,,}.c"
+
+  if [ ! -f "$projectDir/$2/src/$sourceFile" ]; then
+    printInfo "Creating $projectDir/$2/src/$sourceFile"
+    createNewSourceFile "$projectDir/$2/src" "$sourceFile"
+  fi
+
+  # END Create new project
+elif [ "$1" == "new" ]; then
+  # BEGIN Create new file
+
+  # Display usage if no file name parameter given
+  if [ -z "$2" ]; then
+    printUsage "$newUsageMsg"
+
+    exit 1
+  fi
+
+  if [[ "$2" == -* ]]; then
+
+    isValidDirectory "$2" "$3" "$newUsageMsg"
+
+    # Display error if no file name parameter given
+    if [ -z "$4" ]; then
+      printError "venture" "No file name specified"
+      echo
+      printUsage "$newUsageMsg"
+
+      exit 1
+    fi
+
+    # projectDir is the third command-line parameter
+    projectDir="$3"
+
+    # Align the file name parameter with the second parameter
+    shift 2
+
+  else
+
+    # projectDir defaults to current directory
+    projectDir="$(pwd)"
+
+  fi
+
+  # Create a new C source file
+  if [[ "$2" == *.c ]]; then
+
+    # Put the new source file in the "$projectDir/src" subdirectory, if present
+    if [ -d "$projectDir/src" ]; then
+      projectDir="$projectDir/src"
+    fi
+
+    printBanner "Creating new source file $2"
+
+    sourceFile="${2,,}"
+
+    if [ -f "$projectDir/$sourceFile" ]; then
+      printInfo "$projectDir/$sourceFile already exists; exiting"
+    else
+      printInfo "Creating $projectDir/$sourceFile"
+
+      mkdir -p "$projectDir"
+
+      createNewSourceFile "$projectDir" "$sourceFile"
+
+      echo
+    fi
+
+  # Create a new Bash shell script file
+  elif [[ "$2" == *.sh ]]; then
+
+    printBanner "Creating new Bash shell script $2"
+
+    shellScript="$2"
+
+    if [ -f "$projectDir/$shellScript" ]; then
+      printInfo "$projectDir/$shellScript already exists; exiting"
+    else
+      printInfo "Creating $projectDir/$shellScript"
+
+      mkdir -p "$projectDir"
+
+      createNewShellScript "$projectDir" "$shellScript"
+
+      chmod u+x "$projectDir/$shellScript"
+
+      echo
+    fi
+
+  fi
+
+  # END Create new file
+fi
+
+exit 0
+

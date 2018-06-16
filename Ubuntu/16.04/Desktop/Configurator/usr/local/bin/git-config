@@ -1,0 +1,201 @@
+#!/bin/bash
+
+#
+# git-config.sh - DevOpsBroker utility for configuring Git repositories
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-45
+#
+# Manages the Git repository configuration for the following attributes:
+#   o user.name - The name associated with Git commits
+#   o user.email - The email address associated with Git commits
+#
+# Also can execute the following commands:
+#   o list - Lists the current configuration of a Git repository
+#   o test-ssh - Tests GitHub SSH connection
+#
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	showHelp
+# Description:	Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+  # BEGIN showHelp function
+
+  printUsage "git-config [COMMAND] [OPTION]..."
+
+  echo
+  echo -e "$(bold)Valid Commands:$(reset)"
+  echo -e "$(bold padua)  config$(reset)\t\t\t"				"Configure the current Git repository"
+  echo -e "$(bold padua)  list$(reset)\t\t\t\t"				"List all variables set in the config files along with their values"
+  echo -e "$(bold padua)  test-ssh$(reset)\t\t\t"			"Tests GitHub SSH connection once SSH key is created and added to GitHub"
+  echo
+  echo -e "$(bold)Valid Options:$(reset)"
+  echo -e "$(bold padua)  -e $(yellow)EMAIL_ADDR$(reset)\t\t\t"		"The Git email address to use for a single repository"
+  echo -e "$(bold padua)  -n $(yellow)FULL_NAME$(reset)\t\t\t"		"The Git username to use for a single repository"
+
+  # END showHelp function
+}
+
+
+################################## Variables ##################################
+
+repoCommands=("config" "list")
+validCommands=("config" "list" "test-ssh")
+
+GIT=/usr/bin/git
+
+## Options
+command=""
+username=""
+useremail=""
+
+if [ -z "$1" ]; then
+  command="config"
+else
+  command="$1"
+fi
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display error if invalid command
+if [ $(containsElement "$command" "${validCommands[@]}") != "0" ]; then
+  printError "git-config" "Invalid command $command"
+  echo
+
+  showHelp
+
+  exit 1
+fi
+
+# Display error if not within a Git repository
+if [ $(containsElement "$command" "${repoCommands[@]}") == "0" ] && \
+	[ "$($GIT rev-parse --is-inside-work-tree 2>/dev/null)" != "true" ]; then
+  printError "git-config" "Invalid Git repository: $PWD"
+  echo
+  showHelp
+
+  exit 1
+fi
+
+if [ "$command" == "config" ]; then
+
+  # Process command-line options, if present
+  while [[ "$1" =~ ^- ]]; do
+
+    if [ "$1" == "-e" ]; then
+
+      # Display error and usage if incorrect parameters given
+      if [ -z "$2" ]; then
+	printError "git-config" "Missing user email parameter"
+	echo
+	printUsage "git-config -e EMAIL_ADDR"
+
+	exit 1
+      fi
+
+      useremail="$2"
+      shift 2
+
+    elif [ "$1" == "-n" ]; then
+
+      # Display error and usage if incorrect parameters given
+      if [ -z "$2" ]; then
+	printError "git-config" "Missing username parameter"
+	echo
+	printUsage "git-config -n FULL_NAME"
+
+	exit 1
+      fi
+
+      username="$2"
+      shift 2
+
+    fi
+  done
+fi
+
+
+################################### Actions ###################################
+
+if [ "$command" == "config" ]; then
+  # BEGIN config command
+
+  printBanner "Configuring Git Repository"
+
+  # Set username, if missing
+  if [ -z "$username" ]; then
+    username=$(awk -F ":" '/^'$USER'/{print $5}' /etc/passwd | sed 's/,//g')
+
+    # Question 1
+    echo -n "What username do you want to use for this Git repository ($username)? "
+    read fullname
+    echo
+
+    if [ ! -z "$fullname" ]; then
+      username="$fullname"
+    fi
+  fi
+
+  # Question 2 --> Set useremail, if missing
+  while [ -z "$useremail" ]; do
+    echo -n "What email address do you want to use for this Git repository? "
+    read useremail
+    echo
+  done
+
+  printInfo "Configuring Git repository user.name to $username"
+  $GIT config user.name "$username"
+
+  printInfo "Configuring Git repository user.email to $useremail"
+  $GIT config user.email "$useremail"
+
+  echo
+
+  # END config command
+elif [ "$command" == "list" ]; then
+
+  git config --list
+
+elif [ "$command" == "test-ssh" ]; then
+
+  ssh -T github.com
+
+fi
+
+exit 0
+
