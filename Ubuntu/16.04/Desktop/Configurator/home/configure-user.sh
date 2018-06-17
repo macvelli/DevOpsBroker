@@ -192,6 +192,9 @@ installUserConfig ".bashrc" "bashrc.dob"
 # Install $userhome/.profile
 installUserConfig ".profile" "profile.dob"
 
+# Install $userhome/.gitconfig
+installUserConfig ".gitconfig" "gitconfig"
+
 if [ ! -d "$userhome/.config/gtk-3.0" ]; then
   # Create $userhome/.config/gtk-3.0 directory
   mkdir -p -m 700 "$userhome/.config/gtk-3.0"
