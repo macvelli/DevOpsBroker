@@ -690,6 +690,9 @@ installPackage "/usr/share/doc/gstreamer1.0-libav/README" "gstreamer1.0-libav"
 # Install htop
 installPackage "/usr/bin/htop" "htop"
 
+# Install inkscape
+installSnap "/snap/inkscape" "inkscape"
+
 #
 # irqbalance
 #   o Install and activate for multi-core/multi-cpu systems
@@ -775,6 +778,9 @@ installPackage "/usr/bin/speedtest-cli" "speedtest-cli"
 
 # Install sysstat
 installPackage "/usr/bin/iostat" "sysstat"
+
+# Install tidy
+installPackage "/usr/bin/tidy" "tidy"
 
 # Install ttf-mscorefonts-installer
 if [ ! -d /usr/share/fonts/truetype/msttcorefonts ]; then
