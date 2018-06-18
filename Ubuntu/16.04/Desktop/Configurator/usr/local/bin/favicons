@@ -1,0 +1,184 @@
+#!/bin/bash
+
+#
+# favicon - DevOpsBroker script for generating website favicons
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-45
+#
+# One of the cool things about this tool is that it won't resize source PNG
+# images *larger*. If the source PNG image is only 32x32 then favicon-16.png
+# and favicon-32.png will *only* be created and added to the favicon.ico file.
+#
+# Generates the favicon.ico file with the following PNG files:
+#   o favicon-16.png
+#   o favicon-32.png
+#   o favicon-48.png
+#   o favicon-64.png
+#
+# Also can generate a favicon-192.png icon for Android/iOS application icons.
+# -----------------------------------------------------------------------------
+#
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/dob/ansi.conf if bittersweet function does not exist
+if [[ ! "$(declare -F 'bittersweet')" ]]; then
+  . /etc/dob/ansi.conf
+fi
+
+# Load /etc/dob/functions.conf if printBanner function does not exist
+if [[ ! "$(declare -F 'printBanner')" ]]; then
+  . /etc/dob/functions.conf
+fi
+
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	generateFavicon
+# Description:	Converts the PNG to the specified favicon
+#
+# Parameter $1: The size of the favicon to generate
+# -----------------------------------------------------------------------------
+function generateFavicon() {
+  # BEGIN generateFavicon function
+
+  if [ $pngWidth -ge $1 ]; then
+
+    printInfo "Converting $pngFile to $1x$1 favicon-$1.png"
+    $CONVERT "$pngFile" -resize $1x$1 -quality 92 -strip favicon-$1.png
+    icoArray+=("favicon-$1.png")
+    icoSizeArray+=("$1x$1")
+
+  fi
+
+  # END generateFavicon function
+}
+
+################################## Variables ##################################
+
+IDENTIFY=/usr/bin/identify
+CONVERT=/usr/bin/convert
+icoArray=()
+icoSizeArray=()
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  printUsage "favicon PNG"
+
+  exit 1
+fi
+
+# Display error if file is invalid
+if [ ! -f "$1" ]; then
+  printError "favicon" "Cannot access '$1': No such file"
+  echo
+  printUsage "favicon PNG"
+
+  exit 1
+fi
+
+fileIdArray=($($IDENTIFY "$1" 2>/dev/null))
+fileIdArrayLen=${#fileIdArray[@]}
+
+# Display error if file is invalid
+if [ $fileIdArrayLen -eq 0 ] || [ $fileIdArrayLen -gt 9 ] || [ "${fileIdArray[1]}" != "PNG" ]; then
+  printError "favicon" "Invalid PNG file: $1"
+  echo
+  printUsage "favicon PNG"
+
+  exit 1
+fi
+
+pngDimArray=($(echo "${fileIdArray[2]}" | awk -F "x" '{ print $1,$2 }' ))
+pngFile="$1"
+pngWidth=${pngDimArray[0]}
+pngHeight=${pngDimArray[1]}
+
+# Display error if dimensions are invalid
+if [ $pngWidth -ne $pngHeight ] || [ $pngWidth -lt 16 ]; then
+  printError "favicon" "Invalid PNG dimensions: ${fileIdArray[2]}"
+  echo
+  printUsage "favicon PNG"
+
+  exit 1
+fi
+
+
+################################### Actions ###################################
+
+echo
+
+printBanner "Generating favicons"
+
+# Generate default favicons
+generateFavicon 16
+generateFavicon 32
+generateFavicon 48
+generateFavicon 64
+
+# Generate favicon.ico
+printInfo "Creating favicon.ico"
+icoList=${icoArray[*]}
+icoSizeList=${icoSizeArray[*]}
+$CONVERT $icoList favicon.ico
+rm $icoList
+
+echo
+
+# Generate high resolution icon
+if [ $pngWidth -ge 192 ]; then
+
+  generateFavicon 192
+  hiResIcon=true
+
+fi
+
+bannerMsg="DevOpsBroker Favicon Generator Instructions"
+
+echo -e $(bold kobi)
+echo    "╔═════════════════════════════════════════════╗"
+echo -e "║ "$(white)$bannerMsg$(kobi)                 "║"
+echo    "╚═════════════════════════════════════════════╝"
+echo -e $(reset)
+
+
+echo -e -n $(bold white)
+echo "1. Place favicon.ico in the root directory of your website"
+echo "2. Configure your web server (apache/nginx) to compress favicon.ico"
+echo "3. Add the following <link> tag to the <head> section of your HTML files"
+echo
+echo -e "$(padua)<link rel=\"icon\" sizes=\"$icoSizeList\" href=\"/favicon.ico\" type=\"image/x-icon\">"
+
+if [ ! -z $hiResIcon ]; then
+  echo -e $(white)
+  echo "4. Use favicon-192.png on your website in order to support Android/iOS application icons"
+  echo "5. Add the following <link> tags to the <head> section of your HTML files"
+  echo -e $(padua)
+  echo "<link rel=\"apple-touch-icon\" sizes=\"192x192\" href=\"favicon-192.png\" type=\"image/png\">"
+  echo "<link rel=\"icon\" sizes=\"192x192\" href=\"favicon-192.png\" type=\"image/png\">"
+fi
+
+echo -e $(reset)
+
+exit 0
+
