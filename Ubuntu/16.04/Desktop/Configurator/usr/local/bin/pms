@@ -192,7 +192,7 @@ elif [ "$command" == "install" ]; then
 
   # Display usage if no package/snap name parameter given
   if [ -z "$2" ]; then
-    printUsage "pms install package-name|snap-name"
+    printUsage "pms install package-name|snap-name|file.deb"
 
     exit 1
   fi
@@ -204,6 +204,10 @@ elif [ "$command" == "install" ]; then
   if (( $# > 1 )); then
     # Assume APT installation if more than one package defined on command-line
     aptPkgVersion=true
+
+  elif [[ "$pkgNames" =~ \.deb$ ]]; then
+    # Installing a .deb package file
+    debPkg=true
 
   else
     # 1) Find the APT package to install
@@ -243,6 +247,10 @@ elif [ "$command" == "install" ]; then
 
   if [ ! -z "$aptPkgVersion" ]; then
     $APT -y install "$pkgNames"
+  elif [ ! -z "$debPkg" ]; then
+    $DPKG -i "$pkgNames"
+
+    $APT install -f
   else
     $SNAP install "$pkgNames"
   fi
