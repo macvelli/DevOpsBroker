@@ -45,6 +45,9 @@ if [[ ! "$(declare -F 'printBanner')" ]]; then
   . /etc/dob/functions.conf
 fi
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Display usage if no parameters given
 if [ -z "$1" ]; then
   printUsage "archive DIR"
@@ -54,7 +57,7 @@ fi
 
 # Display error if directory is invalid
 if [ ! -d "$1" ]; then
-  printError "archive" "Invalid directory $1"
+  printError "archive" "Cannot access '$1': No such directory"
   echo
   printUsage "archive DIR"
 
