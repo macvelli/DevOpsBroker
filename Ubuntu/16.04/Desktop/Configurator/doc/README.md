@@ -113,3 +113,5 @@ The EFI booting architecture requires a specialized partition configuration in o
 
 7. Write all changes to disk
    * Click on **Install Now** button and then select **Continue**
+
+![Image of Write Changes to Disk](write-changes-to-disk.png)
