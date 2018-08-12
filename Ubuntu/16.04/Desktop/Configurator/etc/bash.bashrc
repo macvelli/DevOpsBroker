@@ -72,7 +72,7 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 if [ "$color_prompt" = yes ]; then
-  PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+  PS1='${debian_chroot:+($debian_chroot)}\[[1;38;2;124;231;124m\]\u@\h\[[0m\]:\[[1;38;2;170;190;235m\]\w\[[0m\]\$ '
 else
   PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
@@ -126,13 +126,17 @@ fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~ DevOpsBroker Configurations ~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Source /etc/dob/ansi.conf
-if [ -f /etc/dob/ansi.conf ]; then
-  . /etc/dob/ansi.conf
+# Source /etc/devops/ansi.conf
+if [ -f /etc/devops/ansi.conf ]; then
+  . /etc/devops/ansi.conf
 fi
 
-# Source /etc/dob/functions.conf
-if [ -f /etc/dob/functions.conf ]; then
-  . /etc/dob/functions.conf
+# Source /etc/devops/exec.conf
+if [ -f /etc/devops/exec.conf ]; then
+  . /etc/devops/exec.conf
 fi
 
+# Source /etc/devops/functions.conf
+if [ -f /etc/devops/functions.conf ]; then
+  . /etc/devops/functions.conf
+fi

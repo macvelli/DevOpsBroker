@@ -35,19 +35,28 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 ################################## Functions ##################################
 
@@ -63,7 +72,7 @@ function generateFavicon() {
   if [ $pngWidth -ge $1 ]; then
 
     printInfo "Converting $pngFile to $1x$1 favicon-$1.png"
-    $CONVERT "$pngFile" -resize $1x$1 -quality 92 -strip favicon-$1.png
+    $EXEC_CONVERT "$pngFile" -resize $1x$1 -quality 92 -strip favicon-$1.png
     icoArray+=("favicon-$1.png")
     icoSizeArray+=("$1x$1")
 
@@ -74,61 +83,59 @@ function generateFavicon() {
 
 ################################## Variables ##################################
 
-IDENTIFY=/usr/bin/identify
-CONVERT=/usr/bin/convert
+## Bash exec variables
+EXEC_CONVERT=/usr/bin/convert
+EXEC_IDENTIFY=/usr/bin/identify
+
 icoArray=()
 icoSizeArray=()
 
+## Options
+pngFile="$1"
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if no parameters given
-if [ -z "$1" ]; then
-  printUsage "favicon PNG"
+errorMessage=$(isValidFile 'favicon' "$pngFile")
 
-  exit 1
-fi
-
-# Display error if file is invalid
-if [ ! -f "$1" ]; then
-  printError "favicon" "Cannot access '$1': No such file"
+# Display error if file parameter is missing or invalid
+if [ "$errorMessage" != '0' ]; then
+  echo "$errorMessage"
   echo
-  printUsage "favicon PNG"
+  printUsage 'favicon PNG'
 
   exit 1
 fi
 
-fileIdArray=($($IDENTIFY "$1" 2>/dev/null))
+fileIdArray=($($EXEC_IDENTIFY "$pngFile"))
 fileIdArrayLen=${#fileIdArray[@]}
 
 # Display error if file is invalid
-if [ $fileIdArrayLen -eq 0 ] || [ $fileIdArrayLen -gt 9 ] || [ "${fileIdArray[1]}" != "PNG" ]; then
-  printError "favicon" "Invalid PNG file: $1"
+if [ $fileIdArrayLen -eq 0 ] || [ "${fileIdArray[1]}" != 'PNG' ]; then
+  printError 'favicon' "Invalid PNG file: $pngFile"
   echo
-  printUsage "favicon PNG"
+  printUsage 'favicon PNG'
 
   exit 1
 fi
 
-pngDimArray=($(echo "${fileIdArray[2]}" | awk -F "x" '{ print $1,$2 }' ))
-pngFile="$1"
-pngWidth=${pngDimArray[0]}
-pngHeight=${pngDimArray[1]}
+IFS='x'; dimensionInfo=(${fileIdArray[2]}); unset IFS;
+pngWidth=${dimensionInfo[0]}
+pngHeight=${dimensionInfo[1]}
 
 # Display error if dimensions are invalid
 if [ $pngWidth -ne $pngHeight ] || [ $pngWidth -lt 16 ]; then
-  printError "favicon" "Invalid PNG dimensions: ${fileIdArray[2]}"
+  printError 'favicon' "Invalid PNG dimensions: ${fileIdArray[2]}"
   echo
-  printUsage "favicon PNG"
+  printUsage 'favicon PNG'
 
   exit 1
 fi
-
 
 ################################### Actions ###################################
 
 echo
 
-printBanner "Generating favicons"
+printBanner 'Generating favicons'
 
 # Generate default favicons
 generateFavicon 16
@@ -137,11 +144,13 @@ generateFavicon 48
 generateFavicon 64
 
 # Generate favicon.ico
-printInfo "Creating favicon.ico"
+printInfo 'Creating favicon.ico'
+
 icoList=${icoArray[*]}
 icoSizeList=${icoSizeArray[*]}
-$CONVERT $icoList favicon.ico
-rm $icoList
+
+$EXEC_CONVERT $icoList favicon.ico
+$EXEC_RM $icoList
 
 echo
 
@@ -153,32 +162,29 @@ if [ $pngWidth -ge 192 ]; then
 
 fi
 
-bannerMsg="DevOpsBroker Favicon Generator Instructions"
+bannerMsg='DevOpsBroker Favicon Generator Instructions'
 
-echo -e $(bold kobi)
-echo    "╔═════════════════════════════════════════════╗"
-echo -e "║ "$(white)$bannerMsg$(kobi)                 "║"
-echo    "╚═════════════════════════════════════════════╝"
-echo -e $(reset)
+echo ${bold} ${wisteria}
+echo '╔═════════════════════════════════════════════╗'
+echo "║ ${white}$bannerMsg${wisteria}"		   '║'
+echo '╚═════════════════════════════════════════════╝'
+echo ${white}
 
-
-echo -e -n $(bold white)
-echo "1. Place favicon.ico in the root directory of your website"
-echo "2. Configure your web server (apache/nginx) to compress favicon.ico"
-echo "3. Add the following <link> tag to the <head> section of your HTML files"
-echo
-echo -e "$(padua)<link rel=\"icon\" sizes=\"$icoSizeList\" href=\"/favicon.ico\" type=\"image/x-icon\">"
+echo '1. Place favicon.ico in the root directory of your website'
+echo '2. Configure your web server (apache/nginx) to compress favicon.ico'
+echo '3. Add the following <link> tag to the <head> section of your HTML files'
+echo ${pastelGreen}
+echo '<link rel="icon" sizes="'$icoSizeList'" href="/favicon.ico" type="image/x-icon">'
 
 if [ ! -z $hiResIcon ]; then
-  echo -e $(white)
-  echo "4. Use favicon-192.png on your website in order to support Android/iOS application icons"
-  echo "5. Add the following <link> tags to the <head> section of your HTML files"
-  echo -e $(padua)
-  echo "<link rel=\"apple-touch-icon\" sizes=\"192x192\" href=\"favicon-192.png\" type=\"image/png\">"
-  echo "<link rel=\"icon\" sizes=\"192x192\" href=\"favicon-192.png\" type=\"image/png\">"
+  echo ${white}
+  echo '4. Use favicon-192.png on your website in order to support Android/iOS application icons'
+  echo '5. Add the following <link> tags to the <head> section of your HTML files'
+  echo ${pastelGreen}
+  echo '<link rel="apple-touch-icon" sizes="192x192" href="favicon-192.png" type="image/png">'
+  echo '<link rel="icon" sizes="192x192" href="favicon-192.png" type="image/png">'
 fi
 
-echo -e $(reset)
+echo ${reset}
 
 exit 0
-

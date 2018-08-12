@@ -29,58 +29,74 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mconfigure-apt-mirror.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
+# Ensure the sources-list.tpl script is executable
+sourcesListTpl=$(isExecutable "$SCRIPT_DIR"/sources-list.tpl)
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
+################################## Variables ##################################
 
-# Find the script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Ensure the sysctl.conf.sh script is executable
-aptSourcesList=$(isExecutable "$SCRIPT_DIR/apt-sources-list.sh")
-
+## Bash exec variables
+EXEC_TRUNCATE=/usr/bin/truncate
+EXEC_PARALLEL=/usr/bin/parallel
 
 ################################### Actions ###################################
 
-# Clear screen and print banner only if called from command line
+# Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
   clear
-
-  bannerMsg="DevOpsBroker Ubuntu 16.04 Desktop APT Mirror Configurator"
-
-  echo -e $(bold kobi)
-  echo    "╔═══════════════════════════════════════════════════════════╗"
-  echo -e "║ "$(white)$bannerMsg$(kobi)                               "║"
-  echo    "╚═══════════════════════════════════════════════════════════╝"
-  echo -e $(reset)
-
 fi
 
-if ! grep -Fq "DevOpsBroker" /etc/apt/sources.list; then
+bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop APT Mirror Configurator'
+
+echo ${bold} ${wisteria}
+echo '╔═══════════════════════════════════════════════════════════╗'
+echo "║ ${white}$bannerMsg${wisteria}"				 '║'
+echo '╚═══════════════════════════════════════════════════════════╝'
+echo ${reset}
+
+if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
   # BEGIN Configure apt mirror site
 
-  printBanner "Configuring /etc/apt/sources.list mirror"
+  printBanner 'Configuring /etc/apt/sources.list mirror'
 
   # Pull the list of mirror sites
   if [ ! -f /tmp/ubuntu-mirrors.txt ]; then
-    printInfo "Pull the list of mirror sites from http://mirrors.ubuntu.com/mirrors.txt"
-    curl -s http://mirrors.ubuntu.com/mirrors.txt -o /tmp/ubuntu-mirrors.txt
+    printInfo 'Pull the list of mirror sites from http://mirrors.ubuntu.com/mirrors.txt'
+    $EXEC_CURL -s http://mirrors.ubuntu.com/mirrors.txt -o /tmp/ubuntu-mirrors.txt
   fi
 
   declare -a mirrorArray
@@ -89,26 +105,26 @@ if ! grep -Fq "DevOpsBroker" /etc/apt/sources.list; then
 
   if [ -f /tmp/ping.job ]; then
     # Truncate the /tmp/ping.job file if exists
-    truncate -s 0 /tmp/ping.job
+    $EXEC_TRUNCATE -s 0 /tmp/ping.job
   fi
 
   for mirror in "${mirrorArray[@]}"; do
 
-    # Select only http mirror sites
-    if [[ "$mirror" == http* ]]; then
+    # Select only http mirror sites and blacklist evowise.com
+    if [[ "$mirror" == http* ]] && [[ "$mirror" != *'evowise.com'* ]]; then
       # Extract the FQDN
       fqdn=${mirror:7}
       fqdn="${fqdn%%/*}"
 
       # Add to the /tmp/ping.job file
-      echo "ping -c 2 -W 1 $fqdn | awk -v fqdn=\"$fqdn\" -F '/' 'END {print "'$5'", fqdn}'" >> /tmp/ping.job
+      echo "$EXEC_PING -c 2 -W 1 $fqdn | $EXEC_AWK -v fqdn=\"$fqdn\" -F '/' 'END {print "'$5'", fqdn}'" >> /tmp/ping.job
     fi
 
   done
 
   # Execute the /tmp/ping.job in parallel
-  printInfo "Execute ping test to find the five fastest sites by latency"
-  parallel -j0 --no-notice :::: /tmp/ping.job | awk '/^[0-9]*\.[0-9]*/{ print $0 }' | sort -nk1 | head -5 | awk '{ print $2 }' > /tmp/ping.results
+  printInfo 'Execute ping test to find the five fastest sites by latency'
+  $EXEC_PARALLEL -j0 --no-notice :::: /tmp/ping.job | $EXEC_AWK '/^[0-9]*\.[0-9]*/{ print $0 }' | $EXEC_SORT -nk1 | $EXEC_HEAD -5 | $EXEC_AWK '{ print $2 }' > /tmp/ping.results
 
   declare -a pingResultsArray
 
@@ -126,7 +142,7 @@ if ! grep -Fq "DevOpsBroker" /etc/apt/sources.list; then
 
       if [[ $mirror = *"$pingResult"* ]]; then
         printInfo "Testing throughput for mirror $mirror"
-        throughput=$(curl -o /dev/null -s -w %{speed_download} "$mirror"ls-lR.gz | sed 's/\.[0-9]*//')
+        throughput=$($EXEC_CURL -o /dev/null -s -w %{speed_download} "$mirror"ls-lR.gz | $EXEC_SED 's/\.[0-9]*//')
 
         if [ $throughput -gt $fastestThroughput ]; then
           fastestThroughput=$throughput
@@ -141,37 +157,38 @@ if ! grep -Fq "DevOpsBroker" /etc/apt/sources.list; then
   printInfo "Configuring /etc/apt/sources.list to use the fastest mirror --> $fastestMirror"
 
   # Install /etc/apt/sources.list
-  if ! grep -Fq "DevOpsBroker" /etc/apt/sources.list; then
+  if ! grep -Fq 'DevOpsBroker' /etc/apt/sources.list; then
     # BEGIN /etc/apt/sources.list
 
-    printInfo "Installing /etc/apt/sources.list"
+    printInfo 'Installing /etc/apt/sources.list'
 
     # Execute template script
-    $SHELL -c "$aptSourcesList" $fastestMirror > "$SCRIPT_DIR/sources.list"
+    "$sourcesListTpl" $fastestMirror > "$SCRIPT_DIR"/sources.list
 
     # Install as root:root with rw-r--r-- privileges
-    install -o root -g root -m 644 "$SCRIPT_DIR/sources.list" /etc/apt
+    $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/sources.list /etc/apt
 
   else
-    printInfo "Updating /etc/apt/sources.list"
+    printInfo 'Updating /etc/apt/sources.list'
 
     # Execute template script
-    $SHELL -c "$aptSourcesList" $fastestMirror > "$SCRIPT_DIR/sources.list"
+    "$sourcesListTpl" $fastestMirror > "$SCRIPT_DIR"/sources.list
 
     # Install as root:root with rw-r--r-- privileges
-    install -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR/sources.list" /etc/apt
+    $EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/sources.list /etc/apt
 
     # END /etc/apt/sources.list
   fi
 
   # Clean up
-  rm "$SCRIPT_DIR/sources.list"
+  $EXEC_RM "$SCRIPT_DIR"/sources.list
 
-  printInfo "Download package information from new apt mirror site"
-  apt update
+  printInfo 'Download package information from new apt mirror site'
+  $EXEC_APT update
+
+  echo
 
   # END Configure apt mirror site
 fi
 
 exit 0
-

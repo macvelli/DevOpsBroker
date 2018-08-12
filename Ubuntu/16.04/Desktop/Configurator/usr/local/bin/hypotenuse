@@ -31,40 +31,63 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_BC=/usr/bin/bc
+
+## Options
+length="$1"
+width="$2"
+scale="$3"
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
-if [ -z "$1" ] || [ -z "$2" ]; then
-  printUsage "hypotenuse LENGTH WIDTH [SCALE]"
+if [ -z "$length" ] || [ -z "$width" ]; then
+  printUsage "hypotenuse LENGTH WIDTH ${gold}[SCALE]"
+  echo
 
   exit 1
 fi
 
 # Display error if parameter is not a valid length
-if [[ ! "$1" =~ ^[0-9]+$ ]]; then
-  printError "hypotenuse" "Invalid length $1"
+if [[ ! "$length" =~ ^[0-9]+$ ]]; then
+  printError 'hypotenuse' "Invalid length: $length"
   echo
-  printUsage "hypotenuse LENGTH WIDTH [SCALE]"
+  printUsage "hypotenuse LENGTH WIDTH ${gold}[SCALE]"
 
   exit 1
 fi
 
 # Display error if parameter is not a valid width
-if [[ ! "$2" =~ ^[0-9]+$ ]]; then
-  printError "hypotenuse" "Invalid width $2"
+if [[ ! "$width" =~ ^[0-9]+$ ]]; then
+  printError 'hypotenuse' "Invalid width: $width"
   echo
-  printUsage "hypotenuse LENGTH WIDTH [SCALE]"
+  printUsage "hypotenuse $length WIDTH ${gold}[SCALE]"
 
   exit 1
 fi
@@ -73,25 +96,17 @@ if [ -z "$3" ]; then
   scale=2;
 else
   # Display error if parameter is not a valid scale
-  if [[ ! "$3" =~ ^[0-9]+$ ]]; then
-    printError "hypotenuse" "Invalid scale $3"
+  if [[ ! "$scale" =~ ^[0-9]+$ ]]; then
+    printError 'hypotenuse' "Invalid scale: $scale"
     echo
-    printUsage "hypotenuse LENGTH WIDTH SCALE"
+    printUsage "hypotenuse $length $width SCALE"
 
     exit 1
   fi
-
-  scale="$3"
 fi
-
-## Length and width parameters
-length="$1"
-width="$2"
-
 
 ################################### Actions ###################################
 
-echo "scale=$scale; sqrt(($length^2)+($width^2))" | bc
+echo "scale=$scale; sqrt(($length^2)+($width^2))" | $EXEC_BC
 
 exit 0
-

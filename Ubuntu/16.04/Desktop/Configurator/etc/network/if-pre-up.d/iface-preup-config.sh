@@ -26,10 +26,8 @@
 #   o Loads the iptables rules into memory
 #   o Loads the ip6tables rules into memory
 #   o Configures the nf_conntrack kernel module
-#
 # -----------------------------------------------------------------------------
 #
-
 
 ################################### Actions ###################################
 
@@ -72,4 +70,3 @@ sysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=60
 sysctl -w net.netfilter.nf_conntrack_tcp_timeout_unacknowledged=60
 
 exit 0
-

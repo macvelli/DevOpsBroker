@@ -24,42 +24,33 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
-# Find the script and executable directories
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-EXEC_DIR=$(dirname "$SCRIPT_DIR")
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
-# Executable variable
-between="$EXEC_DIR/between"
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
 
-# Data directory
-dataDir="$SCRIPT_DIR/between"
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
-# Data input file
-unicode="$dataDir/unicode.html"
-
-# Diff command
-DIFF="/usr/bin/diff -ad"
-
-# Pass/Fail messages
-pass="$(bold padua)pass$(reset)"
-fail="$(bold bittersweet)fail$(reset)"
-
-# Clean any lingering .out files
-rm -f "$dataDir/*.out"
-
+## Script information
+SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
+EXEC_DIR="$SCRIPT_DIR/.."
+DATA_DIR="$SCRIPT_DIR"/between
 
 ################################## Functions ##################################
 
@@ -75,7 +66,7 @@ function negativeTest() {
   local exitCode=0
 
   # 1. Run the test
-  $between $1 $2 $3 1>/dev/null
+  $EXEC_BETWEEN $1 $2 $3 1>/dev/null
 
   exitCode=$?
 
@@ -101,11 +92,11 @@ function negativeTest() {
 function positiveTest() {
   local exitCode=0
 
-  # 1. Run the test and save output to $dataDir/$3.out
+  # 1. Run the test and save output to $DATA_DIR/$3.out
   if [ ! -z "$1" ] && [ ! -z "$2" ] && [ -z "$3" ]; then
-    cat "$dataDir/pre-div-test.expect" | $between $1 $2
+    $EXEC_CAT "$DATA_DIR/pre-div-test.expect" | $EXEC_BETWEEN $1 $2
   else
-    "$between" "$1" "$2" "$unicode" > "$dataDir/$3.out"
+    $EXEC_BETWEEN "$1" "$2" "$unicode" > "$DATA_DIR/$3.out"
   fi
 
   exitCode=$?
@@ -121,13 +112,13 @@ function positiveTest() {
   fi
 
   # 2. Compare expected and actual outputs
-  $DIFF "$dataDir/$3" "$dataDir/$3.out"
+  $EXEC_DIFF "$DATA_DIR/$3" "$DATA_DIR/$3.out"
 
   exitCode=$?
 
   if [ $exitCode -eq 0 ]; then
     # Clean up successful output file
-    rm -f $dataDir/$3.out
+    rm -f $DATA_DIR/$3.out
 
     echo $pass
 
@@ -139,37 +130,52 @@ function positiveTest() {
   fi
 }
 
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_BETWEEN="$EXEC_DIR/between"
+EXEC_DIFF='/usr/bin/diff -ad'
+
+# Data input file
+unicode="$DATA_DIR/unicode.html"
+
+# Pass/Fail messages
+pass="${bold}${pastelGreen}pass${reset}"
+fail="${bold}${bittersweet}fail${reset}"
 
 ################################### Testing ###################################
 
+# Clean any lingering .out files
+$EXEC_RM -f "$DATA_DIR/*.out"
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Positive Testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-printBanner "Positive Testing"
+printBanner 'Positive Testing'
 
 # between "<pre>" "</pre>" unicode.html
-echo -e "between \"<pre>\" \"</pre>\" unicode.html\t\t"		"[$(positiveTest '<pre>' '</pre>' 'pre-test.expect')]"
+echo 'between "<pre>" "</pre>" unicode.html'"		[$(positiveTest '<pre>' '</pre>' 'pre-test.expect')]"
 
-# between "<title>" "</title>" unicode.html 
-echo -e "between \"<title>\" \"</title>\" unicode.html\t"	"[$(positiveTest '<title>' '</title>' 'title-test.expect')]"
+# between "<title>" "</title>" unicode.html
+echo 'between "<title>" "</title>" unicode.html'"	[$(positiveTest '<title>' '</title>' 'title-test.expect')]"
 
-# between "</pre>" "</div>" unicode.html 
-echo -e "between \"</pre>\" \"</div>\" unicode.html\t\t"	"[$(positiveTest '</pre>' '</div>' 'pre-div-test.expect')]"
+# between "</pre>" "</div>" unicode.html
+echo 'between "</pre>" "</div>" unicode.html'"		[$(positiveTest '</pre>' '</div>' 'pre-div-test.expect')]"
 
-# between foo bar 
-echo -e "between foo bar\t\t\t\t\t"				"[$(positiveTest foo bar)]"
+# between foo bar
+echo 'between foo bar'"					[$(positiveTest foo bar)]"
 
 echo
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Negative Testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-printBanner "Negative Testing"
+printBanner 'Negative Testing'
 
 ## Argument Testing
-printInfo "Argument Testing"
-echo -e "between\t\t\t\t\t\t"	 	 "[$(negativeTest)]"
-echo -e "between foo\t\t\t\t\t" 	 "[$(negativeTest foo)]"
-echo -e "between foo bar baz\t\t\t\t"	 "[$(negativeTest foo bar baz)]"
+printInfo 'Argument Testing'
+echo 'between'"						[$(negativeTest)]"
+echo 'between foo'"					[$(negativeTest foo)]"
+echo 'between foo bar baz'"				[$(negativeTest foo bar baz)]"
+
 echo
 
 exit 0
-

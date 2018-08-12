@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# grub.sh - DevOpsBroker script for generating /etc/default/grub configuration
+# grub.tpl - DevOpsBroker script for generating /etc/default/grub configuration
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -24,40 +24,58 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mgrub.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}grub.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
+################################## Variables ##################################
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
+## Options
+zswapMaxPoolPct="$1"
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 # Display usage if no parameters given
-if [ -z "$1" ]; then
-  printUsage "grub.sh ZSWAP_MAX_POOL_PCT"
+if [ -z "$zswapMaxPoolPct" ]; then
+  printUsage "grub.tpl ZSWAP_MAX_POOL_PCT"
 
   exit 1
 fi
 
-# Display error if not running on Ubuntu 16.04 xenial
-if [[ ! "$1" =~ ^[0-9]+$ ]] || \
-      [ "$1" -lt 0 ] || \
-      [ "$1" -gt 100 ]; then
-  printError "grub.sh" "Invalid ZSwap max pool percent $1"
+# Display error if invalid zswap max pool percent specified
+if [[ ! "$zswapMaxPoolPct" =~ ^[0-9]+$ ]] || \
+      [ "$zswapMaxPoolPct" -lt 0 ] || \
+      [ "$zswapMaxPoolPct" -gt 100 ]; then
+  printError 'grub.tpl' "Invalid ZSwap max pool percent $zswapMaxPoolPct"
   echo
-  printUsage "grub.sh ZSWAP_MAX_POOL_PCT"
+  printUsage 'grub.tpl ZSWAP_MAX_POOL_PCT'
 
   exit 1
 fi
@@ -66,11 +84,11 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Template variables
-isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n "true" || echo -n "false")
-efiReboot=$([ "$isEfiBoot" = true ] && echo -n "reboot=efi" || echo -n "")
-defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$1 nmi_watchdog=0 scsi_mod.use_blk_mq=1"
+isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
+efiReboot=$([ "$isEfiBoot" = 'true' ] && echo -n 'reboot=efi' || echo -n '')
+defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct nmi_watchdog=0 scsi_mod.use_blk_mq=1"
 
-if [ "$isEfiBoot" = true ]; then
+if [ "$isEfiBoot" = 'true' ]; then
   defaultCmdLine="acpi=force $defaultCmdLine"
 fi
 
@@ -140,4 +158,3 @@ GRUB_CMDLINE_LINUX="$efiReboot"
 EOF
 
 exit 0
-

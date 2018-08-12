@@ -21,48 +21,69 @@
 # -----------------------------------------------------------------------------
 # Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
 #
-# o Optimize all ext2/ext3/ext4 filesystems to use noatime
+# o Optimize all filesystems to use noatime
 # o Harden the /tmp partition (if defined)
-# o Optimize Reserved Block Percentage on ext2/ext3/ext4 filesystems
+# o Optimize Reserved Block Percentage on ext4 filesystems
 # o Create RAM Disk
 # o TODO: Enable metadata checksums
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mconfigure-fstab.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
-
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
-
+# Ensure the sysctl.conf.tpl script is executable
+fstabTpl=$(isExecutable "$SCRIPT_DIR"/fstab.tpl)
 
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:	tuneReservedBlocks
-# Description:	Tunes the Reserved Blocks setting on ext2/ext3/ext4 filesystems
+# Description:	Tunes the Reserved Blocks setting on ext4 filesystems
 # -----------------------------------------------------------------------------
 function tuneReservedBlocks() {
   # BEGIN tuneReservedBlocks function
 
-  local IFS=$'\n'
-  for blkInfo in $(lsblk -b -o NAME,FSTYPE,SIZE | awk '/ext2|ext3|ext4/{ print substr($1,7),$3 }'); do
-    local partitionName="/dev/"${blkInfo:0:4}
-    local partitionSize=${blkInfo:5}
+  IFS=$'\n'
+  local ext4DeviceList=( $($EXEC_FINDMNT -b -n -o SOURCE,SIZE -t ext4) )
+  unset IFS
+
+  for ext4Device in "${ext4DeviceList[@]}"; do
+    local deviceInfo=( $ext4Device )
+    local partitionName=${deviceInfo[0]}
+    local partitionSize=${deviceInfo[1]}
 
     # Normalize partition sizes to GiB
     partitionSize=$[ ($partitionSize + 1073741823) / 1073741824 ]
@@ -70,77 +91,139 @@ function tuneReservedBlocks() {
     # Determine reserved block percentage
     local reserveBlockPct=5
 
-    if (( $partitionSize >= 11 && $partitionSize <= 16 )); then
+    if [ $partitionSize -eq 6 ]; then
       reserveBlockPct=4
-    elif (( $partitionSize >= 17 && $partitionSize <= 20 )); then
+    elif [ $partitionSize -gt 6 ] && [ $partitionSize -lt 10 ]; then
       reserveBlockPct=3
-    elif (( $partitionSize >= 21 && $partitionSize <= 35 )); then
+    elif [ $partitionSize -ge 10 ] && [ $partitionSize -lt 15 ]; then
       reserveBlockPct=2
-    elif (( $partitionSize > 35 )); then
+    elif [ $partitionSize -ge 15 ]; then
       reserveBlockPct=1
     fi
 
     # Adjust reserved block percentage (if necessary)
     if (( $reserveBlockPct < 5 )); then
-      tune2fs -m $reserveBlockPct $partitionName
+      printInfo "Tuning reserved block percentage to $reserveBlockPct on $partitionName"
+      $EXEC_TUNE2FS -m $reserveBlockPct $partitionName
     fi
   done
 
-   # END tuneReservedBlocks function
+  # END tuneReservedBlocks function
 }
 
-
 ################################## Variables ##################################
+
+## Bash exec variables
+EXEC_FINDMNT=/bin/findmnt
+EXEC_MOUNT=/bin/mount
+EXEC_TUNE2FS=/sbin/tune2fs
 
 remountAll=false
 
 ################################### Actions ###################################
 
-# Clear screen and print banner only if called from command line
+# Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
   clear
-
-  bannerMsg="DevOpsBroker Ubuntu 16.04 Desktop /etc/fstab Configurator"
-
-  echo -e $(bold kobi)
-  echo    "╔═══════════════════════════════════════════════════════════╗"
-  echo -e "║ "$(white)$bannerMsg$(kobi)                               "║"
-  echo    "╚═══════════════════════════════════════════════════════════╝"
-  echo -e $(reset)
-
 fi
 
+bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop /etc/fstab Configurator'
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~ /etc/fstab Configuration ~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo ${bold} ${wisteria}
+echo '╔═══════════════════════════════════════════════════════════╗'
+echo "║ ${white}$bannerMsg${wisteria}"				 '║'
+echo '╚═══════════════════════════════════════════════════════════╝'
+echo ${reset}
+
+# Exit if /etc/fstab already configured
+if [ -f /etc/fstab.orig ] && [ "$1" != '-f' ]; then
+  printInfo '/etc/fstab already configured'
+  echo
+  printUsage "$SCRIPT_EXEC ${gold}[-f]"
+
+  echo ${bold}
+  echo "Valid Options:${romantic}"
+  echo '  -f	Force /etc/fstab reconfiguration'
+  echo ${reset}
+
+  exit 0
+fi
 
 #
-# o Optimize all ext2/ext3/ext4 filesystems to use noatime
-# o Harden the /tmp partition (if defined)
+# Create RAM Disk
 #
-if ! grep -Fq "noatime" /etc/fstab; then
-  # BEGIN /etc/fstab Configuration
+if [ ! -d /mnt/ramdisk ]; then
+  printInfo 'Creating RAM Disk'
 
-  printBanner "Configuring /etc/fstab"
+  # Make the /mnt/ramdisk directory
+  $EXEC_MKDIR --mode=0777 /mnt/ramdisk
 
-  # Backup original /etc/fstab file
-  cp /etc/fstab /etc/fstab.orig
-
-  printInfo "Optimize all ext2/ext3/ext4 filesystems to use noatime"
-  printInfo "Harden the /tmp partition (if defined)"
-
-  # Set noatime on all ext2/ext3/ext4 partitions and harden /tmp (if defined)
-  sed -E 's/^(UUID=.+(ext2|ext3|ext4)\s+)([a-z=,-]+)/\1\3,noatime/; s/^(UUID=.+\/tmp\s+\w+\s+)([a-z=,-]+)/\1\2,nodev,nosuid/' /etc/fstab
+  # Add entry to /etc/fstab to mount ramdisk
+echo '# ramdisk is on /mnt/ramdisk
+ramdisk /mnt/ramdisk tmpfs nosuid,nodev,noatime,comment=x-gvfs-show,size=512M     0       0' >> /etc/fstab
 
   # Need to remount all filesystems
   remountAll=true
+fi
 
-  printInfo "Optimize Reserved Block Percentage on ext2/ext3/ext4 filesystems"
-  echo
+#
+# /etc/fstab Configuration
+#
+
+# Configure /etc/fstab
+if [ ! -f /etc/fstab.orig ]; then
+  printBanner "Configure /etc/fstab"
+
+  # Execute template script
+  "$fstabTpl" > "$SCRIPT_DIR"/fstab
+
+  # Install as root:root with rw-rw-r-- privileges
+  $EXEC_INSTALL -b --suffix .orig -o root -g root -m 664 "$SCRIPT_DIR"/fstab /etc
+
+  # Clean up
+  $EXEC_RM "$SCRIPT_DIR"/fstab
+
+  # Need to remount all filesystems
+  remountAll=true
+elif [ "$1" == '-f' ]; then
+  printBanner "Reconfiguring /etc/fstab"
+
+  # Execute template script
+  "$fstabTpl" > "$SCRIPT_DIR"/fstab
+
+  # Install as root:root with rw-rw-r-- privileges
+  $EXEC_INSTALL -b --suffix .bak -o root -g root -m 664 "$SCRIPT_DIR"/fstab /etc
+
+  # Clean up
+  $EXEC_RM "$SCRIPT_DIR"/fstab
+
+  # Need to remount all filesystems
+  remountAll=true
+fi
+
+# Remount all filesystems
+if [ "$remountAll" == 'true' ]; then
+  # Optimize Reserved Block Percentage on ext2/ext3/ext4 filesystems
   tuneReservedBlocks
-  echo
+
+  printInfo 'Remount all filesystems'
+
+  $EXEC_MOUNT -a
+  $EXEC_SYSTEMCTL daemon-reload
+fi
+
+echo
+
+exit 0
+
+
+
+
+
 
 # TODO: Only works on 64-bit ext4 partitions (mkfs.ext4 -O metadata_csum,64bit /dev/sdx)
-# TODO: debugfs -R features /dev/sda1
+# TODO: sudo debugfs -R features /dev/sda1
+# TODO: sudo tune2fs -l /dev/sdb2
 #
 #  printInfo "Enable metadata checksums"
 #  if [ grep -Fq "sse4_2" /proc/cpuinfo ]; then
@@ -154,40 +237,3 @@ if ! grep -Fq "noatime" /etc/fstab; then
 #echo "
 ## Enable software metadata checksums
 #crc32c_generic" >> /etc/modules
-
-  # END /etc/fstab Configuration
-fi
-
-#
-# Create RAM Disk
-#
-if [ ! -d /mnt/ramdisk ]; then
-  # BEGIN Create RAM Disk
-
-  printInfo "Creating RAM Disk"
-
-  # Make the /mnt/ramdisk directory
-  mkdir -p /mnt/ramdisk
-
-  # Add entry to /etc/fstab to mount ramdisk
-echo "# ramdisk is on /mnt/ramdisk
-ramdisk /mnt/ramdisk tmpfs noatime,nodev,nosuid,comment=x-gvfs-show,size=512M 0 0" >> /etc/fstab
-
-  # Need to remount all filesystems
-  remountAll=true
-
-  # END Create RAM Disk
-fi
-
-# Remount all filesystems
-if [ "$remountAll" == "true" ]; then
-
-  printInfo "Remount all filesystems"
-  mount -a
-  systemctl daemon-reload
-  echo
-
-fi
-
-exit 0
-

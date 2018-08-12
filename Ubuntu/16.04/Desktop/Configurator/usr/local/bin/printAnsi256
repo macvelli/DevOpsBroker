@@ -36,20 +36,20 @@ for x in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
   for y in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     code=$((x * 16 + y))
 
-    if [ "$y" -eq "0" ]; then
-      echo -n " "
-    elif [ "$code" -le "10" ]; then
-      echo -n "    "
-    elif [ "$code" -le "100" ]; then
-      echo -n "   "
+    if [ "$y" -eq 0 ]; then
+      echo -n ' '
+    elif [ "$code" -le 10 ]; then
+      echo -n '    '
+    elif [ "$code" -le 100 ]; then
+      echo -n '   '
     else
-      echo -n "  "
+      echo -n '  '
     fi
 
-    echo -e -n "\033[38;5;$code""m$code"
+    echo -n "[38;5;$code""m$code"
   done
 
-  echo -e "\033[0m"
+  echo '[0m'
 done
 
 exit 0

@@ -26,15 +26,18 @@
 # o /etc/adduser.conf
 # o /etc/bash.bashrc
 # o /etc/modules
-# o /etc/skel/.profile
-# o /etc/skel/.bashrc
+# o /etc/ntp.conf
+# o /etc/profile
 # o /etc/skel/.bash_aliases
 # o /etc/skel/.bash_logout
+# o /etc/skel/.bash_personal
+# o /etc/skel/.bashrc
+# o /etc/skel/.gitconfig
+# o /etc/skel/.profile
 # o /etc/skel/.config/gtk-3.0/gtk.css
 #
 # Also creates the following directories for users of the system to utilize:
 # o /cache
-# o /persist
 #
 # Other configuration tasks include:
 # o Enable the PAM_UMASK module and set the global UMASK
@@ -48,29 +51,40 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mconfigure-system.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
-
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
-
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
-
-# Find the script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 
 ################################## Functions ##################################
 
@@ -84,98 +98,120 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Parameter $3: The directory where to install the file
 # -----------------------------------------------------------------------------
 function installSkeleton() {
-  # BEGIN install skeleton function
 
-  if [ ! -f $3/$2 ] || ! grep -Fq "DevOpsBroker" $3/$2; then
+  if [ "$SCRIPT_DIR/../home/$1" -nt $3/$2 ]; then
     printInfo "Installing $3/$2"
 
     # Install as root:root with rw-r--r-- privileges
-    install -o root -g root -m 644 "$SCRIPT_DIR/../home/$1" $3/$2
+    $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/../home/$1" $3/$2
 
-    echo
-
-  elif [ "$SCRIPT_DIR/../home/$1" -nt $3/$2 ]; then
-    printInfo "Updating $3/$2"
-
-    # Install as root:root with rw-r--r-- privileges
-    install -o root -g root -m 644 "$SCRIPT_DIR/../home/$1" $3/$2
-
-    echo
-
+    echoOnExit=true
   fi
 
-  # END install skeleton function
 }
 
 
+################################## Variables ##################################
+
+echoOnExit=false
+
 ################################### Actions ###################################
 
-# Clear screen and print banner only if called from command line
+# Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
   clear
+fi
 
-  bannerMsg="DevOpsBroker Ubuntu 16.04 Desktop System Configurator"
+bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop System Configurator'
 
-  echo -e $(bold kobi)
-  echo    "╔═══════════════════════════════════════════════════════╗"
-  echo -e "║ "$(white)$bannerMsg$(kobi)                           "║"
-  echo    "╚═══════════════════════════════════════════════════════╝"
-  echo -e $(reset)
+echo ${bold} ${wisteria}
+echo '╔═══════════════════════════════════════════════════════╗'
+echo "║ ${white}$bannerMsg${wisteria}"			     '║'
+echo '╚═══════════════════════════════════════════════════════╝'
+echo ${reset}
 
+# Create /etc/skel/.config/gtk-3.0 directory
+if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
+  $EXEC_MKDIR --mode=0700 /etc/skel/.config/gtk-3.0
 fi
 
 # Install /etc/adduser.conf
-installConfig "adduser.conf" "$SCRIPT_DIR" /etc
+installConfig 'adduser.conf' "$SCRIPT_DIR" /etc
 
 # Install /etc/bash.bashrc
-installConfig "bash.bashrc" "$SCRIPT_DIR" /etc
+installConfig 'bash.bashrc' "$SCRIPT_DIR" /etc
 
 # Install /etc/modules
-installConfig "modules" "$SCRIPT_DIR" /etc
+installConfig 'modules' "$SCRIPT_DIR" /etc
 
 # Install /etc/ntp.conf
-installConfig "ntp.conf" "$SCRIPT_DIR" /etc "ntp"
+installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
-installConfig "profile" "$SCRIPT_DIR" /etc
-
-# Install /etc/skel/.profile
-installSkeleton "profile.dob" ".profile" "/etc/skel"
-
-# Install /etc/skel/.bashrc
-installSkeleton "bashrc.dob" ".bashrc" "/etc/skel"
+installConfig 'profile' "$SCRIPT_DIR" /etc
 
 # Install /etc/skel/.bash_aliases
-installSkeleton "bash_aliases.dob" ".bash_aliases" "/etc/skel"
+installSkeleton 'bash_aliases' '.bash_aliases' '/etc/skel'
 
 # Install /etc/skel/.bash_logout
-installSkeleton "bash_logout.dob" ".bash_logout" "/etc/skel"
+installSkeleton 'bash_logout' '.bash_logout' '/etc/skel'
+
+# Install /etc/skel/.bash_personal
+installSkeleton 'bash_personal' '.bash_personal' '/etc/skel'
+
+# Install /etc/skel/.bashrc
+installSkeleton 'bashrc' '.bashrc' '/etc/skel'
+
+# Install /etc/skel/.gitconfig
+installSkeleton 'gitconfig' '.gitconfig' '/etc/skel'
+
+# Install /etc/skel/.profile
+installSkeleton 'profile' '.profile' '/etc/skel'
 
 # Install /etc/skel/.config/gtk-3.0/gtk.css
-if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
+installSkeleton 'gtk.css' 'gtk.css' '/etc/skel/.config/gtk-3.0'
 
-  mkdir -p --mode=0700 /etc/skel/.config/gtk-3.0
+# Move /opt to /mnt/ssd/opt
+if [ -d /mnt/ssd ] && [ ! -d /mnt/ssd/opt ]; then
+  printInfo "Moving /opt to /mnt/ssd/opt"
 
-fi
+  $EXEC_MKDIR --mode=0755 /mnt/ssd/opt
 
-installSkeleton "gtk.css" "gtk.css" "/etc/skel/.config/gtk-3.0"
+  $EXEC_MV /opt/* /mnt/ssd/opt/
 
-# Make /cache directory for user cache
-if [ ! -d /cache ]; then
-  printInfo "Creating /cache directory"
+  $EXEC_RM -rf /opt
 
-  mkdir --mode=0775 /cache
-  chown root:users /cache
+  $EXEC_LN -s /mnt/ssd/opt /opt
 
   echo
 fi
 
-# Make /persist directory for user
-if [ ! -d /persist ]; then
-  printInfo "Creating /persist directory"
+# Move /snap to /mnt/ssd/snap
+if [ -d /mnt/ssd ] && [ ! -d /mnt/ssd/snap ]; then
+  printInfo "Moving /snap to /mnt/ssd/snap"
 
-  mkdir --mode=0775 /persist
-  chown root:users /persist
+  $EXEC_MKDIR --mode=0755 /mnt/ssd/snap
+
+  $EXEC_MV /snap/* /mnt/ssd/snap/
+
+  $EXEC_RM -rf /snap
+
+  $EXEC_LN -s /mnt/ssd/snap /snap
+
+  echo
+fi
+
+# Create /cache directory for user cache
+if [ ! -L /cache ]; then
+  printInfo 'Creating /cache directory'
+
+  $EXEC_MKDIR --mode=0755 /mnt/ssd/cache
+
+  $EXEC_CHOWN root:users /mnt/ssd/cache
+
+  $EXEC_LN -s /mnt/ssd/cache /cache
+
+  $EXEC_CHOWN --no-dereference root:users /cache
 
   echo
 fi
@@ -184,53 +220,53 @@ fi
 # UMASK Configuration
 #
 
-if ! grep -q '^session optional[[:blank:]]*pam_umask\.so' /etc/pam.d/common-session; then
-  printInfo "Enabling pam_umask module"
+if ! $EXEC_GREP -q '^session optional[[:blank:]]*pam_umask\.so' /etc/pam.d/common-session; then
+  printInfo 'Enabling pam_umask module'
 
-echo -e "
-session optional\t\t\tpam_umask.so" >> /etc/pam.d/common-session
+echo '
+session optional			pam_umask.so' >> /etc/pam.d/common-session
 
-  echo
+  echoOnExit=true
 fi
 
 if [ ! -f /etc/login.defs.orig ]; then
-  printInfo "Configuring global umask"
+  printInfo 'Configuring global umask'
 
   # Backup original /etc/login.defs file
-  cp /etc/login.defs /etc/login.defs.orig
+  $EXEC_CP /etc/login.defs /etc/login.defs.orig
 
   # Modify /etc/login.defs to configure global umask
-  sed -i -e 's/^\(UMASK[[:blank:]]*\)[0-7]\{3\}/\1027/' -e 's/^\(USERGROUPS_ENAB[[:blank:]]*\)yes/\1no/' /etc/login.defs
+  $EXEC_SED -i -e 's/^(UMASK[[:blank:]]*)[0-7]{3}/\1027/' -e 's/^(USERGROUPS_ENAB[[:blank:]]*)yes/\1no/' /etc/login.defs
 
-  echo
+  echoOnExit=true
 fi
 
 #
 # Fix Default Applications for Common MIME Types
 #
 
-if (( $(grep -F "audio/mp4=rhythmbox.desktop" /usr/share/applications/defaults.list /etc/gnome/defaults.list | wc -l) < 2 )); then
+if (( $($EXEC_GREP -F 'audio/mp4=rhythmbox.desktop' /usr/share/applications/defaults.list /etc/gnome/defaults.list | $EXEC_WC -l) < 2 )); then
   # BEGIN Fix Default Applications
 
-  printBanner "Fixing Default Applications for Common MIME Types"
+  printBanner 'Fixing Default Applications for Common MIME Types'
 
-  printInfo "Change default application for common audio files to Rhythmbox"
+  printInfo 'Change default application for common audio files to Rhythmbox'
 
   # Fix /usr/share/applications/defaults.list audio defaults
-  sed -i -E 's/^(audio\/)(ac3|mp4|mpeg|x-m4a|x-mp3|x-mpeg|x-ms-wma|x-pn-aiff|x-pn-wav|x-wav)=.*/\1\2=rhythmbox.desktop/' /usr/share/applications/defaults.list
+  $EXEC_SED -i 's/^(audio\/)(ac3|mp4|mpeg|x-m4a|x-mp3|x-mpeg|x-ms-wma|x-pn-aiff|x-pn-wav|x-wav)=.*/\1\2=rhythmbox.desktop/' /usr/share/applications/defaults.list
 
   # Fix /etc/gnome/defaults.list audio defaults
-  sed -i -E 's/^(audio\/)(ac3|mp4|mpeg|x-m4a|x-mp3|x-mpeg|x-ms-wma|x-pn-aiff|x-pn-wav|x-wav)=.*/\1\2=rhythmbox.desktop/' /etc/gnome/defaults.list
+  $EXEC_SED -i 's/^(audio\/)(ac3|mp4|mpeg|x-m4a|x-mp3|x-mpeg|x-ms-wma|x-pn-aiff|x-pn-wav|x-wav)=.*/\1\2=rhythmbox.desktop/' /etc/gnome/defaults.list
 
-  printInfo "Change default application for video files to VLC"
+  printInfo 'Change default application for video files to VLC'
 
   # Fix /usr/share/applications/defaults.list video defaults
-  sed -i -E 's/^(.*video.*=).+/\1vlc_vlc.desktop/' /usr/share/applications/defaults.list
+  $EXEC_SED -i 's/^(.*video.*=).+/\1vlc_vlc.desktop/' /usr/share/applications/defaults.list
 
   # Fix /etc/gnome/defaults.list video defaults
-  sed -i -E 's/^(.*video.*=).+/\1vlc_vlc.desktop/' /etc/gnome/defaults.list
+  $EXEC_SED -i 's/^(.*video.*=).+/\1vlc_vlc.desktop/' /etc/gnome/defaults.list
 
-  echo
+  echoOnExit=true
 
   # END Fix Default Applications
 fi
@@ -239,19 +275,16 @@ fi
 # Show Hidden Startup Applications
 #   o Ubuntu Search -> Startup Applications
 #
+if $EXEC_GREP -Fq 'NoDisplay=true' /etc/xdg/autostart/*.desktop; then
+  printInfo 'Show hidden startup applications under Ubuntu Search -> Startup Applications'
 
-if grep -Fq "NoDisplay=true" /etc/xdg/autostart/*.desktop; then
-  # BEGIN Show Hidden Startup Applications
+  $EXEC_SED -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
 
-  printInfo "Show hidden startup applications under Ubuntu Search -> Startup Applications"
+  echoOnExit=true
+fi
 
-  # Enable display of each hidden startup application
-  sed -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
-
+if [ "$echoOnExit" == 'true' ]; then
   echo
-
-  # END Show Hidden Startup Applications
 fi
 
 exit 0
-

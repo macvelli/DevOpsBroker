@@ -29,34 +29,152 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	showHelp
+# Description:	Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+  # BEGIN showHelp function
+
+  printUsage "symlink ${gold}[-o OWNER:GROUP] ${yellow}LINK_NAME TARGET"
+
+  echo ${bold}
+  echo "Valid Options:${romantic}"
+  echo '  -o OWNER:GROUP	Create symlink with the specified user and group ownership'
+  echo ${reset}
+
+  # END showHelp function
+}
+
+################################## Variables ##################################
+
+## Options
+owner=''
+group=''
+linkName=''
+target=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if incorrect parameters given
-if [ -z "$1" ] || [ -z "$2" ]; then
-  printUsage "symlink LINK_NAME TARGET"
+# Display usage if no parameters given
+if [ -z "$1" ]; then
+  showHelp
+
+  exit 1
+fi
+
+while [[ "$1" == -* ]]; do
+
+  if [ "$1" == '-o' ]; then
+
+    # Display error and usage if no OWNER:GROUP specified
+    if [ -z "$2" ]; then
+      printError 'symlink' 'Missing OWNER:GROUP parameter'
+      echo
+      showHelp
+
+      exit 1
+
+    # Display error and usage if invalid OWNER:GROUP value specified
+    elif [[ ! "$2" =~ ^.+:.+$ ]]; then
+      printError 'symlink' "Invalid OWNER:GROUP value: '$2'"
+      echo
+      showHelp
+
+      exit 1
+    fi
+
+    IFS=':'; ownerGroup=($2); unset IFS;
+    owner="${ownerGroup[0]}"
+    group="${ownerGroup[1]}"
+
+    # Display error if owner is invalid
+    if [ -z "$($EXEC_GETENT passwd $owner)" ]; then
+      printError 'symlink' "Cannot find '$owner': No such user"
+      echo
+      printUsage 'symlink -o OWNER:GROUP LINK_NAME TARGET'
+
+      exit 1
+    fi
+
+    # Display error if group is invalid
+    if [ -z "$($EXEC_GETENT group $group)" ]; then
+      printError 'symlink' "Cannot find '$group': No such group"
+      echo
+      printUsage "symlink -o $owner:GROUP LINK_NAME TARGET"
+
+      exit 1
+    fi
+
+    shift 2
+
+  # Display error and usage if invalid parameter specified
+  else
+    printError 'symlink' "Invalid option: '$1'"
+    echo
+    showHelp
+
+    exit 1
+  fi
+
+done
+
+linkName="$1"
+target="$2"
+
+# Display error and usage if no LINK_NAME specified
+if [ -z "$linkName" ]; then
+  printError 'symlink' 'Missing LINK_NAME parameter'
+  echo
+  showHelp
+
+  exit 1
+fi
+
+# Display error and usage if no TARGET specified
+if [ -z "$target" ]; then
+  printError 'symlink' 'Missing TARGET parameter'
+  echo
+  showHelp
 
   exit 1
 fi
 
 # Display error if target not valid file or directory
-if [ ! -f "$2" ] && [ ! -d "$2" ]; then
-  printError "symlink" "Invalid target $2: No such file or directory"
+if [ ! -f "$target" ] && [ ! -d "$target" ]; then
+  printError 'symlink' "Cannot access '$target': No such file or directory"
   echo
-  printUsage "symlink $1 TARGET"
+
+  if [ -z $owner ]; then
+    printUsage "symlink $linkName TARGET"
+  else
+    printUsage "symlink -o $owner:$group $linkName TARGET"
+  fi
 
   exit 1
 fi
@@ -64,7 +182,12 @@ fi
 
 ################################### Actions ###################################
 
-ln -s "$2" "$1"
+# Create symbolic link
+ln -s "$target" "$linkName"
+
+# Change link ownership
+if [ ! -z $owner ]; then
+  $EXEC_CHOWN --no-dereference $owner:$group ${linkName}
+fi
 
 exit 0
-

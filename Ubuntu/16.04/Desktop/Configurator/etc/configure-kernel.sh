@@ -49,32 +49,43 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mconfigure-kernel.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
-
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
-
-# Find the script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Ensure the sysctl.conf.sh script is executable
-sysctlConf=$(isExecutable "$SCRIPT_DIR/sysctl.conf.sh")
-
+# Ensure the sysctl.conf.tpl script is executable
+sysctlConf=$(isExecutable "$SCRIPT_DIR"/sysctl.conf.tpl)
 
 ################################## Functions ##################################
 
@@ -84,80 +95,89 @@ sysctlConf=$(isExecutable "$SCRIPT_DIR/sysctl.conf.sh")
 # -----------------------------------------------------------------------------
 function execSpeedTest() {
   # Install speedtest-cli if necessary
-  if [ ! -f /usr/bin/speedtest-cli ]; then
+  if [ ! -f $EXEC_SPEED_TEST ]; then
+    printBanner 'Installing speedtest-cli'
+
+    $EXEC_APT -y install speedtest-cli
+
     echo
-    echo "Installing speedtest-cli..."
-    apt-get -y install speedtest-cli
   fi
 
-  if [ ! -f /tmp/tuneKernel_speedtest.tmp ]; then
-    printInfo "Executing Internet speed test"
-    speedtest-cli | tee /tmp/tuneKernel_speedtest.tmp
-    printInfo "Internet speed test finished"
+  if [ ! -f /etc/devops/speedtest.info ]; then
+    printInfo 'Executing Internet speed test'
+
+    $EXEC_SPEED_TEST | tee /etc/devops/speedtest.info
+
+    printInfo 'Internet speed test finished'
     echo
   fi
 }
 
 
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_SPEED_TEST=/usr/bin/speedtest-cli
+EXEC_SYSCTL=/sbin/sysctl
+
 ################################### Actions ###################################
 
-# Clear screen and print banner only if called from command line
+# Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
   clear
-
-  bannerMsg="DevOpsBroker Ubuntu 16.04 Desktop Kernel Tuning"
-
-  echo -e $(bold kobi)
-  echo    "╔═════════════════════════════════════════════════╗"
-  echo -e "║ "$(white)$bannerMsg$(kobi)                     "║"
-  echo    "╚═════════════════════════════════════════════════╝"
-  echo -e $(reset)
-
 fi
+
+bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Kernel Tuning'
+
+echo ${bold} ${wisteria}
+echo '╔═════════════════════════════════════════════════╗'
+echo "║ ${white}$bannerMsg${wisteria}"		       '║'
+echo '╚═════════════════════════════════════════════════╝'
+echo ${reset}
 
 #
 # Linux Kernel Tuning
 #
-if ! grep -Fq "DevOpsBroker" /etc/sysctl.conf; then
+if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
   # BEGIN /etc/sysctl.conf
 
-  printBanner "Installing /etc/sysctl.conf"
+  printBanner 'Installing /etc/sysctl.conf'
 
   # Execute Internet speed test
   execSpeedTest
 
   # Execute template script
-  $SHELL -c "$sysctlConf" > "$SCRIPT_DIR/sysctl.conf"
+  "$sysctlConf" > "$SCRIPT_DIR"/sysctl.conf
 
   # Install as root:root with rw-r--r-- privileges
-  install -b --suffix .orig -o root -g root -m 644 "$SCRIPT_DIR/sysctl.conf" /etc
+  $EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$SCRIPT_DIR"/sysctl.conf /etc
 
   # Clean up
-  rm "$SCRIPT_DIR/sysctl.conf"
+  $EXEC_RM "$SCRIPT_DIR"/sysctl.conf
 
-  printInfo "Load kernel tuning parameters from /etc/sysctl.conf"
-  sysctl -p
+  printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
+  $EXEC_SYSCTL -p
 
   echo
 
 elif [ "$sysctlConf" -nt /etc/sysctl.conf ]; then
 
-  printBanner "Updating /etc/sysctl.conf"
+  printBanner 'Updating /etc/sysctl.conf'
 
   # Execute Internet speed test
   execSpeedTest
 
   # Execute template script
-  $SHELL -c "$sysctlConf" > "$SCRIPT_DIR/sysctl.conf"
+  "$sysctlConf" > "$SCRIPT_DIR"/sysctl.conf
 
   # Install as root:root with rw-r--r-- privileges
-  install -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR/sysctl.conf" /etc
+  $EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/sysctl.conf /etc
 
   # Clean up
-  rm "$SCRIPT_DIR/sysctl.conf"
+  $EXEC_RM "$SCRIPT_DIR"/sysctl.conf
 
-  printInfo "Load kernel tuning parameters from /etc/sysctl.conf"
-  sysctl -p
+  printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
+  $EXEC_SYSCTL -p
 
   echo
 
@@ -165,4 +185,3 @@ elif [ "$sysctlConf" -nt /etc/sysctl.conf ]; then
 fi
 
 exit 0
-

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# apt-sources-list.sh - DevOpsBroker script for generating /etc/apt/sources.list
+# sources-list.tpl - DevOpsBroker script for generating /etc/apt/sources.list
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -26,44 +26,60 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mapt-sources-list.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}sources-list.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
+################################## Variables ##################################
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
+## Options
+aptMirrorSite="$1"
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
-if [ -z "$1" ]; then
-  printUsage "apt-sources-list.sh APT_MIRROR_SITE"
+if [ -z "$aptMirrorSite" ]; then
+  printUsage "sources-list.tpl APT_MIRROR_SITE"
 
   exit 1
-fi
-
-# Backup original /etc/apt/sources.list
-if [ ! -f /etc/apt/sources.list.orig ]; then
-  cp /etc/apt/sources.list /etc/apt/sources.list.orig
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-## Template variables
-fastestMirror=$1
-origHeader=$(head -1 /etc/apt/sources.list.orig)
+# Backup original /etc/apt/sources.list
+if [ ! -f /etc/apt/sources.list.orig ]; then
+  $EXEC_CP /etc/apt/sources.list /etc/apt/sources.list.orig
+fi
 
+## Template variables
+
+origHeader=$($EXEC_HEAD -1 /etc/apt/sources.list.orig)
 
 ## Template
 cat << EOF
@@ -90,39 +106,38 @@ $origHeader
 # -----------------------------------------------------------------------------
 #
 
-deb $fastestMirror xenial main restricted
-# deb-src $fastestMirror xenial main restricted
+deb $aptMirrorSite xenial main restricted
+# deb-src $aptMirrorSite xenial main restricted
 
 # Major bug fix updates produced after the final release of the distribution
-deb $fastestMirror xenial-updates main restricted
-# deb-src $fastestMirror xenial-updates main restricted
+deb $aptMirrorSite xenial-updates main restricted
+# deb-src $aptMirrorSite xenial-updates main restricted
 
 # Entirely unsupported software by the Ubuntu team
-deb $fastestMirror xenial universe
-# deb-src $fastestMirror xenial universe
-deb $fastestMirror xenial-updates universe
-# deb-src $fastestMirror xenial-updates universe
+deb $aptMirrorSite xenial universe
+# deb-src $aptMirrorSite xenial universe
+deb $aptMirrorSite xenial-updates universe
+# deb-src $aptMirrorSite xenial-updates universe
 
 # Entirely unsupported software by the Ubuntu team
 # May not be under a free license
-deb $fastestMirror xenial multiverse
-# deb-src $fastestMirror xenial multiverse
-deb $fastestMirror xenial-updates multiverse
-# deb-src $fastestMirror xenial-updates multiverse
+deb $aptMirrorSite xenial multiverse
+# deb-src $aptMirrorSite xenial multiverse
+deb $aptMirrorSite xenial-updates multiverse
+# deb-src $aptMirrorSite xenial-updates multiverse
 
 # Includes newer versions of some applications
 # May not have been tested as extensively as in the main release
-deb $fastestMirror xenial-backports main restricted universe multiverse
-# deb-src $fastestMirror xenial-backports main restricted universe multiverse
+deb $aptMirrorSite xenial-backports main restricted universe multiverse
+# deb-src $aptMirrorSite xenial-backports main restricted universe multiverse
 
-deb $fastestMirror xenial-security main restricted
-# deb-src $fastestMirror xenial-security main restricted
-deb $fastestMirror xenial-security universe
-# deb-src $fastestMirror xenial-security universe
-deb $fastestMirror xenial-security multiverse
-# deb-src $fastestMirror xenial-security multiverse
+deb $aptMirrorSite xenial-security main restricted
+# deb-src $aptMirrorSite xenial-security main restricted
+deb $aptMirrorSite xenial-security universe
+# deb-src $aptMirrorSite xenial-security universe
+deb $aptMirrorSite xenial-security multiverse
+# deb-src $aptMirrorSite xenial-security multiverse
 
 EOF
 
 exit 0
-

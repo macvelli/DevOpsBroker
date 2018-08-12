@@ -1,0 +1,208 @@
+#!/bin/bash
+
+#
+# gnome-config - DevOpsBroker script for configuring GNOME GSettings
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# NOTE: This script *cannot* be executed as root. The dconf settings will not
+#	apply to the user otherwise
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
+
+# Display error if running as root
+if [ "$EUID" -eq 0 ]; then
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you cannot be root)${reset}"
+
+  exit 1
+fi
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_DCONF=/usr/bin/dconf
+
+################################## Questions ##################################
+
+# Clear screen and print banner only if called from command line
+if [ $SHLVL -eq 2 ]; then
+  clear
+
+  bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop GSettings Configurator'
+
+  echo ${bold} ${wisteria}
+  echo '╔══════════════════════════════════════════════════════════╗'
+  echo "║ ${white}$bannerMsg${wisteria}"			  '║'
+  echo '╚══════════════════════════════════════════════════════════╝'
+  echo ${reset}
+
+fi
+
+#
+# Show application menus in window title bar
+#   o System Settings -> Appearance -> Behavior
+#
+echo 'Want the menus in the title bar for a window?'
+select titleBarMenus in 'Yes' 'No'; do
+  break;
+done
+
+echo
+
+#
+# Window Controls Location
+#
+#echo 'Which side do you want the window controls on?'
+#select windowControls in 'Right' 'Left'; do
+#  break;
+#done
+#
+#echo
+
+#
+# Enable workspaces
+#   o System Settings -> Appearance -> Behavior
+#
+echo 'Want to enable workspaces?'
+select workspaces in 'Yes' 'No'; do
+  break;
+done
+
+echo
+
+#
+# Screen Inactivity Period
+#   o System Settings -> Brightness & Lock
+#
+#echo 'How long inactivity do you want before turning the screen off?'
+#select inactivePeriod in '1' '2' '3' '5' '10' '15' '20' '30' '45' '60' 'Never'; do
+#  if [ $inactivePeriod == 'Never' ]; then
+#    inactivePeriod='0'
+#  else
+#    # Screen Lock
+#    inactivePeriod=$[ $inactivePeriod * 60 ]
+#    echo
+#    echo 'Want to enable locking the screen when it turns off?'
+#    select locking in 'Yes' 'No'; do
+#      break;
+#    done
+#  fi
+#  break;
+#done
+#
+#echo
+
+################################### Actions ###################################
+
+# Title bar menus
+if [ "$titleBarMenus" == 'Yes' ]; then
+  printInfo 'Enabling title bar menus'
+
+  # Enable integrated menus
+  $EXEC_DCONF write /com/canonical/unity/integrated-menus true
+
+else
+  printInfo 'Disabling title bar menus'
+
+  # Disable integrated menus
+  $EXEC_DCONF write /com/canonical/unity/integrated-menus false
+
+fi
+
+# Window Controls Location
+#if [ "$windowControls" == 'Right' ]; then
+#  printInfo 'Placing the window controls on the right'
+#
+#  # minimize,maximize,close
+#  $EXEC_DCONF write /org/gnome/desktop/wm/preferences/button-layout "':minimize,maximize,close'"
+#
+#else
+#  printInfo 'Placing the window controls on the left'
+#
+#  # close,minimize,maximize
+#  $EXEC_DCONF write /org/gnome/desktop/wm/preferences/button-layout "'close,minimize,maximize:'"
+#
+#fi
+
+# Workspaces
+if [ "$workspaces" == 'Yes' ]; then
+  printInfo 'Enabling workspaces'
+
+  # Enable workspaces
+  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 2
+  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 2
+
+else
+  printInfo 'Disabling workspaces'
+
+  # Disable workspaces
+  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 1
+  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 1
+
+fi
+
+# Screen Inactivity Period
+#printInfo "Setting Screen Inactive Period to $inactivePeriod"
+#
+#$EXEC_DCONF write /org/gnome/desktop/session/idle-delay $inactivePeriod
+
+# Screen Lock
+#if [ "$locking" == 'Yes' ]; then
+#  printInfo 'Enabling screen locking'
+#
+#  # Enable screen locking
+#  $EXEC_DCONF write /org/gnome/desktop/screensaver/lock-enabled true
+#
+#elif [ "$locking" == 'No' ]; then
+#  printInfo 'Disabling screen locking'
+#
+#  # Disable screen locking
+#  $EXEC_DCONF write /org/gnome/desktop/screensaver/lock-enabled false
+#
+#fi
+
+echo
+
+exit 0

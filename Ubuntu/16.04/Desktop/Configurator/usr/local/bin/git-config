@@ -32,19 +32,28 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 ################################## Functions ##################################
 
@@ -55,46 +64,40 @@ fi
 function showHelp() {
   # BEGIN showHelp function
 
-  printUsage "git-config [COMMAND] [OPTION]..."
+  printUsage "git-config ${gold}[COMMAND] [OPTION]..."
 
+  echo ${bold}
+  echo "Valid Commands:${romantic}"
+  echo -e '  config\t\t'		'Configure the current Git repository'
+  echo -e "    ${gold}-e EMAIL_ADDR\t"	"${romantic}The email address to use for a single Git repository"
+  echo -e "    ${gold}-n FULL_NAME\t"	"${romantic}The name to use for a single Git repository"
   echo
-  echo -e "$(bold)Valid Commands:$(reset)"
-  echo -e "$(bold padua)  config$(reset)\t\t\t"				"Configure the current Git repository"
-  echo -e "$(bold padua)  list$(reset)\t\t\t\t"				"List all variables set in the config files along with their values"
-  echo -e "$(bold padua)  test-ssh$(reset)\t\t\t"			"Tests GitHub SSH connection once SSH key is created and added to GitHub"
-  echo
-  echo -e "$(bold)Valid Options:$(reset)"
-  echo -e "$(bold padua)  -e $(yellow)EMAIL_ADDR$(reset)\t\t\t"		"The Git email address to use for a single repository"
-  echo -e "$(bold padua)  -n $(yellow)FULL_NAME$(reset)\t\t\t"		"The Git username to use for a single repository"
+  echo -e '  list\t\t\t'		'List all variables set in the config files along with their values'
+  echo -e '  test-ssh\t\t'		'Tests GitHub SSH connection once SSH key is created and added to GitHub'
+  echo ${reset}
 
   # END showHelp function
 }
 
-
 ################################## Variables ##################################
 
-repoCommands=("config" "list")
-validCommands=("config" "list" "test-ssh")
+## Bash exec variables
+EXEC_GIT=/usr/bin/git
+EXEC_SSH=/usr/bin/ssh
 
-GIT=/usr/bin/git
+repoCommands=('config' 'list')
+validCommands=(${repoCommands[@]} 'test-ssh')
 
 ## Options
-command=""
-username=""
-useremail=""
-
-if [ -z "$1" ]; then
-  command="config"
-else
-  command="$1"
-fi
-
+command=${1:-'config'}
+fullname=''
+useremail=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != "0" ]; then
-  printError "git-config" "Invalid command $command"
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+  printError 'git-config' "Invalid command: '$command'"
   echo
 
   showHelp
@@ -103,99 +106,105 @@ if [ $(containsElement "$command" "${validCommands[@]}") != "0" ]; then
 fi
 
 # Display error if not within a Git repository
-if [ $(containsElement "$command" "${repoCommands[@]}") == "0" ] && \
-	[ "$($GIT rev-parse --is-inside-work-tree 2>/dev/null)" != "true" ]; then
-  printError "git-config" "Invalid Git repository: $PWD"
+if [ $(containsElement "$command" "${repoCommands[@]}") == '0' ] && \
+	[ "$($EXEC_GIT rev-parse --is-inside-work-tree 2>/dev/null)" != 'true' ]; then
+  printError 'git-config' "Invalid Git repository: $PWD"
   echo
   showHelp
 
   exit 1
 fi
 
-if [ "$command" == "config" ]; then
+if [ $command == 'config' ]; then
 
   # Process command-line options, if present
-  while [[ "$1" =~ ^- ]]; do
+  while [[ "$2" =~ ^- ]]; do
 
-    if [ "$1" == "-e" ]; then
+    if [ "$2" == '-e' ]; then
 
       # Display error and usage if incorrect parameters given
-      if [ -z "$2" ]; then
-	printError "git-config" "Missing user email parameter"
+      if [ -z "$3" ]; then
+	printError 'git-config' 'Missing user email parameter'
 	echo
-	printUsage "git-config -e EMAIL_ADDR"
+	printUsage 'git-config -e EMAIL_ADDR'
 
 	exit 1
       fi
 
-      useremail="$2"
+      useremail="$3"
       shift 2
 
-    elif [ "$1" == "-n" ]; then
+    elif [ "$2" == '-n' ]; then
 
       # Display error and usage if incorrect parameters given
-      if [ -z "$2" ]; then
-	printError "git-config" "Missing username parameter"
+      if [ -z "$3" ]; then
+	printError 'git-config' 'Missing name parameter'
 	echo
-	printUsage "git-config -n FULL_NAME"
+	printUsage 'git-config -n FULL_NAME'
 
 	exit 1
       fi
 
-      username="$2"
+      fullname="$3"
       shift 2
 
+    else
+      # Display usage and error if option parameter is not valid
+      printError 'git-config' "Invalid option: $2"
+      echo
+
+      showHelp
+
+      exit 1
     fi
   done
 fi
 
-
 ################################### Actions ###################################
 
-if [ "$command" == "config" ]; then
+if [ $command == 'config' ]; then
   # BEGIN config command
 
-  printBanner "Configuring Git Repository"
+  printBanner 'Configuring Git Repository'
 
-  # Set username, if missing
-  if [ -z "$username" ]; then
-    username=$(awk -F ":" '/^'$USER'/{print $5}' /etc/passwd | sed 's/,//g')
+  # Set fullname, if missing
+  if [ -z "$fullname" ]; then
+    fullname=$($EXEC_AWK -F ':' '/^'$USER'/{print $5}' /etc/passwd | $EXEC_SED 's/,//g')
 
     # Question 1
-    echo -n "What username do you want to use for this Git repository ($username)? "
-    read fullname
+    echo -n "What name do you want to use for this Git repository ($fullname)? "
+    read name
     echo
 
-    if [ ! -z "$fullname" ]; then
-      username="$fullname"
+    if [ ! -z "$name" ]; then
+      fullname="$name"
     fi
   fi
 
   # Question 2 --> Set useremail, if missing
   while [ -z "$useremail" ]; do
-    echo -n "What email address do you want to use for this Git repository? "
+    echo -n 'What email address do you want to use for this Git repository? '
     read useremail
     echo
   done
 
-  printInfo "Configuring Git repository user.name to $username"
-  $GIT config user.name "$username"
+  printInfo "Configuring Git repository user.name to $fullname"
+  $EXEC_GIT config user.name "$fullname"
 
   printInfo "Configuring Git repository user.email to $useremail"
-  $GIT config user.email "$useremail"
+  $EXEC_GIT config user.email "$useremail"
 
   echo
 
   # END config command
-elif [ "$command" == "list" ]; then
+elif [ $command == 'list' ]; then
 
-  git config --list
+  $EXEC_GIT config --list
 
-elif [ "$command" == "test-ssh" ]; then
+elif [ $command == 'test-ssh' ]; then
 
-  ssh -T github.com
+  $EXEC_SSH -T github.com
 
 fi
 
 exit 0
-

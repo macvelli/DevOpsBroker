@@ -34,6 +34,7 @@
 *.hex
 Ubuntu/16.04/Desktop/Configurator/C/between
 Ubuntu/16.04/Desktop/Configurator/C/firelog
+Ubuntu/16.04/Desktop/Configurator/C/scriptinfo
 Ubuntu/16.04/Desktop/Configurator/C/verifyip
 
 # Debug files

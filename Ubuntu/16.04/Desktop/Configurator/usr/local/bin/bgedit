@@ -27,36 +27,55 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_GEDIT=/usr/bin/gedit
+
+## Options
+filesToOpen=()
+i=0
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$1" ]; then
-  printUsage "bgedit FILE..."
+  printUsage 'bgedit FILE...'
+  echo
 
   exit 1
 fi
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-i=0
-filesToOpen=()
 
 for file in "$@"; do
 
   # Display error if file does not exist
   if [ ! -f "$file" ]; then
-    printError "bgedit" "$file does not exist"
+    printError 'bgedit' "Cannot access '$file': No such file"
+    echo
+    printUsage 'bgedit FILE...'
 
     exit 1
   fi
@@ -69,7 +88,6 @@ done
 
 ################################### Actions ###################################
 
-eval 'gedit "${filesToOpen[@]}" &'
+$EXEC_GEDIT "${filesToOpen[@]}" &
 
 exit 0
-

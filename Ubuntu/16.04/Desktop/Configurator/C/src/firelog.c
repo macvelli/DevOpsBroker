@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ansi.h"
+
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 // Default input and output list array sizes
@@ -92,7 +94,7 @@ int main(int argc, char *argv[]) {
     fp = fopen(argv[1], "r");
 
     if (fp == NULL) {
-      printf("\033[1mfirelog: \033[38;5;203mCannot open file %s\033[0m\n", argv[1]);
+      printf(BOLD "firelog: " RED "Cannot open '%s': No such file" RESET "\n", argv[1]);
       exit(EXIT_FAILURE);
     }
   } else {
@@ -145,12 +147,12 @@ int main(int argc, char *argv[]) {
     LogLine *entry = NULL;
 
     if (inputLen > 0) {
-      printf("\033[1;38;2;127;186;147m");
+      printf("[1;38;2;127;186;147m");
       printf("┌─────────────────────────────────┐\n");
-      printf("│\033[38;5;231m");
+      printf("│[38;5;231m");
       printf( " firelog INPUT BLOCK Log Entries ");
-      printf("\033[38;2;127;186;147m│\n");
-      printf("└─────────────────────────────────┘\033[0m\n");
+      printf("[38;2;127;186;147m│\n");
+      printf("└─────────────────────────────────┘[0m\n");
 
       // Loop over the inputList entries and free the LogLine buffers and instances
       for (int i=0; i < inputLen; i++) {
@@ -170,12 +172,12 @@ int main(int argc, char *argv[]) {
     LogLine *entry = NULL;
 
     if (outputLen > 0) {
-      printf("\033[1;38;2;127;186;147m");
+      printf("[1;38;2;127;186;147m");
       printf("┌──────────────────────────────────┐\n");
-      printf("│\033[38;5;231m");
+      printf("│[38;5;231m");
       printf( " firelog OUTPUT BLOCK Log Entries ");
-      printf("\033[38;2;127;186;147m│\n");
-      printf("└──────────────────────────────────┘\033[0m\n");
+      printf("[38;2;127;186;147m│\n");
+      printf("└──────────────────────────────────┘[0m\n");
 
       // Loop over the outputList entries and free the LogLine buffers and instances
       for (int i=0; i < outputLen; i++) {
@@ -350,4 +352,3 @@ void filterOutputLogLine(LogLine logLine, ssize_t length) {
 
   outputList[outputLen++] = newListItem;
 }
-

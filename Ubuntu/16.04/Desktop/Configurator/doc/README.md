@@ -1,0 +1,78 @@
+# DevOpsBroker Ubuntu 16.04 Desktop Configurator
+
+The DevOpsBroker Ubuntu 16.04 Desktop Configurator is a complete turn-key solution for configuring a fresh installation of Ubuntu 16.04 Desktop.
+
+The following tasks are performed by the Configurator:
+
+- Configures IPv4 firewall and IPv6 firewall using iptables and ip6tables
+- Installs all DevOpsBroker system administration and user utilities
+- Installs a number of useful applications, libraries and utilities
+- Installs any available proprietary drivers
+- Configures and optimizes the filesystem
+- Performs Linux kernel tuning optimizations
+- Performs general system configuration
+- Configures the fastest APT sources mirror
+- Configures and optimizes GRUB
+- Manages DevOpsBroker configuration files (e.g. ansi.conf)
+- Tunes the default network interface card
+- Performs Samba configuration and optimization
+- Configures systemwide security configuration
+- Configures the Disk I/O schedulers and tunes each disk independently
+- Replaces dnsmasq with unbound for the local DNS cache server
+- Performs user configuration
+
+## Install Ubuntu 16.04 Desktop
+
+### Download Ubuntu 16.04 Desktop
+
+First thing to do is download and install a fresh copy of Ubuntu 16.04 Desktop. The latest ISO images can be found at:
+
+[Ubuntu 16.04 Xenial Xerus](http://releases.ubuntu.com/16.04/)
+
+Download the 64-bit ISO image to take full advantage of the hardware inside your PC or laptop. Save the ISO file to the Downloads directory.
+
+![Image of 64-bit ISO](ubuntu-xenial-desktop-amd64-iso.png)
+
+### Create Bootable USB Drive
+
+For each scenario below, you will need:
+- A 2GB or larger USB drive
+- The Ubuntu 16.04 Desktop ISO file
+
+#### From Windows
+
+1. Download [Rufus](https://rufus.akeo.ie/), a free and open-source tool to create bootable USB drives
+2. Launch Rufus
+   * Insert USB drive
+   * Select USB drive in the Device field
+   * Boot Selection
+     - Select the Ubuntu 16.04 Desktop ISO file
+   * Partition Scheme
+     - Select **MBR**
+   * Target System
+     - Select **BIOS or UEFI**
+   * Click **Start**
+
+Once Rufus completes the ISO image writing process, you can now install Ubuntu 16.04 Desktop from the USB drive.
+
+#### From Ubuntu
+
+1. Insert USB drive
+2. Launch Starup Disk Creator
+   * Search for 'Startup Disk Creator' from either the **Dash** or **Show Applications**
+3. Select the Ubuntu 16.04 Desktop ISO file
+4. Select the USB drive
+5. Click **Make Startup Disk**
+6. Confirm the USB drive chosen is correct
+
+Once Startup Disk Creator completes the ISO image writing process, you can now install Ubuntu 16.04 Desktop from the USB drive.
+
+### Enable UEFI Boot in BIOS
+
+Again, in order to take full advantage of your machine hardware, you will want to enable UEFI booting before installing Ubuntu.
+
+Every manufacturer is different when it comes to enabling UEFI booting in BIOS. For instance, on my Gigabyte motherboard, I must **disable** CSM Support in order to enable UEFI booting.
+
+![Enable UEFI](bios-disable-csm.png)
+
+Check the motherboard documentation to find the specifics on enabling UEFI booting for your machine.

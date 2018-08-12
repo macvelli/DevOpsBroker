@@ -1,5 +1,5 @@
 #
-# bash_logout.dob - DevOpsBroker Bash initialization file for $HOME/.bash_logout
+# bash_logout - DevOpsBroker Bash initialization file for $HOME/.bash_logout
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -27,18 +27,10 @@
 # Persist the Firefox cache on logout
 #
 
-# Create /persist/$USER/mozilla/firefox if not exist
-if [ ! -d /persist/$USER/mozilla/firefox ]; then
-  mkdir -p /persist/$USER/mozilla/firefox
-  chmod -R 700 /persist/$USER
-  chown -R $USER:$USER /persist/$USER
-fi
-
-# Remove any existing Firefox cache data in /persist
-rm -rf /persist/$USER/mozilla/firefox/*
-
-# Copy Firefox cache from /mnt/ramdisk to /persist
-cp -R /mnt/ramdisk/$USER/mozilla/firefox/* /persist/$USER/mozilla/firefox
+# Gzip and copy Firefox cache from /mnt/ramdisk
+cd /mnt/ramdisk/$USER/mozilla/firefox
+/bin/tar czvf $($EXEC_BASENAME *.default).tar.gz *.default/
+/bin/cp /mnt/ramdisk/$USER/mozilla/firefox/*.default.tar.gz /cache/$USER/
 
 #
 # When leaving the console clear the screen to increase privacy
@@ -46,4 +38,3 @@ cp -R /mnt/ramdisk/$USER/mozilla/firefox/* /persist/$USER/mozilla/firefox
 if [ "$SHLVL" = 1 ]; then
   [ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q
 fi
-

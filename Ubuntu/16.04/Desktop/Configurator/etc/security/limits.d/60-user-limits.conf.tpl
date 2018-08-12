@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# 60-user-limits.conf.sh - DevOpsBroker script for generating the configuration
+# 60-user-limits.conf.tpl - DevOpsBroker script for generating the configuration
 #			   /etc/security/limits.d/60-user-limits.conf
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
@@ -30,27 +30,43 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1m60-user-limits.conf.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}60-user-limits.conf.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-## Template variables
-
-# Total amount of RAM available
-RAM_TOTAL=$(grep -F MemTotal /proc/meminfo | awk '{print $2}')
+################################## Variables ##################################
 
 # Global Maximum Number Simultaneous Open Files
-FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
+FS_FILE_MAX=$[ $(getRamTotal) / 10 ]
 USER_FILE_MAX=$[ $FS_FILE_MAX / 4 ]
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ## Template
@@ -92,4 +108,3 @@ root soft nofile $USER_FILE_MAX
 root hard nofile $USER_FILE_MAX
 
 EOF
-

@@ -1,0 +1,385 @@
+#!/bin/bash
+
+#
+# pms - DevOpsBroker Package Management System
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Now that there are dpkg(1), APT(8), and snap(1) it is getting cumbersom to
+# manage things even as simple as updating the system.
+#
+# This script is meant to change that.
+#
+# TODO: Need to implement find/search functionality https://packages.ubuntu.com/
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	showHelp
+# Description:	Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+  # BEGIN showHelp function
+  printUsage "pms COMMAND ${gold}[OPTION]..."
+
+  echo ${bold}
+  echo "Valid Privileged Commands:${romantic}"
+  echo '  autoremove			Remove packages that were installed to satisfy dependencies and are now no longer needed'
+  echo '  dist-upgrade			Performs an update and may remove some packages in the process'
+  echo '  full-upgrade			Same as dist-upgrade; just different command'
+  echo '  install PACKAGE_NAME...	Install one or more packages for installation or upgrading'
+  echo '  reconfigure PACKAGE_NAME	Reconfigure a package that is already installed'
+  echo '  reinstall PACKAGE_NAME	Reinstall a package that is already installed'
+  echo '  remove PACKAGE_NAME		Remove a package from the system'
+  echo '  uninstall PACKAGE_NAME...	Uninstall one or more packages'
+  echo '  update			Install the newest versions of all packages and snaps currently installed on the system'
+  echo '  upgrade			Same as update; just different command'
+  echo ${white}
+  echo "Valid User Commands:${romantic}"
+  echo '  info		Display information about an APT package or Snap'
+  echo '  list		Lists all installed APT packages and Snaps'
+  echo '  which FILE	Displays which package the given file belongs to'
+  echo ${reset}
+
+  # END showHelp function
+}
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_APT_CACHE=/usr/bin/apt-cache
+EXEC_APT_GET=/usr/bin/apt-get
+EXEC_BETWEEN=/usr/local/bin/between
+EXEC_DPKG=/usr/bin/dpkg
+EXEC_DPKG_QUERY=/usr/bin/dpkg-query
+EXEC_DPKG_RECONFIG=/usr/sbin/dpkg-reconfigure
+EXEC_LSB_RELEASE=/usr/bin/lsb_release
+EXEC_WHICH=/usr/bin/which
+
+sudoCommands=('autoremove' 'dist-upgrade' 'full-upgrade' 'install' 'reconfigure' 'reinstall' 'remove' 'uninstall' 'update' 'upgrade')
+validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
+
+## Options
+command="$1"
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display help if no parameters given
+if [ -z $command ]; then
+  showHelp
+
+  exit 1
+fi
+
+# Ensure the first parameter is a valid command
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+  printError 'pms' "Invalid command: $command"
+  echo
+
+  showHelp
+
+  exit 1
+fi
+
+# Display error if not running as root
+if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$EUID" -ne 0 ]; then
+  echo "${bold}pms: ${bittersweet}Permission denied (you must be root)${reset}"
+
+  exit 1
+fi
+
+################################### Actions ###################################
+
+if [ $command == 'autoremove' ]; then
+
+  $EXEC_APT autoremove
+
+elif [ $command == 'update' ] || [ $command == 'upgrade' ]; then
+  # Update apt packages
+  $EXEC_APT update
+  echo
+  $EXEC_APT list --upgradeable
+  echo
+  $EXEC_APT -y upgrade
+  echo
+
+  # Update the last-update file to today
+  echo $($EXEC_DATE -I) > /etc/devops/last-update
+
+  # Update snap applications
+  $EXEC_SNAP refresh
+
+  # END update/upgrade command
+elif [ $command == 'dist-upgrade' ] || [ $command == 'full-upgrade' ]; then
+  # Update apt packages
+  $EXEC_APT update
+  echo
+  $EXEC_APT list --upgradeable
+  echo
+  $EXEC_APT -y full-upgrade
+  echo
+
+  # Update snap applications
+  $EXEC_SNAP refresh
+
+  # END dist-upgrade/full-upgrade command
+elif [ $command == 'info' ]; then
+  # Display usage if no package/snap name parameter given
+  if [ -z "$2" ]; then
+    printUsage 'pms info package-name|snap-name'
+    exit 1
+  fi
+
+  printBanner 'Snap Information'
+
+  # List files installed from snap-name
+  echo "${gold}$($EXEC_SNAP info $2 2>&1)"
+
+  printBanner 'Package Information'
+
+  # List files installed from package-name
+  pkgInfo=$($EXEC_DPKG_QUERY -l $2 2>&1)
+
+  echo "${pastelGreen}$pkgInfo"
+
+  if [[ $pkgInfo == dpkg-query* ]]; then
+    echo
+  else
+    # Show package information from the APT cache
+    echo ${perano}
+    $EXEC_APT_CACHE show --no-all-versions "$2"
+    echo
+  fi
+
+  # END info command
+elif [ $command == 'install' ]; then
+  # Display usage if no package/snap name parameter given
+  if [ -z "$2" ]; then
+    printUsage 'pms install package-name|snap-name|file.deb'
+    exit 1
+  fi
+
+  # Gather all package names from the command-line
+  shift
+  pkgNames="$@"
+
+  if (( $# > 1 )); then
+    # Assume APT installation if more than one package defined on command-line
+    aptPkgVersion=true
+
+  elif [[ "$pkgNames" =~ \.deb$ ]]; then
+    # Installing a .deb package file
+    debPkg=true
+
+  else
+    # 1) Find the APT package to install
+    printInfo "Searching for APT package $pkgNames"
+    aptPkgVersion=$($EXEC_APT_CACHE show "$pkgNames" 2>/dev/null | $EXEC_AWK -F ": " '/Version/{ print $2 }' | $EXEC_HEAD -1)
+
+    # 2) Find the Snap to install
+    printInfo "Searching for Snap $pkgNames"
+    snapPkgVersion=$($EXEC_SNAP find "$pkgNames" 2>/dev/null | $EXEC_AWK '/^'$pkgNames' /{ print $2 }')
+
+    # 3) Take care of neither/both situations
+    if [ -z "$aptPkgVersion" ] && [ -z "$snapPkgVersion" ]; then
+      printError 'pms' "Invalid APT Package/Snap $pkgNames"
+      echo
+      printUsage 'pms install package-name|snap-name'
+
+      exit 1
+
+    elif [ ! -z "$aptPkgVersion" ] && [ ! -z "$snapPkgVersion" ]; then
+      echo "Which $pkgNames version do you want to install?"
+      select pkgVersion in "$aptPkgVersion (APT Package)" "$snapPkgVersion (Snap)"; do
+	break;
+      done
+      echo
+
+      if [[ "$pkgVersion" == *APT* ]]; then
+	snapPkgVersion=""
+      else
+	aptPkgVersion=""
+      fi
+
+    fi
+  fi
+
+  # 4) Install APT Package/Snap
+  printBanner "Installing $pkgNames"
+
+  if [ ! -z "$aptPkgVersion" ]; then
+    $EXEC_APT -y install $pkgNames
+  elif [ ! -z "$debPkg" ]; then
+    $EXEC_DPKG -i "$pkgNames"
+
+#    $EXEC_APT install -f
+  else
+    $EXEC_SNAP install "$pkgNames"
+  fi
+
+  echo
+
+  # END install command
+elif [ $command == 'list' ]; then
+  # BEGIN list command
+
+  # List all installed packages if no package name given
+  if [ -z "$2" ]; then
+    printBanner 'Installed APT packages'
+
+    $EXEC_APT list --installed
+
+    echo
+    printBanner 'Installed Snaps'
+
+    $EXEC_SNAP list
+
+  # List the contents of a .deb package file
+  elif [ -f "$2" ] && [[ "$2" == *.deb ]]; then
+
+    $EXEC_DPKG --contents "$2"
+
+  else
+    isPkgInstalled=$($EXEC_APT_CACHE policy "$2" | $EXEC_AWK '/Installed/{ print $2 }')
+
+    # Display error if package name does not exist
+    if [ -z "$isPkgInstalled" ]; then
+      printError 'pms' "Invalid package name $2"
+      printUsage 'pms list PACKAGE_NAME'
+
+      exit 1
+
+    # List files installed from package-name
+    elif [ "$isPkgInstalled" != '(none)' ]; then
+      echo "Installed: $isPkgInstalled${newline}"
+
+      $EXEC_DPKG -L "$2"
+
+    # List files from Ubuntu package file list
+    else
+      echo "Installed: $isPkgInstalled${newline}"
+
+      $EXEC_CURL -s --no-buffer https://packages.ubuntu.com/$($EXEC_LSB_RELEASE -sc)/all/$2/filelist | $EXEC_BETWEEN "<pre>" "</pre>"
+    fi
+  fi
+
+  # END list command
+elif [ $command == 'reconfigure' ]; then
+
+  if [ -z "$2" ]; then
+    printUsage 'pms reconfigure package-name'
+    exit 1
+  fi
+
+  $EXEC_DPKG_RECONFIG "$2"
+
+  # END reconfigure command
+elif [ $command == 'reinstall' ]; then
+
+  if [ -z "$2" ]; then
+    printUsage 'pms reinstall package-name'
+    exit 1
+  fi
+
+  $EXEC_APT_GET install --reinstall "$2"
+
+  # END reinstall command
+elif [ $command == 'remove' ]; then
+
+  if [ -z "$2" ]; then
+    printUsage 'pms remove package-name'
+    exit 1
+  fi
+
+  $EXEC_DPKG -r "$2"
+
+  # END remove command
+elif [ $command == 'uninstall' ]; then
+
+  if [ -z "$2" ]; then
+    printUsage 'pms uninstall package-name'
+    exit 1
+  fi
+
+  # Gather all package names from the command-line
+  shift
+  pkgNames="$@"
+
+  # Uninstall APT Package
+  printBanner "Uninstalling $pkgNames"
+
+  $EXEC_APT -y purge $pkgNames
+
+  # END uninstall command
+elif [ $command == 'which' ]; then
+
+  if [ -z "$2" ]; then
+    printUsage 'pms which FILE'
+    exit 1
+  fi
+
+  # Set filename variable
+  filename="$2"
+
+  # Attempt to find filename
+  if [ ! -f "$filename" ]; then
+    filename=$($EXEC_WHICH "$2")
+  fi
+
+  # Display error if file does not exist
+  if [ ! -f "$filename" ]; then
+    printError 'pms' "Cannot access '$filename': No such file"
+    echo
+    printUsage 'pms which FILE'
+
+    exit 1
+  fi
+
+  echo -n 'Package Name: '
+  $EXEC_DPKG_QUERY -S "$filename" | $EXEC_AWK -F ":" '{ print $1 }'
+
+  # END which command
+fi
+
+exit 0

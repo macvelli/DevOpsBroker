@@ -40,6 +40,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "ansi.h"
+
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 
@@ -62,8 +64,7 @@ void verifyIPv6(char *ip);
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    printf("\033[1mUsage: \033[38;5;226mverifyip IP_ADDR\033[0m\n");
-
+    printUsage("verifyip IP_ADDR");
     exit(EXIT_FAILURE);
   }
 
@@ -148,8 +149,6 @@ void verifyIPv4(char *ip) {
     // Invalid IP Address format
     exit(EXIT_FAILURE);
   }
-
-//  printf("Count: %d\tGroups: %d\n", count, groups);
 
 }
 
@@ -246,7 +245,4 @@ void verifyIPv6(char *ip) {
     exit(EXIT_FAILURE);
   }
 
-//  printf("Count: %d\tGroups: %d\n", count, groups);
-
 }
-

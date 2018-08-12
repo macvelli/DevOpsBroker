@@ -3,7 +3,7 @@
 #
 # sig - DevOpsBroker utility for creating and verifying PGP signatures of files
 #
-# Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -32,81 +32,91 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:	showHelp
 # Description:	Displays help message to the user
-#
-# Parameter $1: The command passed to sig on the command-line (optional)
-# Parameter $2: The name of the signature file (optional)
 # -----------------------------------------------------------------------------
 function showHelp() {
   # BEGIN showHelp function
 
-  if [ -z "$1" ]; then
-    printUsage "sig sign [-a] FILE"
-    printUsage "false" "sig verify PGP_SIG FILE"
+  if [ -z "$command" ]; then
+    printUsage "sig sign ${gold}[-a] ${yellow}FILE"
+    printUsage 'false' 'sig verify PGP_SIG FILE'
 
-    echo
-    echo -e "$(bold)Valid Options:$(reset)"
-    echo -e "$(bold padua)  -a\t"		"Create an ASCII-format detached signature file"
-  elif [ "$1" == "sign" ]; then
-    printUsage "sig sign [-a] FILE"
+    echo ${bold}
+    echo "Valid Commands:${romantic}"
+    echo '  sign  	Create a detached signature of the specified FILE'
+    echo '  verify	Verify the specified FILE was signed using the detached signature PGP_SIG'
+    echo ${reset}
 
-    echo
-    echo -e "$(bold)Valid Options:$(reset)"
-    echo -e "$(bold padua)  -a\t"		"Create an ASCII-format detached signature file"
-  else
-    if [ -z "$2" ]; then
-      sigFile="SIG_FILE"
+  elif [ $command == 'sign' ]; then
+    printUsage "sig sign ${gold}[-a] ${yellow}FILE"
+
+    echo ${bold}
+    echo "Valid Options:${romantic}"
+    echo '  -a	Create an ASCII-format detached signature file'
+    echo ${reset}
+
+  elif [ $command == 'verify' ]; then
+    if [ -z "$sigFile" ]; then
+      printUsage 'sig verify PGP_SIG FILE'
     else
-      sigFile="$2"
+      printUsage "sig verify $sigFile FILE"
     fi
 
-    printUsage "sig verify $sigFile FILE"
+    echo
   fi
 
   # END showHelp function
 }
 
-
 ################################## Variables ##################################
 
 validCommands=("sign" "verify")
 
-GPG=/usr/bin/gpg
-
 # Options
 command="$1"
-asciiFormat=false
+fileName=''
+asciiFormat='false'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
-if [ -z "$1" ]; then
+if [ -z "$command" ]; then
   showHelp
 
   exit 1
 fi
 
 # Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != "0" ]; then
-  printError "sig" "Invalid command: $command"
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+  printError 'sig' "Invalid command: '$command'"
+  command=''
   echo
 
   showHelp
@@ -114,81 +124,64 @@ if [ $(containsElement "$command" "${validCommands[@]}") != "0" ]; then
   exit 1
 fi
 
-# Display error if no file specified
-if [ -z "$2" ]; then
-  printError "sig" "Missing file parameter"
-  echo
+if [ $command == 'sign' ]; then
 
-  showHelp "$command"
+  if [ "$2" == '-a' ]; then
+    asciiFormat=true
+
+    # File is the third parameter
+    fileName="$3"
+  else
+    # File is the second parameter
+    fileName="$2"
+  fi
+
+elif [ $command == 'verify' ]; then
+
+  # Signature file is the second parameter
+  sigFile="$2"
+
+  # File is the third parameter
+  fileName="$3"
+
+  errorMessage=$(isValidFile 'sig' "$sigFile")
+
+  # Display error if signature file parameter is missing or invalid
+  if [ "$errorMessage" != '0' ]; then
+    echo "$errorMessage"
+    echo
+    showHelp
+
+    exit 1
+  fi
+
+fi
+
+errorMessage=$(isValidFile 'sig' "$fileName")
+
+# Display error if file parameter is missing or invalid
+if [ "$errorMessage" != '0' ]; then
+  echo "$errorMessage"
+  echo
+  showHelp
 
   exit 1
 fi
-
-if [ "$command" == "sign" ] && [ "$2" == "-a" ]; then
-  asciiFormat=true
-
-  shift
-
-  # Display error if no file specified
-  if [ -z "$2" ]; then
-    printError "sig" "Missing file parameter"
-    echo
-
-    showHelp "$command"
-
-    exit 1
-  fi
-fi
-
-# Display error if invalid file
-if [ ! -f "$2" ]; then
-  printError "sig" "Cannot access '$2': No such file"
-  echo
-
-  showHelp "$command"
-
-  exit 1
-fi
-
-if [ "$command" == "verify" ]; then
-
-  # Display error if no file specified
-  if [ -z "$3" ]; then
-    printError "sig" "Missing file parameter"
-    echo
-
-    showHelp "$command" "$2"
-
-    exit 1
-  fi
-
-  # Display error if invalid file
-  if [ ! -f "$3" ]; then
-    printError "sig" "Cannot access '$3': No such file"
-    echo
-
-    showHelp "$command"
-
-    exit 1
-  fi
-fi
-
 
 ################################### Actions ###################################
 
-if [ "$command" == "sign" ]; then
+if [ "$command" == 'sign' ]; then
 
-  if [ "$asciiFormat" == "false" ]; then
-    $GPG --detach-sig "$2"
+  if [ "$asciiFormat" == 'false' ]; then
+    $EXEC_GPG --detach-sig "$fileName"
   else
-    $GPG --detach-sig -a "$2"
+    $EXEC_GPG --detach-sig -a "$fileName"
   fi
 
-elif [ "$command" == "verify" ]; then
+elif [ "$command" == 'verify' ]; then
 
-  $GPG --verify "$2" "$3"
+  $EXEC_GPG --verify "$sigFile" "$fileName"
 
 fi
 
 exit 0
-

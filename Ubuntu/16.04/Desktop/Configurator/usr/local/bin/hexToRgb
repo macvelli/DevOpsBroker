@@ -30,46 +30,56 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Variables ##################################
+
+## Options
+hexCode="$1"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
-if [ -z "$1" ]; then
-  printUsage "hexToRgb HEX_CODE"
+if [ -z "$hexCode" ]; then
+  printUsage 'hexToRgb HEX_CODE'
+  echo
 
   exit 1
 fi
 
 # Display error if parameter is not a valid hex color code
-if [[ ! "$1" =~ ^\#?[a-fA-F0-9]{6}$ ]]; then
-  printError "hexToRgb" "Invalid hex color code $1"
+if [[ ! "$hexCode" =~ ^\#?[a-fA-F0-9]{6}$ ]]; then
+  printError 'hexToRgb' "Invalid hex color code: $hexCode"
   echo
-  printUsage "hexToRgb HEX_CODE"
+  printUsage 'hexToRgb HEX_CODE'
 
   exit 1
 fi
 
-
-################################## Variables ##################################
-
-# Define $hexCode variable. Remove hash character, if present
-if [ ${#1} -eq 7 ]; then
-  hexCode="${1:1:6}"
-else
-  hexCode="$1"
+# Remove hash character, if present
+if [ ${#hexCode} -eq 7 ]; then
+  hexCode="${hexCode:1}"
 fi
 
 
@@ -79,7 +89,6 @@ red=$((16#${hexCode:0:2}))
 green=$((16#${hexCode:2:2}))
 blue=$((16#${hexCode:4:2}))
 
-echo -e "$(bold)#$hexCode -> $(reset)$(rgb $red $green $blue)rgb($red, $green, $blue)$(reset)"
+echo "${bold}#$hexCode -> $(rgb $red $green $blue)rgb($red, $green, $blue)${reset}"
 
 exit 0
-

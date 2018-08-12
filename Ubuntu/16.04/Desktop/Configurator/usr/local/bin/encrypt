@@ -28,38 +28,52 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_SHRED=/usr/bin/shred
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if incorrect parameters given
+# Display usage if no parameters given
 if [ -z "$1" ]; then
-  printUsage "encrypt FILENAME|DIRNAME"
-
-  exit 1
-fi
-
-# Display error if target not valid file or directory
-if [ ! -f "$1" ] && [ ! -d "$1" ]; then
-  printError "encrypt" "Invalid target $1: No such file or directory"
+  printUsage 'encrypt FILE|DIR'
   echo
-  printUsage "encrypt FILENAME|DIRNAME"
 
   exit 1
 fi
 
+# Display error and usage if target not valid file or directory
+if [ ! -f "$1" ] && [ ! -d "$1" ]; then
+  printError 'encrypt' "Cannot access '$1': No such file or directory"
+  echo
+  printUsage 'encrypt FILE|DIR'
+
+  exit 1
+fi
 
 ################################### Actions ###################################
 
@@ -68,23 +82,22 @@ if [ -d "$1" ]; then
   # Create directory.tar.gz file
   filename="$1.tar.gz"
 
-  /bin/tar -zcf "$filename" "$1"
+  $EXEC_TAR -zcf "$filename" "$1"
 
   # Encrypt the tarball
-  /usr/bin/gpg --symmetric -z 0 "$filename" 2>/dev/null
+  $EXEC_GPG --symmetric -z 0 "$filename" 2>/dev/null
 
   # Shred the tarball if gpg succeeded
   if [ -f "$filename.gpg" ]; then
-    /usr/bin/shred -uzn 0 "$filename"
+    $EXEC_SHRED -uzn 0 "$filename"
   fi
 
 else
 
   filename="$1"
 
-  /usr/bin/gpg --symmetric "$filename" 2>/dev/null
+  $EXEC_GPG --symmetric "$filename" 2>/dev/null
 
 fi
 
 exit 0
-

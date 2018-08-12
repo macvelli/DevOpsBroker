@@ -28,6 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ansi.h"
+
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 // Default buffer size
@@ -59,23 +61,20 @@ char *endSubstr = NULL;
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
-    printf("\033[1mUsage: \033[38;5;226mbetween START END [input-file]\033[0m\n");
-
+  if (argc == 1) {
+    printUsage("between START END [input-file]");
     exit(EXIT_FAILURE);
   }
 
   if (argv[1][0] == '\0') {
-    printf("\033[1mbetween: \033[38;5;203mSTART parameter is empty\033[0m\n\n");
-    printf("\033[1mUsage: \033[38;5;226mbetween START END [input-file]\033[0m\n");
-
+    printError("between", "START parameter is missing\n\n");
+    printUsage("between START END [input-file]");
     exit(EXIT_FAILURE);
   }
 
-  if (argv[2][0] == '\0') {
-    printf("\033[1mbetween: \033[38;5;203mEND parameter is empty\033[0m\n\n");
-    printf("\033[1mUsage: \033[38;5;226mbetween START END [input-file]\033[0m\n");
-
+  if (argc == 2 || argv[2][0] == '\0') {
+    printError("between", "END parameter is missing\n\n");
+    printf(BOLD "Usage: " YELLOW "between %s END [input-file]" RESET "\n", argv[1]);
     exit(EXIT_FAILURE);
   }
 
@@ -96,7 +95,7 @@ int main(int argc, char *argv[]) {
     fp = fopen(argv[3], "r");
 
     if (fp == NULL) {
-      printf("\033[1mbetween: \033[38;5;203mCannot open file %s\033[0m\n", argv[3]);
+      printf(BOLD "between: " RED "Cannot open '%s': No such file" RESET "\n", argv[3]);
       exit(EXIT_FAILURE);
     }
   } else {
@@ -199,4 +198,3 @@ void append(char *line, ssize_t len) {
   bufLen = newLen;
   ptr = '\0';
 }
-

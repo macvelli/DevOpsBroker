@@ -22,86 +22,22 @@
 # Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
 #
 # Performs the following configurations:
-#   o Ensures all configuration scripts DevOpsBroker utilizes are executable
-#   o Configures firewall using both iptables and ip6tables for IPv4 and IPv6
-#   o Tunes the default network card (hardware offload / tx queue length / initcwnd and initrwnd)
+#   o Configures IPv4 firewall and IPv6 firewall using iptables and ip6tables
+#   o Installs all DevOpsBroker system administration and user utilities
+#   o Installs a number of useful applications, libraries and utilities
 #   o Installs any available proprietary drivers
 #   o Configures and optimizes the filesystem
 #   o Performs Linux kernel tuning optimizations
 #   o Performs general system configuration
 #   o Configures the fastest APT sources mirror
 #   o Configures and optimizes GRUB
+#   o Manages DevOpsBroker configuration files (e.g. ansi.conf)
+#   o Tunes the default network interface card
 #   o Performs Samba configuration and optimization
 #   o Configures systemwide security configuration
-#   o Configures the Disk I/O schedulers
+#   o Configures the Disk I/O schedulers and tunes each disk independently
 #   o Replaces dnsmasq with unbound for the local DNS cache server
 #   o Performs user configuration
-#
-# Installs the following user utilities:
-#   o addUserToGroup
-#   o firewall
-#   o archive
-#   o between
-#   o bgedit
-#   o convert-number (binary / decimal / hex / octal)
-#   o decrypt
-#   o encrypt
-#   o extract
-#   o firelog
-#   o geoip
-#   o git-config
-#   o hexToRgb
-#   o hypotenuse
-#   o pms
-#   o printAnsi256
-#   o public-ip
-#   o random-password
-#   o reverse-dns
-#   o rgbToHex
-#   o showFileFormat
-#   o ssh-key
-#   o symlink
-#   o venture
-#   o verifyip
-#
-# Installs the following packages and Snaps:
-#   o arp-scan
-#   o avahi-daemon
-#   o curl
-#   o dconf-editor
-#   o dnsutils
-#   o dos2unix
-#   o exfat
-#   o flashplugin-installer
-#   o gcc
-#   o gdb
-#   o mmdblookup
-#   o getent
-#   o gimp
-#   o git
-#   o gksu
-#   o gnome-tweak-tool
-#   o gparted
-#   o gstreamer1.0-libav
-#   o htop
-#   o irqbalance
-#   o libpam-modules
-#   o mesa-utils
-#   o net-tools
-#   o nmap
-#   o ntp
-#   o openssh-client
-#   o parallel
-#   o pulseaudio-equalizer
-#   o samba
-#   o speedtest-cli
-#   o sysstat
-#   o ttf-mscorefonts-installer
-#   o unbound
-#   o vlc
-#   o xclip
-#   o whois
-#   o yad
 #
 # Unnstalls the following packages:
 #   o dnsmasq
@@ -137,9 +73,6 @@
 # o View all available connection profiles for all network interfaces
 # nmcli device show
 #
-# o Measure read speed of any drive (Hard Drive/SSD/USB):
-# hdparm -t /dev/sd(a|b|c|d...)
-#
 # o View which devices and handlers are currently active:
 # cat /proc/bus/input/devices
 #
@@ -153,123 +86,70 @@
 # -----------------------------------------------------------------------------
 #
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mconfigure-desktop.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Find the script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Create /etc/dob directory
-if [ ! -d /etc/dob ]; then
-
-  # Make the /etc/dob directory
-  mkdir -p --mode=0755 /etc/dob
-
-fi
-
-# Install /etc/dob/ansi.conf
-if [ ! -f /etc/dob/ansi.conf ]; then
-
-  # Install as root:root with rw-r--r-- privileges
-  install -o root -g root -m 644 "$SCRIPT_DIR/etc/dob/ansi.conf" /etc/dob
-
-fi
-
-# Install /etc/dob/functions.conf
-if [ ! -f /etc/dob/ansi.conf ]; then
-
-  # Install as root:root with rw-r--r-- privileges
-  install -o root -g root -m 644 "$SCRIPT_DIR/etc/dob/functions.conf" /etc/dob
-
-fi
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
-
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ubuntu Version Check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Check which version of Ubuntu is installed
+EXEC_LSB_RELEASE=/usr/bin/lsb_release
+
 IFS=$'\n'
-DISTRO_INFO=($(lsb_release -sirc))
+DISTRO_INFO=($($EXEC_LSB_RELEASE -sirc))
 IFS=' '
 
 # Display error if not running on Ubuntu 16.04 xenial
 if [ ${#DISTRO_INFO[@]} -ne 3 ] || \
-      [ "${DISTRO_INFO[0]}" != "Ubuntu" ] || \
-      [ "${DISTRO_INFO[1]}" != "16.04" ] || \
-      [ "${DISTRO_INFO[2]}" != "xenial" ]; then
-  printError "configure-desktop.sh" "Invalid Linux distribution ${DISTRO_INFO[@]}"
+      [ "${DISTRO_INFO[0]}" != 'Ubuntu' ] || \
+      [ "${DISTRO_INFO[1]}" != '16.04' ] || \
+      [ "${DISTRO_INFO[2]}" != 'xenial' ]; then
+  printError 'configure-desktop.sh' "Invalid Linux distribution ${DISTRO_INFO[@]}"
 
   exit 1
 fi
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Shell Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+################################## Variables ##################################
 
-## Define shell script locations
+## Bash exec variables
+EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 
-# Make gsettings.sh executable
-isExecutable "$SCRIPT_DIR/gsettings.sh" 1>/dev/null
+# Default network interface
+DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
 
-# Make install-drivers.sh executable
-isExecutable "$SCRIPT_DIR/install-drivers.sh" 1>/dev/null
-
-# Make install-services.sh executable
-isExecutable "$SCRIPT_DIR/install-services.sh" 1>/dev/null
-
-# Make ttf-msclearfonts.sh executable
-isExecutable "$SCRIPT_DIR/ttf-msclearfonts.sh" 1>/dev/null
-
-# Set configure-fstab.sh location and make it executable
-configFstab=$(isExecutable "$SCRIPT_DIR/etc/configure-fstab.sh")
-
-# Set configure-kernel.sh location and make it executable
-configKernel=$(isExecutable "$SCRIPT_DIR/etc/configure-kernel.sh")
-
-# Set configure-system.sh location and make it executable
-configSystem=$(isExecutable "$SCRIPT_DIR/etc/configure-system.sh")
-
-# Set configure-apt-mirror.sh location and make it executable
-configAptMirror=$(isExecutable "$SCRIPT_DIR/etc/apt/configure-apt-mirror.sh")
-
-# Set configure-grub.sh location and make it executable
-configGrub=$(isExecutable "$SCRIPT_DIR/etc/default/configure-grub.sh")
-
-# Set ip6tables-desktop.sh location and make it executable
-ip6tablesDesktop=$(isExecutable "$SCRIPT_DIR/etc/network/ip6tables-desktop.sh")
-
-# Set iptables-desktop.sh location and make it executable
-iptablesDesktop=$(isExecutable "$SCRIPT_DIR/etc/network/iptables-desktop.sh")
-
-# Set configure-nic.sh location and make it executable
-configNic=$(isExecutable "$SCRIPT_DIR/etc/network/if-up.d/configure-nic.sh")
-
-# Set configure-samba.sh location and make it executable
-configSamba=$(isExecutable "$SCRIPT_DIR/etc/samba/configure-samba.sh")
-
-# Set configure-security.sh location and make it executable
-configSecurity=$(isExecutable "$SCRIPT_DIR/etc/security/configure-security.sh")
-
-# Set configure-unbound.sh location and make it executable
-configUnbound=$(isExecutable "$SCRIPT_DIR/etc/unbound/configure-unbound.sh")
-
-# Set configure-user.sh location and make it executable
-configUser=$(isExecutable "$SCRIPT_DIR/home/configure-user.sh")
-
+# Number of CPUs
+NUM_CPUS=$($EXEC_GREP -c ^processor /proc/cpuinfo)
 
 ################################## Functions ##################################
 
@@ -278,13 +158,13 @@ configUser=$(isExecutable "$SCRIPT_DIR/home/configure-user.sh")
 # Description:	Installs the specified package, if not already installed
 #
 # Parameter $1:	The file to check for existence; install if not present
-# Parameter $2: The name of the package to install
+# Parameter $2: The name of the package to install~/Development/GitHub/DevOpsBroker/Ubuntu/16.04/Desktop/Configurator
 # -----------------------------------------------------------------------------
 function installPackage() {
   if [ ! -f "$1" ]; then
     printBanner "Installing $2"
 
-    apt -y install $2
+    $EXEC_APT -y install $2
 
     echo
   fi
@@ -301,70 +181,10 @@ function installSnap() {
   if [ ! -d "$1" ]; then
     printBanner "Installing $2"
 
-    snap install $2
+    $EXEC_SNAP install $2
 
     echo
   fi
-}
-
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	installUtility
-# Description:	Installs the utility into the specified directory
-#
-# Parameter $1:	The name of the utility to install
-# Parameter $2:	The source directory (where to find the utility to install)
-# Parameter $3: The installation directory
-# -----------------------------------------------------------------------------
-function installUtility() {
-  # BEGIN install utility function
-
-  local utility="$1"
-  local sourceDir="$2"
-  local installDir="$3"
-
-  if [ ! -f "$installDir/$utility" ]; then
-
-    if [ "$installDir" == "/usr/local/sbin" ]; then
-      # Install administration utility
-      printInfo "Installing $utility administration utility"
-
-      # Install utility as root:sudo with rwxr-x--- privileges
-      install -o root -g sudo -m 750 "$sourceDir/$utility" /usr/local/sbin
-
-    elif [ "$installDir" == "/usr/local/bin" ]; then
-      # Install user utility
-      printInfo "Installing $utility user utility"
-
-      # Install utility as root:users with rwxr-xr-x privileges
-      install -o root -g users -m 755 "$sourceDir/$utility" /usr/local/bin
-
-    fi
-
-    echo
-
-  elif [ "$sourceDir/$utility" -nt "$installDir/$utility" ]; then
-
-    if [ "$installDir" == "/usr/local/sbin" ]; then
-      # Update administration utility
-      printInfo "Updating $utility administration utility"
-
-      # Install utility as root:sudo with rwxr-x--- privileges
-      install -o root -g sudo -m 750 "$sourceDir/$utility" /usr/local/sbin
-
-    elif [ "$installDir" == "/usr/local/bin" ]; then
-      # Update user utility
-      printInfo "Updating $utility user utility"
-
-      # Install utility as root:users with rwxr-xr-x privileges
-      install -o root -g users -m 755 "$sourceDir/$utility" /usr/local/bin
-
-    fi
-
-    echo
-
-  fi
-
-  # END install utility function
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -378,320 +198,188 @@ function uninstallPackage() {
   if [ -f "$1" ]; then
     printBanner "Uninstalling $2"
 
-    apt -y purge $2
+    $EXEC_APT -y purge $2
 
     echo
   fi
 }
 
-
-################################## Variables ##################################
-
-# Default network interface
-DEFAULT_NIC=$(ip -4 route show default | awk '{ print $5 }')
-
-# Number of CPUs
-NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
-
 ################################### Actions ###################################
 
-# Clear screen and print banner only if called from command line
+# Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
   clear
-
-  bannerMsg="DevOpsBroker Ubuntu 16.04 Desktop Configurator"
-
-  echo -e $(bold kobi)
-  echo    "╔════════════════════════════════════════════════╗"
-  echo -e "║ "$(white)$bannerMsg$(kobi)                    "║"
-  echo    "╚════════════════════════════════════════════════╝"
-  echo -e $(reset)
-
 fi
 
+bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Configurator'
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall/Network ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo ${bold} ${wisteria}
+echo '╔════════════════════════════════════════════════╗'
+echo "║ ${white}$bannerMsg${wisteria}"		      '║'
+echo '╚════════════════════════════════════════════════╝'
+echo ${reset}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install iptables
-installPackage "/sbin/iptables" "iptables"
+installPackage '/sbin/iptables' 'iptables'
 
-## Configure iptables
-
-# Call iptables-desktop.sh script
+# Configure IPv4 firewall with iptables-desktop.sh script
 if [ ! -f /etc/network/iptables.rules ] || \
-	[ "$iptablesDesktop" -nt /etc/network/iptables.rules ]; then
+	[ "$SCRIPT_DIR"/etc/network/iptables-desktop.sh -nt /etc/network/iptables.rules ]; then
 
-  $SHELL -c "$iptablesDesktop"
+  "$SCRIPT_DIR"/etc/network/iptables-desktop.sh
 
   echo
 fi
 
-## Configure ip6tables
-
-# Call ip6tables-desktop.sh script
+# Configure IPv6 firewall with ip6tables-desktop.sh script
 if [ ! -f /etc/network/ip6tables.rules ] || \
-	[ "$ip6tablesDesktop" -nt /etc/network/ip6tables.rules ]; then
+	[ "$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh -nt /etc/network/ip6tables.rules ]; then
 
-  $SHELL -c "$ip6tablesDesktop"
+  "$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh
 
   echo
 fi
 
-## Install iface-preup-config.sh script
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~ DevOpsBroker Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ifacePreUpDir="etc/network/if-pre-up.d"
-if [ ! -f /etc/network/if-pre-up.d/iface-preup-config.sh ]; then
+# Install and/or update DevOpsBroker system administration and user utilities
+"$SCRIPT_DIR"/update-utils.sh
 
-  printInfo "Installing /etc/network/if-pre-up.d/iface-preup-config.sh"
-
-  # Install as root:root with rwxr-xr-x privileges
-  install -o root -g root -m 755 "$SCRIPT_DIR/$ifacePreUpDir/iface-preup-config.sh" /$ifacePreUpDir
-
-elif [ "$SCRIPT_DIR/$ifacePreUpDir/iface-preup-config.sh" -nt "/$ifacePreUpDir/iface-preup-config.sh" ]; then
-
-  printInfo "Updating /etc/network/if-pre-up.d/iface-preup-config.sh"
-
-  # Install as root:root with rwxr-xr-x privileges
-  install -b --suffix .bak -o root -g root -m 755 "$SCRIPT_DIR/$ifacePreUpDir/iface-preup-config.sh" /$ifacePreUpDir
-
-fi
-
-if [ ! -z "$DEFAULT_NIC" ]; then
-
-  ## Tune Default NIC Interface
-
-  $SHELL -c "$configNic" "$DEFAULT_NIC"
-
-  ## Configure /etc/network/interfaces
-  if ! grep -Fq "$DEFAULT_NIC" /etc/network/interfaces; then
-    echo "o Configuring /etc/network/interfaces..."
-
-  echo "
-# $DEFAULT_NIC
-auto $DEFAULT_NIC
-iface $DEFAULT_NIC inet dhcp
-  pre-up /etc/network/if-pre-up.d/iface-preup-config.sh
-  post-up /etc/network/if-up.d/tune-$DEFAULT_NIC.sh" >> /etc/network/interfaces
-
-    echo
-  fi
-fi
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ User Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Build all C language utilties
-/usr/bin/make -s --directory="$SCRIPT_DIR/C"
-chown -R $SUDO_USER:$SUDO_USER "$SCRIPT_DIR/C"
-
-# Install addUserToGroup administration script
-installUtility addUserToGroup "$SCRIPT_DIR/usr/local/sbin" /usr/local/sbin
-
-# Install firewall administration script
-installUtility firewall "$SCRIPT_DIR/usr/local/sbin" /usr/local/sbin
-
-# Install archive script
-installUtility archive "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install between utility
-installUtility between "$SCRIPT_DIR/C" /usr/local/bin
-
-# Install bgedit script
-installUtility bgedit "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install convert-number script
-installUtility convert-number "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Create symbolic links to the convert-number script
-if [ ! -L /usr/local/bin/binary ]; then
-  printInfo "Creating symbolic link /usr/local/bin/binary"
-  ln -s /usr/local/bin/convert-number /usr/local/bin/binary
-  chown --no-dereference root:users /usr/local/bin/binary
-
-  printInfo "Creating symbolic link /usr/local/bin/decimal"
-  ln -s /usr/local/bin/convert-number /usr/local/bin/decimal
-  chown --no-dereference root:users /usr/local/bin/decimal
-
-  printInfo "Creating symbolic link /usr/local/bin/hex"
-  ln -s /usr/local/bin/convert-number /usr/local/bin/hex
-  chown --no-dereference root:users /usr/local/bin/hex
-
-  printInfo "Creating symbolic link /usr/local/bin/octal"
-  ln -s /usr/local/bin/convert-number /usr/local/bin/octal
-  chown --no-dereference root:users /usr/local/bin/octal
-fi
-
-# Install decrypt script
-installUtility decrypt "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install encrypt script
-installUtility encrypt "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install extract script
-installUtility extract "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install firelog utility
-installUtility firelog "$SCRIPT_DIR/C" /usr/local/bin
-
-# Install geoip script
-installUtility geoip "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install git-config script
-installUtility git-config "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install hexToRgb script
-installUtility hexToRgb "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install hypotenuse script
-installUtility hypotenuse "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install pms script
-installUtility pms "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install printAnsi256 script
-installUtility printAnsi256 "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install public-ip script
-installUtility public-ip "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install random-password script
-installUtility random-password "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install reverse-dns script
-installUtility reverse-dns "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install rgbToHex script
-installUtility rgbToHex "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install showFileFormat script
-installUtility showFileFormat "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install ssh-key script
-installUtility ssh-key "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install symlink script
-installUtility symlink "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install venture script
-installUtility venture "$SCRIPT_DIR/usr/local/bin" /usr/local/bin
-
-# Install verifyip utility
-installUtility verifyip "$SCRIPT_DIR/C" /usr/local/bin
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~ Applications/Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
 
 # Install arp-scan
-installPackage "/usr/bin/arp-scan" "arp-scan"
+installPackage '/usr/bin/arp-scan' 'arp-scan'
+
+# Install aspell
+installPackage '/usr/bin/aspell' 'aspell aspell-en'
 
 # Install avahi-daemon
-installPackage "/usr/sbin/avahi-daemon" "avahi-daemon"
+installPackage '/usr/sbin/avahi-daemon' 'avahi-daemon'
+
+# Install bridge-utils
+installPackage '/sbin/brctl' 'bridge-utils'
+
+# Install clang
+installPackage '/usr/bin/clang-5.0' 'clang-5.0 clang-5.0-doc'
+
+if [ ! -L /usr/bin/clang ]; then
+  printInfo "Creating symbolic link /usr/lib/llvm-5.0/bin/clang"
+  $EXEC_LN -s /usr/lib/llvm-5.0/bin/clang /usr/bin/clang
+fi
 
 # Install curl
-installPackage "/usr/bin/curl" "curl"
+installPackage '/usr/bin/curl' 'curl'
 
 # Install dconf-editor
-installPackage "/usr/bin/dconf-editor" "dconf-editor"
+installPackage '/usr/bin/dconf-editor' 'dconf-editor'
 
 # Uninstall dnsmasq
-uninstallPackage "/etc/dnsmasq.conf" "dnsmasq"
+uninstallPackage '/etc/dnsmasq.conf' 'dnsmasq'
 
 # Install dnsutils
-installPackage "/usr/bin/dig" "dnsutils"
+installPackage '/usr/bin/dig' 'dnsutils'
 
 # Install dos2unix
-installPackage "/usr/bin/dos2unix" "dos2unix"
+installPackage '/usr/bin/dos2unix' 'dos2unix'
 
 # Install exfat
-installPackage "/sbin/mkfs.exfat" "exfat-fuse exfat-utils"
+installPackage '/sbin/mkfs.exfat' 'exfat-fuse exfat-utils'
+
+# Install fio
+installPackage '/usr/bin/fio' 'fio'
 
 # Install flashplugin-installer
-installPackage "/usr/lib/flashplugin-installer/install_plugin" "flashplugin-installer"
+installPackage '/usr/lib/flashplugin-installer/install_plugin' 'flashplugin-installer'
 
 # Install gcc
-installPackage "/usr/bin/gcc" "gcc"
+installPackage '/usr/bin/gcc' 'gcc'
 
 # Install gdb
-installPackage "/usr/bin/gdb" "gdb"
+installPackage '/usr/bin/gdb' 'gdb'
 
 # Uninstall geoip-bin
-uninstallPackage "/usr/bin/geoiplookup" "geoip-bin"
+uninstallPackage '/usr/bin/geoiplookup' 'geoip-bin'
 
 # Uninstall geoip-database
-uninstallPackage "/usr/share/GeoIP/GeoIP.dat" "geoip-database"
+uninstallPackage '/usr/share/GeoIP/GeoIP.dat' 'geoip-database'
 
 # Delete /usr/share/GeoIP directory
 if [ -d /usr/share/GeoIP ]; then
-  printInfo "Deleting /usr/share/GeoIP directory"
+  printInfo 'Deleting /usr/share/GeoIP directory'
 
-  rm -rf /usr/share/GeoIP
+  $EXEC_RM -rf /usr/share/GeoIP
 
   echo
 fi
+
+# Install ioping
+installPackage '/usr/bin/ioping' 'ioping'
+
+# Install libc-bin
+installPackage '/usr/bin/getent' 'libc-bin'
 
 # Install mmdblookup
 if [ ! -f /usr/bin/mmdblookup ]; then
   # BEGIN GeoLite2 City Lookup
 
-  printBanner "Installing MaxMind GeoLite2 Geolocation"
+  printBanner 'Installing MaxMind GeoLite2 Geolocation'
 
-  printInfo "Add MaxMind PPA for GeoLite2 Support"
-  add-apt-repository -y ppa:maxmind/ppa
-  apt update
+  printInfo 'Add MaxMind PPA for GeoLite2 Support'
+  $EXEC_ADD_APT_REPO -y ppa:maxmind/ppa
+  $EXEC_APT update
   echo
 
-  printInfo "Install mmdblookup"
-  apt -y install libmaxminddb0 libmaxminddb-dev mmdb-bin
+  printInfo 'Install mmdblookup'
+  $EXEC_APT -y install libmaxminddb0 libmaxminddb-dev mmdb-bin
   echo
 
   # Install GeoLite2 City geolocation database
-  geoip update
+  /usr/local/bin/geoip update
 
   echo
 
   # END GeoLite2 City Lookup
 fi
 
-# Install getent
-installPackage "/usr/bin/getent" "libc-bin"
-
 # Install gimp
-installSnap "/snap/gimp" "gimp"
+installSnap '/snap/gimp' 'gimp'
 
 # Install git
 if [ ! -f /usr/bin/git ]; then
-  printBanner "Installing git"
+  printBanner 'Installing git'
 
-  printInfo "Add Git stable release PPA"
-  add-apt-repository ppa:git-core/ppa
-  apt-get update
+  printInfo 'Add Git stable release PPA'
+  $EXEC_ADD_APT_REPO ppa:git-core/ppa
+  $EXEC_APT update
   echo
 
-  apt -y install git
+  $EXEC_APT -y install git
 
   echo
-
-  printInfo "Configure git color UI"
-  /usr/bin/git config --global color.ui auto
 fi
 
 # Install gksu
-installPackage "/usr/bin/gksu" "gksu"
+installPackage '/usr/bin/gksu' 'gksu'
 
 # Install gnome-tweak-tool
-installPackage "/usr/bin/gnome-tweak-tool" "gnome-tweak-tool"
+installPackage '/usr/bin/gnome-tweak-tool' 'gnome-tweak-tool'
 
 # Install gparted
-installPackage "/usr/sbin/gparted" "gparted"
+installPackage '/usr/sbin/gparted' 'gparted'
 
 # Install gstreamer1.0-libav
-installPackage "/usr/share/doc/gstreamer1.0-libav/README" "gstreamer1.0-libav"
+installPackage '/usr/share/doc/gstreamer1.0-libav/README' 'gstreamer1.0-libav'
 
 # Install htop
-installPackage "/usr/bin/htop" "htop"
+installPackage '/usr/bin/htop' 'htop'
+
+# Install hwinfo
+installPackage '/usr/sbin/hwinfo' 'hwinfo'
 
 # Install inkscape
-installSnap "/snap/inkscape" "inkscape"
+installSnap '/snap/inkscape' 'inkscape'
 
 #
 # irqbalance
@@ -699,214 +387,284 @@ installSnap "/snap/inkscape" "inkscape"
 #
 if [ $NUM_CPUS -gt 1 ]; then
   # Install irqbalance
-  installPackage "/usr/sbin/irqbalance" "irqbalance"
+  installPackage '/usr/sbin/irqbalance' 'irqbalance'
 
   # Start irqbalance service
-  if ! systemctl status irqbalance | grep -Fq "active (running)"; then
-    printInfo "Start irqbalance service"
+  if ! $EXEC_SYSTEMCTL status irqbalance | $EXEC_GREP -Fq 'active (running)'; then
+    printInfo 'Start irqbalance service'
 
-    systemctl start irqbalance
+    $EXEC_SYSTEMCTL start irqbalance
 
     echo
   fi
 
 fi
 
+# Install libaio-dev
+installPackage '/usr/include/libaio.h' 'libaio-dev'
+
+# Uninstall libc6-dbg
+uninstallPackage '/usr/share/doc/libc6-dbg/copyright' 'libc6-dbg'
+
+# Install libmagic-dev
+installPackage '/usr/include/magic.h' 'libmagic-dev'
+
 # Install libpam-modules
-installPackage "/usr/share/doc/libpam-modules/copyright" "libpam-modules"
+installPackage '/usr/share/doc/libpam-modules/copyright' 'libpam-modules'
+
+# Install linux-generic-hwe-16.04
+installPackage '/usr/share/doc/linux-generic-hwe-16.04/copyright' 'linux-generic-hwe-16.04'
 
 # Install mesa-utils
-installPackage "/usr/bin/glxinfo" "mesa-utils"
+installPackage '/usr/bin/glxinfo' 'mesa-utils'
 
 # Install net-tools
-installPackage "/bin/netstat" "net-tools"
+installPackage '/bin/netstat' 'net-tools'
 
 # Install nmap
-installPackage "/usr/bin/nmap" "nmap"
+installPackage '/usr/bin/nmap' 'nmap'
 
 # Install ntp
-installPackage "/usr/sbin/ntpd" "ntp"
+installPackage '/usr/sbin/ntpd' 'ntp'
 
 # Install openssh-client
-installPackage "/usr/bin/ssh-keygen" "openssh-client"
+installPackage '/usr/bin/ssh-keygen' 'openssh-client'
+
+# Install ovmf
+installPackage '/usr/share/ovmf/OVMF.fd' 'ovmf'
 
 # Install parallel
-installPackage "/usr/bin/parallel" "parallel"
+installPackage '/usr/bin/parallel' 'parallel'
 
 # Install pulseaudio-equalizer
 if [ ! -f /usr/bin/pulseaudio-equalizer-gtk ]; then
   # BEGIN Install pulseaudio-equalizer
 
-  printBanner "Installing pulseaudio-equalizer"
+  printBanner 'Installing pulseaudio-equalizer'
 
-  printInfo "Adding webupd8.org PPA"
-  add-apt-repository ppa:nilarimogard/webupd8
-  apt update
+  printInfo 'Adding webupd8.org PPA'
+  $EXEC_ADD_APT_REPO ppa:nilarimogard/webupd8
+  $EXEC_APT update
   echo
 
   # Install the equalizer
-  apt -y install pulseaudio-equalizer
+  $EXEC_APT -y install pulseaudio-equalizer
   echo
 
   # Install PulseAudio icon
-  printInfo "Installing pulseaudio icon"
-  install -o root -g root -m 644 "$SCRIPT_DIR/usr/share/pixmaps/pulseaudio.png" /usr/share/pixmaps
+  printInfo 'Installing pulseaudio icon'
+  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/usr/share/pixmaps/pulseaudio.png" /usr/share/pixmaps
 
   # .desktop directory
-  desktopDir="usr/share/applications"
+  desktopDir='usr/share/applications'
 
   # Fix icon in /usr/share/applications/pulseaudio-equalizer.desktop
-  install -o root -g root -m 644 "$SCRIPT_DIR/$desktopDir/pulseaudio-equalizer.desktop" "/$desktopDir"
+  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$desktopDir/pulseaudio-equalizer.desktop" "/$desktopDir"
 
   # Presets directory
-  presetsDir="usr/share/pulseaudio-equalizer/presets"
+  presetsDir='usr/share/pulseaudio-equalizer/presets'
 
   # Install Default preset
-  printInfo "Installing Default equalizer preset"
-  install -o root -g root -m 644 "$SCRIPT_DIR/$presetsDir/Default.preset" "/$presetsDir"
+  printInfo 'Installing Default equalizer preset'
+  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$presetsDir/Default.preset" "/$presetsDir"
 
   echo
 
   # END Install pulseaudio-equalizer
 fi
 
+# Install qemu-kvm
+installPackage '/usr/share/doc/qemu-kvm/copyright' 'qemu-kvm'
+
 # Install samba
-installPackage "/usr/sbin/smbd" "samba"
+installPackage '/usr/sbin/smbd' 'samba'
+
+# Install shutter
+#if [ ! -f /usr/bin/shutter ]; then
+#  printBanner 'Installing shutter'
+#
+#  printInfo 'Add Shutter stable release PPA'
+#  $EXEC_ADD_APT_REPO ppa:shutter/ppa
+#  $EXEC_APT update
+#  echo
+#
+#  $EXEC_APT -y install shutter
+#
+#  echo
+#fi
 
 # Install speedtest-cli
-installPackage "/usr/bin/speedtest-cli" "speedtest-cli"
+installPackage '/usr/bin/speedtest-cli' 'speedtest-cli'
+
+# Install sysfsutils
+installPackage '/usr/bin/systool' 'sysfsutils'
 
 # Install sysstat
-installPackage "/usr/bin/iostat" "sysstat"
+installPackage '/usr/bin/iostat' 'sysstat'
 
 # Install tidy
-installPackage "/usr/bin/tidy" "tidy"
+installPackage '/usr/bin/tidy' 'tidy'
 
 # Install ttf-mscorefonts-installer
 if [ ! -d /usr/share/fonts/truetype/msttcorefonts ]; then
-  printBanner "Installing ttf-mscorefonts-installer"
+  printBanner 'Installing ttf-mscorefonts-installer'
 
-  apt -y install ttf-mscorefonts-installer
+  $EXEC_APT -y install ttf-mscorefonts-installer
   echo
 
-  printInfo "Updating the font cache"
-  fc-cache -f -v
+  printInfo 'Updating the font cache'
+  /usr/bin/fc-cache -f -v
 
   echo
 fi
 
 # Install unbound
-installPackage "/usr/sbin/unbound" "unbound"
+installPackage '/usr/sbin/unbound' 'unbound'
 
 # Install vlc
-installSnap "/snap/vlc" "vlc"
+installSnap '/snap/vlc' 'vlc'
 
 # Install whois
-installPackage "/usr/bin/whois" "whois"
+installPackage '/usr/bin/whois' 'whois'
 
 # Install xclip
-installPackage "/usr/bin/xclip" "xclip"
+installPackage '/usr/bin/xclip' 'xclip'
+
+# Install xserver-xorg-hwe-16.04
+installPackage '/usr/share/doc/xserver-xorg-hwe-16.04/copyright' 'xserver-xorg-hwe-16.04'
 
 # Install yad
-installPackage "/usr/bin/yad" "yad"
+installPackage '/usr/bin/yad' 'yad'
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ System/User Configuration ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#
+# Device Driver Installation
+#
+
+"$SCRIPT_DIR"/device-drivers.sh
 
 #
 # Filesystem Configuration
 #
 
 # Configure /etc/fstab with configure-fstab.sh script
-$SHELL -c "$configFstab"
+"$SCRIPT_DIR"/etc/configure-fstab.sh
 
 #
 # Linux Kernel Tuning
 #
 
 # Configure /etc/sysctl.conf with configure-kernel.sh script
-$SHELL -c "$configKernel"
+"$SCRIPT_DIR"/etc/configure-kernel.sh
 
 #
 # General System Configuration
 #
 
 # Configure system with configure-system.sh script
-$SHELL -c "$configSystem"
+"$SCRIPT_DIR"/etc/configure-system.sh
 
 #
 # APT Sources Mirror Configuration
 #
 
 # Configure /etc/apt/sources.list with configure-apt-mirror.sh script
-$SHELL -c "$configAptMirror"
+"$SCRIPT_DIR"/etc/apt/configure-apt-mirror.sh
 
 #
 # GRUB Configuration
 #
 
 # Configure /etc/default/grub with configure-grub.sh script
-$SHELL -c "$configGrub"
+"$SCRIPT_DIR"/etc/default/configure-grub.sh
 
 #
 # DevOpsBroker Configration Files
 #
 
-# Install /etc/dob/ansi.conf
-installConfig "ansi.conf" "$SCRIPT_DIR/etc/dob" /etc/dob
+# Install /etc/devops/ansi.conf
+installConfig 'ansi.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
 
-# Install /etc/dob/functions.conf
-installConfig "functions.conf" "$SCRIPT_DIR/etc/dob" /etc/dob
+# Install /etc/devops/exec.conf
+installConfig 'exec.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
+
+# Install /etc/devops/functions.conf
+installConfig 'functions.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
+
+#
+# Network Interface Card Configuration
+#
+
+# Install /etc/network/if-pre-up.d/iface-preup-config.sh
+installConfig 'iface-preup-config.sh' "$SCRIPT_DIR"/etc/network/if-pre-up.d /etc/network/if-pre-up.d
+$EXEC_CHMOD 755 /etc/network/if-pre-up.d/iface-preup-config.sh
+
+if [ ! -z "$DEFAULT_NIC" ]; then
+  # Configure /etc/network/if-up.d/ with configure-nic.sh script
+  "$SCRIPT_DIR"/etc/network/configure-nic.sh $DEFAULT_NIC
+
+  # Configure /etc/network/interfaces
+  if ! $EXEC_GREP -Fq $DEFAULT_NIC /etc/network/interfaces; then
+
+    printInfo 'Configuring /etc/network/interfaces'
+
+## Template
+/bin/cat << EOF >> /etc/network/interfaces
+# $DEFAULT_NIC
+auto $DEFAULT_NIC
+iface $DEFAULT_NIC inet dhcp
+  pre-up /etc/network/if-pre-up.d/iface-preup-config.sh
+EOF
+    echo
+  fi
+fi
 
 #
 # Samba Configuration
 #
 
 # Configure /etc/samba/smb.conf with configure-samba.sh script
-$SHELL -c "$configSamba"
+"$SCRIPT_DIR"/etc/samba/configure-samba.sh
 
 #
 # Systemwide Security Configuration
 #
 
-# Configure /etc/security with configure-security.sh script
-$SHELL -c  "$configSecurity"
+# Configure /etc/security/limits.d/ with configure-security.sh script
+"$SCRIPT_DIR"/etc/security/configure-security.sh
 
 #
-# Disk I/O Schedulers Configuration
-#   o Non-rotational disks: kyber
-#   o Rotational disks: bfq
+# Udev Configuration
 #
 
-# Install /etc/udev/rules.d/60-io-schedulers.rules
-installConfig "60-io-schedulers.rules" "$SCRIPT_DIR/etc/udev/rules.d" /etc/udev/rules.d
+# Configure /etc/udev/rules.d/ with configure-udev.sh script
+"$SCRIPT_DIR"/etc/udev/configure-udev.sh
 
 #
 # Unbound DNS Cache Server Configuration
 #
 
-# Configure /etc/unbound/unbound.conf.d/dns-cache-server.conf with configure-unbound.sh script
-$SHELL -c "$configUnbound"
+# Configure /etc/unbound/unbound.conf.d/ with configure-unbound.sh script
+"$SCRIPT_DIR"/etc/unbound/configure-unbound.sh
 
 #
 # User Configuration
 #
 
 # Configure the user with configure-user.sh script
-$SHELL -c "$configUser $SUDO_USER"
+"$SCRIPT_DIR"/home/configure-user.sh $SUDO_USER
 
 #
 # Upgrade Ubuntu
 #
 
-today=$(date -I)
-if [ $(cat /etc/dob/last-update) != $today ]; then
-  pms upgrade
-
-  echo $today > /etc/dob/last-update
+today=$($EXEC_DATE -I)
+if [ ! -f /etc/devops/last-update ] || [ $($EXEC_CAT /etc/devops/last-update) != $today ]; then
+  /usr/local/sbin/pms upgrade
 fi
 
-echo "Done!"
+echo 'Done!'
 echo
 
 exit 0
-

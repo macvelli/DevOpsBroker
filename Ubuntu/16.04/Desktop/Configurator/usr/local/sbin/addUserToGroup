@@ -22,69 +22,115 @@
 # -----------------------------------------------------------------------------
 # Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
 #
-# Adds the user to the group.
+# Adds the user to the group. If the user is not specified, then $SUDO_USER is
+# used instead.
 #
 # Parameters:
-#   $1: Username
+#   $1: Username (optional)
 #   $2: Group name
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1maddUserToGroup: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}addUserToGroup: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
+################################## Variables ##################################
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
-
+# Options
+numOptions="$#"
+user="$1"
+group="$2"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Diplay usage if incorrect number of parameters passed
-if [ $# -ne 2 ]; then
-  printUsage "addUserToGroup USER GROUP"
-
-  exit 1
-fi
-
-nsswitch="$(getent passwd $1)"
-
-# Ensure the first parameter is a valid username
-if [ ${#nsswitch} -eq 0 ]; then
-  printError "addUserToGroup" "Invalid username $1"
+# Display usage if no parameters given
+if [ $numOptions -eq 0 ]; then
+  printUsage "addUserToGroup ${gold}[USER] ${yellow}GROUP"
   echo
-  printUsage "addUserToGroup USER GROUP"
 
   exit 1
+elif [ $numOptions -eq 1 ]; then
+
+  # First parameter is a valid group on the system
+  if [ ! -z "$($EXEC_GETENT group $1)" ]; then
+    user=$SUDO_USER
+    group="$1"
+  else
+    if [ ! -z "$($EXEC_GETENT passwd $1)" ]; then
+      printUsage "addUserToGroup $1 GROUP"
+    else
+      printError "addUserToGroup" "Cannot find '$1': No such user or group"
+      echo
+      printUsage "addUserToGroup ${gold}[USER] ${yellow}GROUP"
+    fi
+
+    exit 1
+  fi
+
+else
+
+  # Display error if user is invalid
+  if [ -z "$($EXEC_GETENT passwd $user)" ]; then
+    printError "addUserToGroup" "Cannot find '$user': No such user"
+    echo
+    printUsage 'addUserToGroup USER GROUP'
+
+    exit 1
+  fi
+
+  # Display error if group is invalid
+  if [ -z "$($EXEC_GETENT group $group)" ]; then
+    printError "addUserToGroup" "Cannot find '$group': No such group"
+    echo
+    printUsage "addUserToGroup $user GROUP"
+
+    exit 1
+  fi
+
 fi
-
-# Ensure the second parameter is a valid group
-if ! grep -q "^$2:" /etc/group; then
-  printError "addUserToGroup" "Invalid group name $2"
-  echo
-  printUsage "addUserToGroup $1 GROUP"
-
-  exit 1
-fi
-
 
 ################################### Actions ###################################
 
+# Get the list of all groups defined for the user
+userGroupList=($($EXEC_GROUPS $user))
+listLength=${#userGroupList[@]}
+
+for ((i=2; i < $listLength; i++)); do
+  if [ "$group" == ${userGroupList[i]} ]; then
+    echo "${bold}addUserToGroup: ${yellow}User '${pastelGreen}$user${yellow}' already a member of the '${pastelGreen}$group${yellow}' group"
+
+    exit 0
+  fi
+done
+
 # Add user to group
-/usr/sbin/adduser $1 $2
+$EXEC_ADDUSER $user $group
 
 exit 0
-

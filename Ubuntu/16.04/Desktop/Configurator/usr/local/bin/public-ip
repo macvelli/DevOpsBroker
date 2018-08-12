@@ -30,52 +30,63 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+################################## Variables ##################################
 
 ## Options
 ipv4=true
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Process parameter, if present
 if [ ! -z "$1" ]; then
-  if [ "$1" == "-6" ]; then
+  if [ "$1" == '-6' ]; then
     ipv4=false
-  elif [ "$1" != "-4" ]; then
+  elif [ "$1" != '-4' ]; then
     # Display error and usage if option parameter is not valid
-    printError "public-ip" "Invalid option $1"
+    printError 'public-ip' "Invalid option: $1"
     echo
-    printUsage "public-ip [OPTION]"
-    echo
-    echo -e "$(bold)Valid Options:$(reset)"
-    echo -e "$(bold padua)  -4$(reset)	Use IPv4 only"
-    echo -e "$(bold padua)  -6$(reset)	Use IPv6 only"
+    printUsage "public-ip ${gold}[OPTION]"
+
+    echo ${bold}
+    echo "Valid Options:${romantic}"
+    echo '  -4	Use IPv4 only'
+    echo '  -6	Use IPv6 only'
+    echo ${reset}
 
     exit 1
   fi
 fi
 
-
 ################################### Actions ###################################
 
-if [ "$ipv4" = true ]; then
+if [ "$ipv4" == 'true' ]; then
   dig -4 +short myip.opendns.com @208.67.222.222	# Use OpenDNS
 else
-  ipv6Addr=$(ip -6 addr | awk '/scope global/{ print $2 }')
+  ipv6Addr=$($EXEC_IP -6 addr | $EXEC_AWK '/scope global/{ print $2 }')
   echo "${ipv6Addr::-3}"
 fi
 
 exit 0
-

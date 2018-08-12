@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# sysctl.conf.sh - DevOpsBroker script for generating /etc/sysctl.conf configuration
+# sysctl.conf.tpl - DevOpsBroker script for generating /etc/sysctl.conf configuration
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -39,6 +39,35 @@
 # -----------------------------------------------------------------------------
 #
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+# Display error if not running as root
+if [ "$EUID" -ne 0 ]; then
+  echo "${bold}sysctl.conf.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
+
+  exit 1
+fi
 
 ################################## Functions ##################################
 
@@ -71,11 +100,11 @@ function tuneNetwork() {
   local NIC_BDP=$[ $NIC_SPEED * 125 * 10 ]
 
   # Calculate Bandwidth Delay Product (BDP) based on Internet Download speed
-  local INET_DL_SPEED=$(grep -F "Download: " /tmp/tuneKernel_speedtest.tmp | awk -F '[^0-9]*' '{print $2}')
+  local INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | awk -F '[^0-9]*' '{print $2}')
   local INET_DL_BDP=$[ $INET_DL_SPEED * 125 * 200 ]
 
   # Calculate Bandwidth Delay Product (BDP) based on Internet Upload speed
-  local INET_UL_SPEED=$(grep -F "Upload: " /tmp/tuneKernel_speedtest.tmp | awk -F '[^0-9]*' '{print $2}')
+  local INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | awk -F '[^0-9]*' '{print $2}')
   local INET_UL_BDP=$[ $INET_UL_SPEED * 125 * 200 ]
 
   # Determine the maximum receive BDP value
@@ -131,7 +160,7 @@ function tuneNetwork() {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ General Information ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Total amount of RAM available
-RAM_TOTAL=$(grep -F MemTotal /proc/meminfo | awk '{print $2}')
+RAM_TOTAL=$(getRamTotal)
 
 # Amount of RAM available in GB
 RAM_GB=$[ ($RAM_TOTAL + 1048575) / 1048576 ]
@@ -156,7 +185,7 @@ NIC_SPEED=$(ethtool $NIC | grep -F "Speed:" | awk -F '[^0-9]*' '{print $2}')
 NIC_MTU=$(cat /sys/class/net/$NIC/mtu)
 
 # Enable MTU Probing if using Jumbo Frames
-MTU_PROBING=$[ $NIC_MTU > 1500 ? 1 : 0 ]
+MTU_PROBING=$[ $NIC_MTU > 1500 ? 0 : 1 ]
 
 # TCP Maximum Segment Size (MSS) = MTU - 20 (IP Header size) - 20 (TCP Header size)
 NIC_TCP_MSS=$[ $NIC_MTU - 20 - 20 ]
@@ -274,6 +303,12 @@ net.core.optmem_max = $UNSCALED_TCP_WIN
 net.ipv6.conf.all.disable_ipv6 = 0
 net.ipv6.conf.default.disable_ipv6 = 0
 
+# Do not accept IPv6 Router Advertisements
+net.ipv6.conf.all.accept_ra = 0
+net.ipv6.conf.default.accept_ra = 0
+net.ipv6.conf.all.autoconf = 0
+net.ipv6.conf.default.autoconf = 0
+
 # Do not accept source routed packets
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv6.conf.all.accept_source_route = 0
@@ -315,7 +350,7 @@ net.ipv4.conf.default.forwarding = 0
 net.ipv6.conf.default.forwarding = 0
 
 # Enable Path MTU Discovery
-net.ipv4.ip_no_pmtu_disc = 0
+net.ipv4.ip_no_pmtu_disc = $MTU_PROBING
 
 # Increase the total port range for both TCP and UDP connections
 net.ipv4.ip_local_port_range = 1500 65001
@@ -415,4 +450,3 @@ vm.min_free_kbytes = $VM_MIN_FREE_KB
 vm.vfs_cache_pressure = $VM_VFS_CACHE_PRESSURE
 
 EOF
-

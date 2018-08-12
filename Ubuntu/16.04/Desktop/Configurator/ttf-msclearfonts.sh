@@ -55,22 +55,42 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
+
 # Display error if not running as root
 if [ "$EUID" -ne 0 ]; then
-  echo -e "\033[1mttf-msclearfonts.sh: \033[38;5;203mPermission denied (you must be root)\033[0m"
+  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
 
   exit 1
 fi
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
-fi
+################################## Variables ##################################
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
-fi
+## Bash exec variables
+EXEC_FONT_CACHE=/usr/bin/fc-cache
+EXEC_YAD=/usr/bin/yad
 
 ################################### Actions ###################################
 
@@ -78,102 +98,90 @@ fi
 if [ $SHLVL -eq 1 ]; then
   clear
 
-  bannerMsg="DevOpsBroker Microsoft ClearType Fonts Installer"
+  bannerMsg='DevOpsBroker Microsoft ClearType Fonts Installer'
 
-  echo -e $(bold kobi)
-  echo    "╔══════════════════════════════════════════════════╗"
-  echo -e "║ "$(white)$bannerMsg$(kobi)                      "║"
-  echo    "╚══════════════════════════════════════════════════╝"
-  echo -e $(reset)
+  echo ${bold} ${wisteria}
+  echo '╔══════════════════════════════════════════════════╗'
+  echo "║ ${white}$bannerMsg${wisteria}"		  '║'
+  echo '╚══════════════════════════════════════════════════╝'
+  echo ${reset}
 
 fi
 
 # Exit if Microsoft ClearType fonts have already been installed
-if [ -d /usr/local/share/fonts/microsoft/cleartype ]; then
-  printInfo "Microsoft ClearType Fonts already installed"
+if [ -d /usr/share/fonts/truetype/mscleartype ]; then
+  printInfo 'Microsoft ClearType Fonts already installed'
   echo
 
   exit 0
 fi
 
 # Install Microsoft ClearType Fonts
-printBanner "Installing Microsoft ClearType Fonts"
+printBanner 'Installing Microsoft ClearType Fonts'
 
 # Make the /usr/local/share/fonts/microsoft/cleartype directory
-mkdir -p --mode=0755 /usr/local/share/fonts/microsoft/cleartype
-chown -R root:staff /usr/local/share/fonts
+$EXEC_MKDIR --mode=0755 /usr/share/fonts/truetype/mscleartype
+$EXEC_CHOWN -R root:root /usr/share/fonts/truetype/mscleartype
 
-printInfo "Select directory containing the Microsoft ClearType Fonts to install"
-sourceDir=$(yad --file-selection --directory --title="Microsoft ClearType Fonts" --width=800 --height=600 --center --filename=$HOME/Desktop/)
+printInfo 'Select directory containing the Microsoft ClearType Fonts to install'
+sourceDir=$($EXEC_YAD --file-selection --directory --title='Microsoft ClearType Fonts' --width=800 --height=600 --center --filename=$HOME/Desktop/)
+echo
 
 # Install Calibri
-if [ -f "$sourceDir/calibri.ttf" ]; then
-  printInfo "Installing Calibri"
+if [ -f "$sourceDir"/calibri.ttf ]; then
+  printInfo 'Installing Calibri'
 
-  install -o root -g staff -m 644 "$sourceDir/calibri*.ttf" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/calibri*.ttf /usr/share/fonts/truetype/mscleartype
 fi
 
 # Install Cambria
-if [ -f "$sourceDir/cambria.ttc" ]; then
-  printInfo " Installing Cambria"
+if [ -f "$sourceDir"/cambria.ttc ]; then
+  printInfo 'Installing Cambria'
 
-  install -o root -g staff -m 644 "$sourceDir/cambria*.tt*" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/cambria*.tt* /usr/share/fonts/truetype/mscleartype
 fi
 
 # Install Consolas
-if [ -f "$sourceDir/consola.ttf" ]; then
-  printInfo "Installing Consolas"
+if [ -f "$sourceDir"/consola.ttf ]; then
+  printInfo 'Installing Consolas'
 
-  install -o root -g staff -m 644 "$sourceDir/consola*.ttf" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/consola*.ttf /usr/share/fonts/truetype/mscleartype
 fi
 
 # Install Constantia
-if [ -f "$sourceDir/constan.ttf" ]; then
-  printInfo "Installing Constantia"
+if [ -f "$sourceDir"/constan.ttf ]; then
+  printInfo 'Installing Constantia'
 
-  install -o root -g staff -m 644 "$sourceDir/constan*.ttf" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/constan*.ttf /usr/share/fonts/truetype/mscleartype
 fi
 
 # Install Corbel
-if [ -f "$sourceDir/corbel.ttf" ]; then
-  printInfo "Installing Corbel"
+if [ -f "$sourceDir"/corbel.ttf ]; then
+  printInfo 'Installing Corbel'
 
-  install -o root -g staff -m 644 "$sourceDir/corbel*.ttf" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/corbel*.ttf /usr/share/fonts/truetype/mscleartype
 fi
 
 # Install Segoe UI
-if [ -f "$sourceDir/segoeui.ttf" ]; then
-  printInfo "Installing Segoe UI"
+if [ -f "$sourceDir"/segoeui.ttf ]; then
+  printInfo 'Installing Segoe UI'
 
-  install -o root -g staff -m 644 "$sourceDir/segoeui*.ttf" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/segoeui*.ttf /usr/share/fonts/truetype/mscleartype
 fi
 
 # Install Tahoma
-if [ -f "$sourceDir/tahoma.ttf" ]; then
-  printInfo "Installing Tahoma"
+if [ -f "$sourceDir"/tahoma.ttf ]; then
+  printInfo 'Installing Tahoma'
 
-  install -o root -g staff -m 644 "$sourceDir/tahoma*.ttf" /usr/local/share/fonts/microsoft/cleartype
-
-  echo
+  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/tahoma*.ttf /usr/share/fonts/truetype/mscleartype
 fi
-
-printInfo "Updating the font cache"
-
-fc-cache -f -v
 
 echo
 
-exit 0
+printInfo 'Updating the font cache'
 
+$EXEC_FONT_CACHE -f -v
+
+echo 'Done!'
+
+exit 0

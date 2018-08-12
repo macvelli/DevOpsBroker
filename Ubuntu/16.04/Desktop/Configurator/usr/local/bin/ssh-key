@@ -40,19 +40,35 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+# Display error if running as root
+if [ "$EUID" -eq 0 ]; then
+  echo "${bold}ssh-key: ${bittersweet}Permission denied (you cannot be root)${reset}"
+
+  exit 1
+fi
 
 ################################## Functions ##################################
 
@@ -63,13 +79,12 @@ fi
 function findPrivateKey() {
   # BEGIN findPrivateKey function
 
-  privateKeyList=()
-  while IFS=  read -r -d $'\0'; do
-    privateKeyList+=("$REPLY")
-  done < <(find "$sshDir" -type f ! -name '*.pub' -print0)
+  echo "SSH directory: $sshDir"
+
+  privateKeyList=($($EXEC_GREP -Fl -d skip 'BEGIN OPENSSH PRIVATE KEY' "$sshDir"/*))
 
   if [ ${#privateKeyList[@]} -gt 1 ]; then
-    echo -e "$(bold)Which private SSH key do you want to work with?$(reset)"
+    echo ${bold}'Which private SSH key do you want to work with?'${reset}
     select privateKey in "${privateKeyList[@]}"; do
       break;
     done
@@ -91,10 +106,10 @@ function findPublicKey() {
   publicKeyList=()
   while IFS=  read -r -d $'\0'; do
     publicKeyList+=("$REPLY")
-  done < <(find "$sshDir" -type f -name '*.pub' -print0)
+  done < <($EXEC_FIND "$sshDir" -type f -name '*.pub' -print0)
 
   if [ ${#publicKeyList[@]} -gt 1 ]; then
-    echo -e "$(bold)Which public SSH key do you want to work with?$(reset)"
+    echo ${bold}'Which public SSH key do you want to work with?'${reset}
     select publicKey in "${publicKeyList[@]}"; do
       break;
     done
@@ -113,23 +128,23 @@ function findPublicKey() {
 function showHelp() {
   # BEGIN showHelp function
 
-  printUsage "ssh-key COMMAND [OPTION]..."
+  printUsage "ssh-key COMMAND ${gold}[OPTION]..."
 
-  echo
-  echo -e "$(bold)Valid Commands:$(reset)"
-  echo -e "$(bold padua)  clip$(reset)\t\t\t\t"				"Clips an SSH public key to the X11 clipboard"
-  echo -e "$(bold padua)  copy$(reset)\t\t\t\t"				"Copies an SSH public key to username@remote_server"
-  echo -e "$(bold padua)  fingerprint$(reset)\t\t\t"			"Shows fingerprint of all SSH public keys"
-  echo -e "$(bold padua)  generate$(reset)\t\t\t"			"Generates an SSH key pair in the $HOME/.ssh directory"
-  echo -e "$(bold padua)  list$(reset)\t\t\t\t"				"List all SSH public keys in the $HOME/.ssh directory"
-  echo -e "$(bold padua)  passphrase$(reset)\t\t\t"			"Change the passphrase of an existing SSH private key"
-  echo
-  echo -e "$(bold)Valid Options:$(reset)"
-  echo -e "$(bold padua)  -d $(yellow)DIRECTORY$(reset)\t\t\t"		"The directory where to find the .ssh/ subdirectory"
-  echo -e "$(bold padua)  -p $(yellow)PORT$(reset)\t\t\t"		"The port to use when copying an SSH public key to a remote server"
-  echo -e "$(bold padua)  -t $(yellow)ecdsa|ed25519|rsa|rsa1$(reset)\t"	"The key type to create; default is \"ed25519\""
-  echo -e "$(bold padua)  -u $(yellow)USERNAME$(reset)\t\t\t"		"The username who owns the SSH keys"
-  echo
+  echo ${bold}
+  echo "Valid Commands:${romantic}"
+  echo '  clip		Clips an SSH public key to the X11 clipboard'
+  echo '  copy		Copies an SSH public key to username@remote_server'
+  echo '  fingerprint	Shows fingerprint of all SSH public keys'
+  echo '  generate	Generates an SSH key pair in the $HOME/.ssh directory'
+  echo '  list		List all SSH public keys in the $HOME/.ssh directory'
+  echo '  passphrase	Change the passphrase of an existing SSH private key'
+  echo ${white}
+  echo "Valid Options:${romantic}"
+  echo '  -d DIRECTORY	The directory where to find the .ssh/ subdirectory'
+  echo '  -p PORT	The port to use when copying an SSH public key to a remote server'
+  echo '  -t KEYTYPE	The key type to create (ecdsa|ed25519|rsa|rsa1); default is "ed25519"'
+  echo '  -u USERNAME	The username who owns the SSH keys'
+  echo ${reset}
 
   # END showHelp function
 }
@@ -137,25 +152,33 @@ function showHelp() {
 
 ################################## Variables ##################################
 
-validCommands=("clip" "copy" "fingerprint" "gen" "generate" "list" "pass" "passphrase")
-
+## Bash exec variables
+EXEC_HOSTNAME=/bin/hostname
 SSH_COPY_ID=/usr/bin/ssh-copy-id
 SSH_KEYGEN=/usr/bin/ssh-keygen
 XCLIP=/usr/bin/xclip
 
+validCommands=("clip" "copy" "fingerprint" "gen" "generate" "list" "pass" "passphrase")
+
+## Options
+command="$1"
+keyType='ed25519'
+sshDir="$HOME/.ssh"
+sshPort='22'
+username=$USER
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if incorrect parameters given
-if [ -z "$1" ]; then
+if [ -z "$command" ]; then
   showHelp
 
   exit 1
 fi
 
 # Ensure the first parameter is a valid command
-if [ $(containsElement "$1" "${validCommands[@]}") != "0" ]; then
-  printError "ssh-key" "Invalid command $1"
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+  printError 'ssh-key' "Invalid command: $command"
   echo
 
   showHelp
@@ -164,65 +187,52 @@ if [ $(containsElement "$1" "${validCommands[@]}") != "0" ]; then
 fi
 
 ## Options
-command="$1"
-keyType="ed25519"
-sshDir="$HOME/.ssh"
-sshPort="22"
-username="$(whoami)"
 
 # Process command-line options, if present
 while [[ "$2" =~ ^- ]]; do
 
-  if [ "$2" == "-d" ]; then
+  if [ "$2" == '-d' ]; then
 
-    # Display error and usage if incorrect parameters given
-    if [ -z "$3" ]; then
-      printError "ssh-key" "Missing directory parameter"
-      echo
-      printUsage "ssh-key $command -d DIRECTORY"
+    errorMessage=$(isValidDirectory 'ssh-key' "$3")
 
-      exit 1
-    elif [ ! -d "$3" ]; then
-      printError "ssh-key" "Invalid directory: $3"
+    # Display error if directory parameter is missing or invalid
+    if [ "$errorMessage" != '0' ]; then
+      echo "$errorMessage"
       echo
-      printUsage "ssh-key $command -d DIRECTORY"
+      printUsage "ssh-key $command ${gold}-d DIRECTORY"
 
       exit 1
     fi
 
     sshDir="$3/.ssh"
 
-    if [ ! -d "$sshDir" ]; then
-      # Make SSH directory
-      mkdir -p --mode=0700 "$sshDir"
-
-      # Make directory to enable SSH multiplexing
-      mkdir -p --mode=0700 "$sshDir/multiplex"
-    fi
-
     shift 2
 
-  elif [ "$2" == "-p" ]; then
+  elif [ "$2" == '-p' ]; then
 
     # Display error and usage if incorrect parameters given
-    if [ "$command" != "copy" ]; then
-      printError "ssh-key" "Invalid command $command: Port number parameter"
+    if [ $command != 'copy' ]; then
+      printError 'ssh-key' 'Invalid parameter: -p'
       echo
-      printUsage "ssh-key copy -p PORT username@remote_server"
+      printUsage "ssh-key copy ${gold}-p PORT ${yellow}username@remote_server"
 
       exit 1
-    elif [ -z "$3" ]; then
-      printError "ssh-key" "Missing port number parameter"
+    fi
+
+    # Display error if no port number parameter given
+    if [ -z "$3" ]; then
+      printError 'ssh-key' 'Missing port number parameter'
       echo
-      printUsage "ssh-key copy -p PORT username@remote_server"
+      printUsage "ssh-key copy ${gold}-p PORT ${yellow}username@remote_server"
 
       exit 1
-    elif [[ ! "$3" =~ ^[0-9]+$ ]] || \
-	[ "$3" -lt 1 ] || \
-	[ "$3" -gt 65535]; then
-      printError "ssh-key" "Invalid port number: $3"
+    fi
+
+    # Display error if invalid port number parameter given
+    if [[ ! "$3" =~ ^[0-9]+$ ]] || [ "$3" -lt 1 ] || [ "$3" -gt 65535 ]; then
+      printError 'ssh-key' "Invalid port number: $3"
       echo
-      printUsage "ssh-key copy -p PORT username@remote_server"
+      printUsage "ssh-key copy ${gold}-p PORT ${yellow}username@remote_server"
 
       exit 1
     fi
@@ -230,19 +240,28 @@ while [[ "$2" =~ ^- ]]; do
     sshPort="$3"
     shift 2
 
-  elif [ "$2" == "-t" ]; then
+  elif [ "$2" == '-t' ]; then
 
     # Display error and usage if incorrect parameters given
-    if [ -z "$3" ]; then
-      printError "ssh-key" "Missing key type parameter"
+    if [ $command != 'gen' ] && [ $command != 'generate' ]; then
+      printError 'ssh-key' 'Invalid parameter: -t'
       echo
-      printUsage "ssh-key $command -t ecdsa|ed25519|rsa|rsa1"
+      printUsage "ssh-key generate ${gold}-t ecdsa|ed25519|rsa|rsa1"
+
+      exit 1
+    fi
+
+    # Display error if key type parameter is missing or invalid
+    if [ -z "$3" ]; then
+      printError 'ssh-key' 'Missing key type parameter'
+      echo
+      printUsage "ssh-key $command ${gold}-t ecdsa|ed25519|rsa|rsa1"
 
       exit 1
     elif [[ ! "$3" =~ ^(ecdsa|ed25519|rsa|rsa1)$ ]]; then
-      printError "ssh-key" "Invalid key type: $3"
+      printError 'ssh-key' "Invalid key type: $3"
       echo
-      printUsage "ssh-key $command -t ecdsa|ed25519|rsa|rsa1"
+      printUsage "ssh-key $command ${gold}-t ecdsa|ed25519|rsa|rsa1"
 
       exit 1
     fi
@@ -250,38 +269,46 @@ while [[ "$2" =~ ^- ]]; do
     keyType="$3"
     shift 2
 
-  elif [ "$2" == "-u" ]; then
+  elif [ "$2" == '-u' ]; then
 
     # Display error and usage if incorrect parameters given
-    if [ -z "$3" ]; then
-      printError "ssh-key" "Missing username parameter"
+    if [ $command != 'gen' ] && [ $command != 'generate' ]; then
+      printError 'ssh-key' 'Invalid parameter: -u'
       echo
-      printUsage "ssh-key $command -u USERNAME"
+      printUsage "ssh-key generate ${gold}-u USERNAME"
 
       exit 1
-    else
-      nsswitch="$(getent passwd $3)"
-
-      # Ensure the parameter is a valid username
-      if [ ${#nsswitch} -eq 0 ]; then
-	printError "ssh-key" "Invalid username: $3"
-	echo
-	printUsage "ssh-key $command -u USERNAME"
-
-	exit 1
-      fi
-
-      username="$3"
-      shift 2
-
     fi
+
+    errorMessage=$(isValidUsername 'ssh-key' "$3")
+
+    # Display error if username parameter is missing or invalid
+    if [ "$errorMessage" != '0' ]; then
+      echo "$errorMessage"
+      echo
+      printUsage "ssh-key $command ${gold}-u USERNAME"
+
+      exit 1
+    fi
+
+    username="$3"
+    shift 2
   fi
 done
 
-
 ################################### Actions ###################################
 
-if [ "$command" == "clip" ]; then
+# Make SSH directory (if necessary)
+if [ ! -d "$sshDir" ]; then
+  $EXEC_MKDIR --mode=0700 "$sshDir"
+fi
+
+# Make directory to enable SSH multiplexing (if necessary)
+if [ ! -d "$sshDir/multiplex" ]; then
+  $EXEC_MKDIR --mode=0700 "$sshDir/multiplex"
+fi
+
+if [ $command == 'clip' ]; then
   # BEGIN clip command
 
   # Find the public key the user wants to clip
@@ -293,14 +320,14 @@ if [ "$command" == "clip" ]; then
   $XCLIP -selection clipboard < "$publicKey"
 
   # END clip command
-elif [ "$command" == "copy" ]; then
+elif [ $command == 'copy' ]; then
   # BEGIN copy command
 
   # Display error and usage if incorrect parameters given
   if [ -z "$2" ]; then
-    printError "ssh-key" "Missing username@remote_server parameter"
+    printError 'ssh-key' 'Missing username@remote_server parameter'
     echo
-    printUsage "ssh-key copy username@remote_server"
+    printUsage 'ssh-key copy username@remote_server'
 
     exit 1
   fi
@@ -317,31 +344,31 @@ elif [ "$command" == "copy" ]; then
   $SSH_COPY_ID -i "$publicKey" -p $sshPort $userHost
 
   # END copy command
-elif [ "$command" == "fingerprint" ]; then
+elif [ $command == 'fingerprint' ]; then
   # BEGIN fingerprint command
 
   # Generate the publicKeyList
   publicKeyList=()
   while IFS=  read -r -d $'\0'; do
     publicKeyList+=("$REPLY")
-  done < <(find "$sshDir" -type f -name '*.pub' -print0)
+  done < <($EXEC_FIND "$sshDir" -type f -name '*.pub' -print0)
 
   for publicKey in "${publicKeyList[@]}"; do
     $SSH_KEYGEN -l -v -f "$publicKey"
   done
 
   # END fingerprint command
-elif [ "$command" == "gen" ] || [ "$command" == "generate" ]; then
+elif [ $command == 'gen' ] || [ $command == 'generate' ]; then
   # BEGIN gen/generate command
 
-  printBanner "Generating SSH Keys"
-  hostName=$(hostname)
+  printBanner 'Generating SSH Keys'
+  hostName=$($EXEC_HOSTNAME)
 
-  echo -e "$(bold yellow)NOTE: It is highly recommended to use a long random passphrase$(reset)"
-  echo
+  echo ${bold}${yellow}'NOTE: It is highly recommended to use a long random passphrase'
+  echo ${white}
 
   # Question 1
-  echo -n "What email address do you want to use for the SSH key? "
+  echo -n 'What email address do you want to use for the SSH key? '
   read emailAddress
   echo
 
@@ -350,36 +377,36 @@ elif [ "$command" == "gen" ] || [ "$command" == "generate" ]; then
   fi
 
   # Question 2
-  sshFile="$username-$hostName-id_$keyType"
-  echo -n "What filename do you want to use for the SSH key ($sshFile)? "
+  sshKeyName="$username-$hostName-id_$keyType"
+  echo -n "What filename do you want to use for the SSH key ($sshKeyName)? "
   read filename
   echo
 
   if [ ! -z "$filename" ]; then
-    sshFile="$filename"
+    sshKeyName="$filename"
   fi
 
   # Generate SSH key
-  $SSH_KEYGEN -t $keyType -C "$emailAddress-$(date -I)" -f "$sshDir/$sshFile"
+  $SSH_KEYGEN -t $keyType -C "$emailAddress-$($EXEC_DATE -I)" -f "$sshDir/$sshKeyName"
 
   # Change directory and file ownership to $username
-  chown -R $username:$username "$sshDir"
+  $EXEC_CHOWN -R $username:$username "$sshDir"
 
   # END gen/generate command
-elif [ "$command" == "list" ]; then
+elif [ $command == 'list' ]; then
   # BEGIN list command
 
-  printBanner "Listing SSH Public Keys"
+  printBanner 'Listing SSH Public Keys'
 
-  find "$sshDir" -maxdepth 1 -type f -name "*.pub"
+  $EXEC_FIND "$sshDir" -maxdepth 1 -type f -name "*.pub"
 
   echo
 
   # END list command
-elif [ "$command" == "pass" ] || [ "$command" == "passphrase" ]; then
+elif [ $command == 'pass' ] || [ $command == 'passphrase' ]; then
   # BEGIN pass/passphrase command
 
-  printBanner "Changing SSH Private Key Passphrase"
+  printBanner 'Changing SSH Private Key Passphrase'
 
   # Find the private key the user wants to change the passphrase
   findPrivateKey
@@ -391,4 +418,3 @@ elif [ "$command" == "pass" ] || [ "$command" == "passphrase" ]; then
 fi
 
 exit 0
-
