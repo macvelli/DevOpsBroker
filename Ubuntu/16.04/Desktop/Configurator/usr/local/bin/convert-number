@@ -38,54 +38,74 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Load /etc/dob/ansi.conf if bittersweet function does not exist
-if [[ ! "$(declare -F 'bittersweet')" ]]; then
-  . /etc/dob/ansi.conf
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+  source /etc/devops/ansi.conf
 fi
 
-# Load /etc/dob/functions.conf if printBanner function does not exist
-if [[ ! "$(declare -F 'printBanner')" ]]; then
-  . /etc/dob/functions.conf
+${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+  source /etc/devops/exec.conf
 fi
 
-# The name used to execute this script
-execName=$(basename "$0")
+${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+  source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+
+## Script information
+SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_BC=/usr/bin/bc
 
 # Number format from/to map
 declare -A formatMap
 
-formatMap["all"]="binary|decimal|hex|octal"
-formatMap["binary"]="decimal|hex|octal"
-formatMap["decimal"]="binary|hex|octal"
-formatMap["hex"]="binary|decimal|octal"
-formatMap["octal"]="binary|decimal|hex"
+formatMap['all']='binary|decimal|hex|octal'
+formatMap['binary']='decimal|hex|octal'
+formatMap['decimal']='binary|hex|octal'
+formatMap['hex']='binary|decimal|octal'
+formatMap['octal']='binary|decimal|hex'
 
 # Base number format map
 declare -A baseNumberMap
 
-baseNumberMap["binary"]="BASE_2_NUM"
-baseNumberMap["decimal"]="BASE_10_NUM"
-baseNumberMap["hex"]="BASE_16_NUM"
-baseNumberMap["octal"]="BASE_8_NUM"
+baseNumberMap['binary']='BASE_2_NUM'
+baseNumberMap['decimal']='BASE_10_NUM'
+baseNumberMap['hex']='BASE_16_NUM'
+baseNumberMap['octal']='BASE_8_NUM'
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
+if [ $SCRIPT_EXEC == 'convert-number' ]; then
 
-if [ "$execName" == "convert-number" ]; then
+  # From number format is the first parameter
+  fromFormat="$1"
+
+  # To number format is the second parameter
+  toFormat="$2"
 
   # Display usage if no parameters given
-  if [ -z "$1" ]; then
+  if [ -z $fromFormat ]; then
     printUsage "convert-number ${formatMap['all']} ${formatMap['all']} NUMBER"
 
     exit 1
   fi
 
   # Display error if from number format is invalid
-  if [[ ! "$1" =~ ^(binary|decimal|hex|octal)$ ]]; then
-    printError "convert-number" "Invalid from number format $1"
+  if [[ ! $fromFormat =~ ^(binary|decimal|hex|octal)$ ]]; then
+    printError 'convert-number' "Invalid from number format: $fromFormat"
     echo
     printUsage "convert-number ${formatMap['all']} ${formatMap['all']} NUMBER"
 
@@ -93,26 +113,20 @@ if [ "$execName" == "convert-number" ]; then
   fi
 
   # Display usage if no to number format parameter given
-  if [ -z "$2" ]; then
-    printUsage "convert-number $1 ${formatMap[$1]} ${baseNumberMap[$1]}"
+  if [ -z $toFormat ]; then
+    printUsage "convert-number $fromFormat ${formatMap[$fromFormat]} ${baseNumberMap[$fromFormat]}"
 
     exit 1
   fi
 
   # Display error if to number format is invalid
-  if [[ ! "$2" =~ ^(binary|decimal|hex|octal)$ ]]; then
-    printError "convert-number" "Invalid to number format $2"
+  if [[ ! $toFormat =~ ^(binary|decimal|hex|octal)$ ]]; then
+    printError 'convert-number' "Invalid to number format: $toFormat"
     echo
-    printUsage "convert-number $fromFormat ${formatMap['all']} ${baseNumberMap[$fromFormat]}"
+    printUsage "convert-number $fromFormat ${formatMap[$fromFormat]} ${baseNumberMap[$fromFormat]}"
 
     exit 1
   fi
-
-  # From number format is the first parameter
-  fromFormat="$1"
-
-  # To number format is the second parameter
-  toFormat="$2"
 
   # Shift parameter list to align number to convert with the second parameter
   shift
@@ -121,22 +135,22 @@ else
 
   # Display usage if no parameters given
   if [ -z "$1" ]; then
-    printUsage "$execName ${formatMap[$execName]} ${baseNumberMap[$execName]}"
+    printUsage "$SCRIPT_EXEC ${formatMap[$SCRIPT_EXEC]} ${baseNumberMap[$SCRIPT_EXEC]}"
 
     exit 1
   fi
 
   # Display error if to number format is invalid
   if [[ ! "$1" =~ ^(binary|decimal|hex|octal)$ ]]; then
-    printError "$execName" "Invalid to number format $1"
+    printError "$SCRIPT_EXEC" "Invalid to number format $1"
     echo
-    printUsage "$execName ${formatMap[$execName]} ${baseNumberMap[$execName]}"
+    printUsage "$SCRIPT_EXEC ${formatMap[$SCRIPT_EXEC]} ${baseNumberMap[$SCRIPT_EXEC]}"
 
     exit 1
   fi
 
   # From number format is the name used to execute this script
-  fromFormat="$execName"
+  fromFormat="$SCRIPT_EXEC"
 
   # To number format is the first parameter
   toFormat="$1"
@@ -151,26 +165,26 @@ if [ -z "$2" ]; then
 fi
 
 # Display error if number to convert is invalid
-if [ "$fromFormat" == "binary" ] && [[ ! "$2" =~ ^[0-1]+$ ]]; then
-  printError "binary" "Invalid binary number $2"
+if [ $fromFormat == 'binary' ] && [[ ! "$2" =~ ^[0-1]+$ ]]; then
+  printError 'binary' "Invalid binary number: $2"
   echo
   printUsage "binary $toFormat ${baseNumberMap['binary']}"
 
   exit 1
-elif [ "$fromFormat" == "decimal" ] && [[ ! "$2" =~ ^[0-9]+$ ]]; then
-  printError "decimal" "Invalid decimal number $2"
+elif [ $fromFormat == 'decimal' ] && [[ ! "$2" =~ ^[0-9]+$ ]]; then
+  printError 'decimal' "Invalid decimal number: $2"
   echo
   printUsage "decimal $toFormat ${baseNumberMap['decimal']}"
 
   exit 1
-elif [ "$fromFormat" == "hex" ] && [[ ! "$2" =~ ^[a-fA-F0-9]+$ ]]; then
-  printError "hex" "Invalid hex number $2"
+elif [ $fromFormat == 'hex' ] && [[ ! "$2" =~ ^[a-fA-F0-9]+$ ]]; then
+  printError 'hex' "Invalid hex number: $2"
   echo
   printUsage "hex $toFormat ${baseNumberMap['hex']}"
 
   exit 1
-elif [ "$fromFormat" == "octal" ] && [[ ! "$2" =~ ^[0-7]+$ ]]; then
-  printError "octal" "Invalid octal number $2"
+elif [ $fromFormat == 'octal' ] && [[ ! "$2" =~ ^[0-7]+$ ]]; then
+  printError 'octal' "Invalid octal number: $2"
   echo
   printUsage "octal $toFormat ${baseNumberMap['octal']}"
 
@@ -179,64 +193,65 @@ fi
 
 # Number to convert is the second parameter
 number="$2"
-
+outputPrefix="$number ->"
 
 ################################### Actions ###################################
 
-if [ "$fromFormat" == "binary" ]; then
+if [ $fromFormat == 'binary' ]; then
 
-  if [ "$toFormat" == "decimal" ]; then
-    echo "$number -> $(echo "ibase=2; $number" | bc)"
-  elif [ "$toFormat" == "hex" ]; then
-    echo "$number -> 0x$(echo "obase=16; ibase=2; $number" | bc)"
-  elif [ "$toFormat" == "octal" ]; then
-    echo "$number -> 0$(echo "obase=8; ibase=2; $number" | bc)"
+  decimalNum=$( echo "ibase=2; $number" | $EXEC_BC )
+
+  if [ $toFormat == 'decimal' ]; then
+    echo $outputPrefix $decimalNum
+  elif [ $toFormat == 'hex' ]; then
+    echo $outputPrefix $( printf "0x%02x" $decimalNum )
+  elif [ $toFormat == 'octal' ]; then
+    echo $outputPrefix $( printf "0%o" $decimalNum )
   else
-    echo "$number -> $number"
+    echo $outputPrefix $number
   fi
 
-elif [ "$fromFormat" == "decimal" ]; then
+elif [ $fromFormat == 'decimal' ]; then
 
-  if [ "$toFormat" == "binary" ]; then
-    echo "$number -> $(echo "obase=2; $number" | bc)"
-  elif [ "$toFormat" == "hex" ]; then
-    echo "$number -> 0x$(echo "obase=16; $number" | bc)"
-  elif [ "$toFormat" == "octal" ]; then
-    echo "$number -> 0$(echo "obase=8; $number" | bc)"
+  if [ $toFormat == 'binary' ]; then
+    echo $outputPrefix $( echo "obase=2; $number" | $EXEC_BC )
+  elif [ $toFormat == 'hex' ]; then
+    echo $outputPrefix $( printf "0x%02x" $number )
+  elif [ $toFormat == 'octal' ]; then
+    echo $outputPrefix $( printf "0%o" $number )
   else
-    echo "$number -> $number"
+    echo $outputPrefix $number
   fi
 
-elif [ "$fromFormat" == "hex" ]; then
+elif [ $fromFormat == 'hex' ]; then
 
   # bc only accepts hex numbers with uppercase A-F values
-  hexInput=$number
   number="${number^^}"
 
-  if [ "$toFormat" == "binary" ]; then
-    echo "$hexInput -> $(echo "obase=2; ibase=16; $number" | bc)"
-  elif [ "$toFormat" == "decimal" ]; then
-    echo "$hexInput -> $(echo "ibase=16; $number" | bc)"
-  elif [ "$toFormat" == "octal" ]; then
-    echo "$hexInput -> 0$(echo "obase=8; ibase=16; $number" | bc)"
+  if [ $toFormat == 'binary' ]; then
+    echo $outputPrefix $( echo "obase=2; ibase=16; $number" | $EXEC_BC )
+  elif [ $toFormat == 'decimal' ]; then
+    echo $outputPrefix $( echo "ibase=16; $number" | $EXEC_BC )
+  elif [ $toFormat == 'octal' ]; then
+    echo $outputPrefix 0$( echo "obase=8; ibase=16; $number" | $EXEC_BC )
   else
-    echo "$hexInput -> 0x$number"
+    echo -n "$outputPrefix "
+    [[ $number == 0x* ]] && echo $number || echo 0x$number
   fi
 
 else
 
-  if [ "$toFormat" == "binary" ]; then
-    echo "$number -> $(echo "obase=2; ibase=8; $number" | bc)"
-  elif [ "$toFormat" == "decimal" ]; then
-    echo "$number -> $(echo "ibase=8; $number" | bc)"
-  elif [ "$toFormat" == "hex" ]; then
-    echo "$number -> 0x$(echo "obase=16; ibase=8; $number" | bc)"
+  if [ $toFormat == 'binary' ]; then
+    echo $outputPrefix $( echo "obase=2; ibase=8; $number" | $EXEC_BC )
+  elif [ $toFormat == 'decimal' ]; then
+    echo $outputPrefix $( echo "ibase=8; $number" | $EXEC_BC )
+  elif [ $toFormat == 'hex' ]; then
+    echo $outputPrefix $( printf "0x%02x" $( echo "ibase=8; $number" | $EXEC_BC ) )
   else
-    echo -n "$number -> "
-    [[ "$number" == 0* ]] && echo "$number" || echo "0$number"
+    echo -n "$outputPrefix "
+    [[ $number == 0* ]] && echo $number || echo 0$number
   fi
 
 fi
 
 exit 0
-
