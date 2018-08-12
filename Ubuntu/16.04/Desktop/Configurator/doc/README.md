@@ -27,7 +27,7 @@ The following tasks are performed by the Configurator:
 
 First thing to do is download and install a fresh copy of Ubuntu 16.04 Desktop. The latest ISO images can be found at:
 
-[Ubuntu 16.04 Xenial Xerus](http://releases.ubuntu.com/16.04/)
+[Ubuntu 16.04 Xenial Xerus Downloads](http://releases.ubuntu.com/16.04/)
 
 Download the 64-bit ISO image to take full advantage of the hardware inside your PC or laptop. Save the ISO file to the Downloads directory.
 
@@ -76,3 +76,40 @@ Every manufacturer is different when it comes to enabling UEFI booting in BIOS. 
 ![Enable UEFI](bios-disable-csm.png)
 
 Check the motherboard documentation to find the specifics on enabling UEFI booting for your machine.
+
+### EFI System Partition Configuration
+
+The EFI booting architecture requires a specialized partition configuration in order to work properly.
+
+1. Create a custom partition scheme from **Installation type**
+   * Choose **Something else** from the Installation type menu
+
+![Image of Ubuntu Installation Type](ubuntu-desktop-installation-type.png)
+
+2. Create an empty partition table (**WARNING: Will erase everything on the disk**)
+   * Click on the **New Parition Table...** button and then select **Continue**
+
+![Image of Create New Empty Partition Table](create-empty-partition-table.png)
+
+3. Create a swap partition
+   * Click on the **+** button and then configure with the appropriate size for your machine
+
+![Image of Create Swap Partition Table](create-swap-partition.png)
+
+4. Create an EFI System partition
+   * A 100MB partition size is more than sufficient
+
+![Image of Create EFI System Partition Table](create-efi-system-partition.png)
+
+5. Create a /boot partition
+   * Make 1000MB partition size with ext4 filesystem
+
+![Image of Create /boot Partition Table](create-boot-partition.png)
+
+6. Create the / partition
+   * Use the rest of the disk for the root partition size with XFS filesystem
+
+![Image of Create Root Partition Table](create-root-partition.png)
+
+7. Write all changes to disk
+   * Click on **Install Now** button and then select **Continue**
