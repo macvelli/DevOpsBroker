@@ -86,6 +86,9 @@ tuneDiskIOTpl=$(isExecutable "$SCRIPT_DIR"/rules.d/tune-diskio.tpl)
 ## Bash exec variables
 EXEC_LSBLK=/bin/lsblk
 
+## Variables
+echoOnExit=false
+
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
@@ -130,8 +133,12 @@ for udevRuleFile in "${udevRuleFileList[@]}"; do
   $EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$udevRuleFile" /etc/udev/rules.d/
 
   $EXEC_RM "$udevRuleFile"
+
+  echoOnExit=true
 done
 
-echo
+if [ "$echoOnExit" == 'true' ]; then
+  echo
+fi
 
 exit 0

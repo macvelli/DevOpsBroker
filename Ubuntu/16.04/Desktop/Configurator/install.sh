@@ -94,10 +94,8 @@ function installConfFile() {
 
 ################################## Variables ##################################
 
-# Installation directory
-INSTALL_DIR=/opt/devopsbroker/xenial/desktop/configurator
-
-echoOnExit=false
+## Variables
+bindMounts=false
 
 ################################### Actions ###################################
 
@@ -116,8 +114,8 @@ echo ${reset}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Build all C language utilties and install scriptinfo
-/usr/bin/make -s --directory="$SCRIPT_DIR"/C
+# Build and install scriptinfo C language utility
+/usr/bin/make -s --directory="$SCRIPT_DIR"/C scriptinfo
 $EXEC_INSTALL -o root -g users -m 755 "$SCRIPT_DIR"/C/scriptinfo /usr/local/bin
 
 # Set file ownership permissions
@@ -140,49 +138,66 @@ if [[ ! "$userGroupList" =~ devops ]]; then
   echo
 fi
 
-# Move /opt to /mnt/ssd/opt
-if [ -d /mnt/ssd ] && [ ! -d /mnt/ssd/opt ]; then
-  printInfo "Moving /opt to /mnt/ssd/opt"
-
-  $EXEC_MKDIR --mode=0755 /mnt/ssd/opt
-
-  $EXEC_MV /opt/* /mnt/ssd/opt/
-
-  $EXEC_RM -rf /opt
-
-  $EXEC_LN -s /mnt/ssd/opt /opt
-
-  echo
-fi
-
-# Move /snap to /mnt/ssd/snap
-if [ -d /mnt/ssd ] && [ ! -d /mnt/ssd/snap ]; then
-  printInfo "Moving /snap to /mnt/ssd/snap"
-
-  $EXEC_MKDIR --mode=0755 /mnt/ssd/snap
-
-  $EXEC_MV /snap/* /mnt/ssd/snap/
-
-  $EXEC_RM -rf /snap
-
-  $EXEC_LN -s /mnt/ssd/snap /snap
-
-  echo
-fi
-
 # Create /cache directory for user cache
-if [ ! -L /cache ]; then
+if [ ! -d /cache ]; then
   printInfo 'Creating /cache directory'
 
-  $EXEC_MKDIR --mode=0755 /mnt/ssd/cache
+  $EXEC_MKDIR --mode=0755 /cache
+  $EXEC_CHOWN root:users /cache
+fi
 
-  $EXEC_CHOWN root:users /mnt/ssd/cache
+if [ -d /mnt/ssd ]; then
 
-  $EXEC_LN -s /mnt/ssd/cache /cache
+  # Create /mnt/ssd/cache directory for user cache
+  if [ ! -d /mnt/ssd/cache ]; then
+    printInfo 'Creating /mnt/ssd/cache directory'
 
-  $EXEC_CHOWN --no-dereference root:users /cache
+    $EXEC_MKDIR --mode=0755 /mnt/ssd/cache
+    $EXEC_CHOWN root:users /mnt/ssd/cache
+    $EXEC_MOUNT --bind /mnt/ssd/cache /cache
 
-  echo
+    bindMounts=true
+  fi
+
+  # Move /opt directory to /mnt/ssd/opt
+  if [ ! -d /mnt/ssd/opt ]; then
+    printInfo 'Copying /opt directory to /mnt/ssd'
+
+    $EXEC_CP -a /opt /mnt/ssd
+    $EXEC_RM -rf /opt/{*,.*}
+    $EXEC_MOUNT --bind /mnt/ssd/opt /opt
+
+    bindMounts=true
+  fi
+
+  # Move /snap directory to /mnt/ssd/snap
+  if [ ! -d /mnt/ssd/snap ]; then
+    printInfo 'Copying /snap directory to /mnt/ssd'
+
+    $EXEC_CP -a /snap /mnt/ssd
+    $EXEC_RM -rf /snap/{*,.*}
+    $EXEC_MOUNT --bind /mnt/ssd/snap /snap
+
+    bindMounts=true
+  fi
+
+  if [ "$bindMounts" == 'true' ]; then
+    if ! $EXEC_GREP -q '^# Bind mounts' /etc/fstab; then
+      echo '# Bind mounts' >> /etc/fstab
+    fi
+
+    if ! $EXEC_GREP -q '^/mnt/ssd/cache' /etc/fstab; then
+      echo '/mnt/ssd/cache	/cache	none	bind	0	0' >> /etc/fstab
+    fi
+
+    if ! $EXEC_GREP -q '^/mnt/ssd/opt' /etc/fstab; then
+      echo '/mnt/ssd/opt	/opt	none	bind	0	0' >> /etc/fstab
+    fi
+
+    if ! $EXEC_GREP -q '^/mnt/ssd/snap' /etc/fstab; then
+      echo '/mnt/ssd/snap	/snap	none	bind	0	0' >> /etc/fstab
+    fi
+  fi
 fi
 
 # Create /opt/devopsbroker/xenial/desktop/configurator directory

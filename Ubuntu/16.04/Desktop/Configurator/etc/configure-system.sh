@@ -171,51 +171,6 @@ installSkeleton 'profile' '.profile' '/etc/skel'
 # Install /etc/skel/.config/gtk-3.0/gtk.css
 installSkeleton 'gtk.css' 'gtk.css' '/etc/skel/.config/gtk-3.0'
 
-# Move /opt to /mnt/ssd/opt
-if [ -d /mnt/ssd ] && [ ! -d /mnt/ssd/opt ]; then
-  printInfo "Moving /opt to /mnt/ssd/opt"
-
-  $EXEC_MKDIR --mode=0755 /mnt/ssd/opt
-
-  $EXEC_MV /opt/* /mnt/ssd/opt/
-
-  $EXEC_RM -rf /opt
-
-  $EXEC_LN -s /mnt/ssd/opt /opt
-
-  echo
-fi
-
-# Move /snap to /mnt/ssd/snap
-if [ -d /mnt/ssd ] && [ ! -d /mnt/ssd/snap ]; then
-  printInfo "Moving /snap to /mnt/ssd/snap"
-
-  $EXEC_MKDIR --mode=0755 /mnt/ssd/snap
-
-  $EXEC_MV /snap/* /mnt/ssd/snap/
-
-  $EXEC_RM -rf /snap
-
-  $EXEC_LN -s /mnt/ssd/snap /snap
-
-  echo
-fi
-
-# Create /cache directory for user cache
-if [ ! -L /cache ]; then
-  printInfo 'Creating /cache directory'
-
-  $EXEC_MKDIR --mode=0755 /mnt/ssd/cache
-
-  $EXEC_CHOWN root:users /mnt/ssd/cache
-
-  $EXEC_LN -s /mnt/ssd/cache /cache
-
-  $EXEC_CHOWN --no-dereference root:users /cache
-
-  echo
-fi
-
 #
 # UMASK Configuration
 #

@@ -115,7 +115,6 @@ function tuneReservedBlocks() {
 
 ## Bash exec variables
 EXEC_FINDMNT=/bin/findmnt
-EXEC_MOUNT=/bin/mount
 EXEC_TUNE2FS=/sbin/tune2fs
 
 remountAll=false

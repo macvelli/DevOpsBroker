@@ -179,9 +179,6 @@ function installTemplate() {
 
 ################################## Variables ##################################
 
-# Installation directory
-INSTALL_DIR=/opt/devopsbroker/xenial/desktop/configurator
-
 ## Variables
 echoOnExit=false
 

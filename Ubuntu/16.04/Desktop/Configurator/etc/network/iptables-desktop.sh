@@ -532,6 +532,9 @@ $IPTABLES -A filter-udp-in -p udp -m udp --sport 53 -j ACCEPT
 printInfo 'Allow Google Talk Voice and Video incoming packets'
 $IPTABLES -A filter-udp-in -p udp -m multiport --sports 19302,19305:19309 -j ACCEPT
 
+printInfo 'Allow mDNS UDP UNICAST incoming packets'
+$IPTABLES -A filter-udp-in -s $IPv4_SUBNET -p udp -m udp --sport 5353 -j ACCEPT
+
 printInfo 'Allow NTP UDP incoming packets'
 $IPTABLES -A filter-udp-in -p udp -m udp --sport 123 -j ACCEPT
 

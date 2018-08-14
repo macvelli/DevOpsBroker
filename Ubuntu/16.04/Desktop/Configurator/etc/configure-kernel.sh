@@ -120,6 +120,16 @@ function execSpeedTest() {
 EXEC_SPEED_TEST=/usr/bin/speedtest-cli
 EXEC_SYSCTL=/sbin/sysctl
 
+## Variables
+tunedKernel=false
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Delete /etc/devops/speedtest.info on force kernel retune
+if [ "$1" == '-f' ]; then
+  $EXEC_RM /etc/devops/speedtest.info 2>/dev/null
+fi
+
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
@@ -158,9 +168,9 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
   printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
   $EXEC_SYSCTL -p
 
-  echo
+  tunedKernel=true
 
-elif [ "$sysctlConf" -nt /etc/sysctl.conf ]; then
+elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "$1" == '-f' ]; then
 
   printBanner 'Updating /etc/sysctl.conf'
 
@@ -179,9 +189,22 @@ elif [ "$sysctlConf" -nt /etc/sysctl.conf ]; then
   printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
   $EXEC_SYSCTL -p
 
-  echo
+  tunedKernel=true
 
   # END /etc/sysctl.conf
+fi
+
+if [ "$tunedKernel" == 'true' ]; then
+  echo
+else
+  printInfo 'Linux kernel already tuned'
+  echo
+  printUsage "$SCRIPT_EXEC ${gold}[-f]"
+
+  echo ${bold}
+  echo "Valid Options:${romantic}"
+  echo '  -f	Force retuning of Linux kernel'
+  echo ${reset}
 fi
 
 exit 0
