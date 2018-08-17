@@ -86,7 +86,7 @@ SUBNET=$(echo "${inetInfoList[1]:5}" | $EXEC_SED 's/(.+\.)[0-9]+$/\10/')
 NETMASK=${inetInfoList[3]:5}
 
 ## Template
-cat << EOF
+/bin/cat << EOF
 #
 # smb.conf - DevOpsBroker configuration for Samba; see smb.conf(5) for help
 #

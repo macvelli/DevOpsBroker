@@ -61,7 +61,6 @@ EXEC_DEBUGFS=/sbin/debugfs
 EXEC_FINDMNT=/bin/findmnt
 EXEC_FSCK=/sbin/fsck
 EXEC_TUNE2FS=/sbin/tune2fs
-EXEC_UMOUNT=/bin/umount
 
 ## Options
 mountPoint="$1"

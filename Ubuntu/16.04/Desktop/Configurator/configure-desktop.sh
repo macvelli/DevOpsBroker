@@ -258,9 +258,6 @@ installPackage '/usr/bin/aspell' 'aspell aspell-en'
 # Install avahi-daemon
 installPackage '/usr/sbin/avahi-daemon' 'avahi-daemon'
 
-# Install bridge-utils
-installPackage '/sbin/brctl' 'bridge-utils'
-
 # Install clang
 installPackage '/usr/bin/clang-5.0' 'clang-5.0 clang-5.0-doc'
 
@@ -292,6 +289,9 @@ installPackage '/usr/bin/fio' 'fio'
 
 # Install flashplugin-installer
 installPackage '/usr/lib/flashplugin-installer/install_plugin' 'flashplugin-installer'
+
+# Install gawk
+installPackage '/usr/bin/gawk' 'gawk'
 
 # Install gcc
 installPackage '/usr/bin/gcc' 'gcc'
@@ -596,6 +596,8 @@ installConfig 'functions.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
 # Network Interface Card Configuration
 #
 
+# TODO: Move this to configure-nic.sh
+
 # Install /etc/network/if-pre-up.d/iface-preup-config.sh
 installConfig 'iface-preup-config.sh' "$SCRIPT_DIR"/etc/network/if-pre-up.d /etc/network/if-pre-up.d
 $EXEC_CHMOD 755 /etc/network/if-pre-up.d/iface-preup-config.sh
@@ -611,6 +613,7 @@ if [ ! -z "$DEFAULT_NIC" ]; then
 
 ## Template
 /bin/cat << EOF >> /etc/network/interfaces
+
 # $DEFAULT_NIC
 auto $DEFAULT_NIC
 iface $DEFAULT_NIC inet dhcp

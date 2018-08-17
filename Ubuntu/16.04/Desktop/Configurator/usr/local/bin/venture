@@ -30,21 +30,21 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
@@ -62,13 +62,11 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 # Parameter $1: The name of the directory to create within the base directory
 # -----------------------------------------------------------------------------
 function createDirectory() {
+	if [ ! -d "$baseDir/$1" ]; then
+		printInfo "Creating $baseDir/$1 directory"
 
-  if [ ! -d "$baseDir/$1" ]; then
-    printInfo "Creating $baseDir/$1 directory"
-
-    $EXEC_MKDIR "$baseDir/$1"
-  fi
-
+		$EXEC_MKDIR "$baseDir/$1"
+	fi
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -76,287 +74,266 @@ function createDirectory() {
 # Description:	Displays help message to the user
 # -----------------------------------------------------------------------------
 function showHelp() {
-  # BEGIN showHelp function
+	# BEGIN showHelp function
 
-  if [ -z "$command" ]; then
-    printUsage "venture create ${gold}[-d directory] ${yellow}PROJECT_NAME"
-    printUsage 'false' "venture new ${gold}[-d directory] ${yellow}FILENAME"
+	printUsage "venture create ${gold}[-d directory] ${yellow}PROJECT_NAME"
+	printUsage 'false' "venture new ${gold}[-d directory] ${yellow}FILE"
 
-    echo ${bold}
-    echo "Valid Commands:${romantic}"
-    echo '  create	Create a brand new C project'
-    echo '  new		Create a new file'
-    echo ${reset}
+	echo ${bold}
+	echo "Valid Commands:${romantic}"
+	echo -e ${yellow}'  create\t'        ${romantic}'Create a brand new C project'
+	echo -e ${yellow}'  new\t\t'         ${romantic}'Create a new file'
+	echo ${reset}
 
-  elif [ $command == 'create' ]; then
-    printUsage "venture create ${gold}[-d directory] ${yellow}PROJECT_NAME"
-    echo
-  elif [ $command == 'new' ]; then
-    printUsage "venture new ${gold}[-d directory] ${yellow}FILENAME"
+	echo -n ${bold}
+	echo "Valid Options:${romantic}"
+	echo -e ${gold}'  -d directory\t'  ${romantic}'The target directory'
+	echo ${reset}
 
-    echo ${bold}
-    echo "Valid File Types:${romantic}"
-    echo -e '  source.c\t'	'C language source file'
-    echo -e '  header.h\t'	'C language header file'
-    echo -e '  script.sh\t'	'Bash shell script file'
-    echo -e '  template.tpl\t'	'Bash shell template file'
-    echo ${reset}
-  fi
-
-  echo -n ${bold}
-  echo "Valid Options:${romantic}"
-  echo -e '  -d directory\t'	'The target directory'
-  echo ${reset}
-
-  # END showHelp function
+	# END showHelp function
 }
 
-
 ################################## Variables ##################################
-
-validCommands=('create' 'new')
-echoOnExit=false
 
 ## Options
 command="$1"
 baseDir='.'
 
+## Variables
+validCommands=('create' 'new')
+echoOnExit=false
+
+declare -A paramNameMap
+
+paramNameMap['create']='PROJECT_NAME'
+paramNameMap['new']='FILE'
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display help if no parameters given
 if [ -z "$command" ]; then
-  showHelp
+	showHelp
 
-  exit 1
+	exit 1
 fi
 
 # Ensure the first parameter is a valid command
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-  printError 'venture' "Invalid command: '$command'"
-  echo
+	printError 'venture' "Invalid command: '$command'"
+	command=''
+	echo
+	showHelp
 
-  showHelp
-
-  exit 1
+	exit 1
 fi
 
 # Process command-line options
 while [[ "$2" == -* ]]; do
 
-  # Base directory option
-  if [ "$2" == '-d' ]; then
+	# Base directory option
+	if [ "$2" == '-d' ]; then
 
-    errorMessage=$(isValidDirectory 'venture' "$3")
+		errorMessage=$(isValidDirectory 'venture' "$3")
 
-    # Display error if directory parameter is missing or invalid
-    if [ "$errorMessage" != '0' ]; then
-      showHelp
+		# Display error if directory parameter is missing or invalid
+		if [ "$errorMessage" != '0' ]; then
+			echo "$errorMessage"
+			echo
+			printUsage "venture $command ${gold}-d directory ${yellow}${paramNameMap[$command]}"
 
-      exit 1
-    fi
+			exit 1
+		fi
 
-    # baseDir is the third command-line parameter
-    baseDir="$3"
-    shift 2
+		# baseDir is the third command-line parameter
+		baseDir="$3"
+		shift 2
+	else
+		# Display error and help if option parameter is not valid
+		printError 'venture' "Invalid option: '$2'"
+		echo
+		printUsage "venture $command ${gold}[-d directory] ${yellow}${paramNameMap[$command]}"
 
-  else
-    # Display error and help if option parameter is not valid
-    printError 'venture' "Invalid option: '$2'"
-    echo
-    showHelp
-
-    exit 1
-  fi
-
+		exit 1
+	fi
 done
 
+if [ "$command" == 'create' ]; then
+	projectName="$2"
+
+	# Display error and usage if no project name parameter given
+	if [ -z "$projectName" ]; then
+		printError 'venture' 'Missing project name'
+		echo
+		printUsage "venture create ${paramNameMap['create']}"
+
+		exit 1
+	fi
+
+	baseDir="$baseDir/$projectName"
+elif [ "$command" == 'new' ]; then
+	fileName="$2"
+
+	# Display error and usage if no file name parameter given
+	if [ -z "$fileName" ]; then
+		printError 'venture' 'Missing file name'
+		echo
+		printUsage "venture new ${paramNameMap['new']}"
+
+		exit 1
+	fi
+
+	# Display error and usage if unsupported file parameter given
+	if [[ ! "$fileName" =~ ^.+\.(c|h|conf|sh|tpl)$ ]]; then
+		printError 'venture' "Unsupported file name '$fileName'"
+		echo
+		printUsage "venture new ${paramNameMap['new']}"
+
+		echo ${bold}
+		echo 'Valid File Types:'
+		echo -e ${yellow}'  source.c\t'      ${romantic}'C language source file'
+		echo -e ${yellow}'  header.h\t'      ${romantic}'C language header file'
+		echo -e ${yellow}'  linux.conf\t'    ${romantic}'Linux configuration file'
+		echo -e ${yellow}'  script.sh\t'     ${romantic}'Bash shell script file'
+		echo -e ${yellow}'  template.tpl\t'  ${romantic}'Bash shell template file'
+		echo ${reset}
+
+		exit 1
+	fi
+
+	# Display file exists info message and exit
+	if [ -f "$baseDir/$fileName" ]; then
+		printInfo "$baseDir/$fileName already exists; exiting"
+		exit 0
+	fi
+
+	# Make baseDir if not already exists
+	if [ ! -d "$baseDir" ]; then
+		$EXEC_MKDIR "$baseDir"
+	fi
+
+	if [[ "$fileName" == *.c ]] || [[ "$fileName" == *.h ]]; then
+		fileName="${fileName,,}"
+
+		# Put the new source file in the "$baseDir/src" subdirectory, if present
+		if [ -d "$baseDir/src" ]; then
+			baseDir="$baseDir/src"
+		fi
+	fi
+fi
 
 ################################### Actions ###################################
 
-if [ "$1" == 'create' ]; then
-  # BEGIN Create new project
+if [ "$command" == 'create' ]; then
+	# BEGIN Create new project
 
-  projectName="$2"
-  baseDir="$baseDir/$projectName"
+	printBanner "Creating new project $projectName"
 
-  # Display usage if no project name parameter given
-  if [ -z "$projectName" ]; then
-    showHelp
+	createDirectory 'bin'
+	createDirectory 'doc'
+	createDirectory 'lib'
+	createDirectory 'res'
+	createDirectory 'src'
+	createDirectory 'test'
 
-    exit 1
-  fi
+	if [ ! -f "$baseDir/makefile" ]; then
+		# Create new makefile
+		printInfo "Creating $baseDir/makefile"
 
-  printBanner "Creating new project $projectName"
+		# Set makefile.tpl location and make it executable
+		makefileTpl=$(isExecutable "$SCRIPT_DIR"/template/makefile.tpl)
 
-  createDirectory 'bin'
-  createDirectory 'doc'
-  createDirectory 'lib'
-  createDirectory 'res'
-  createDirectory 'src'
-  createDirectory 'test'
+		# Execute template script
+		"$makefileTpl" "$projectName" > "$baseDir/makefile"
 
-  if [ ! -f "$baseDir/makefile" ]; then
-    # Create new makefile
-    printInfo "Creating $baseDir/makefile"
+		echoOnExit=true
+	fi
 
-    # Set makefile.tpl location and make it executable
-    makefileTpl=$(isExecutable "$SCRIPT_DIR"/template/makefile.tpl)
+	# Create a new C source file
+	sourceFile="${projectName,,}.c"
+	baseDir="$baseDir/src"
 
-    # Execute template script
-    "$makefileTpl" "$projectName" > "$baseDir/makefile"
+	if [ ! -f "$baseDir/$sourceFile" ]; then
+		# Create a new C source file
+		printInfo "Creating $baseDir/$sourceFile"
 
-    echoOnExit=true
-  fi
+		# Set source-file-c.tpl location and make it executable
+		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
 
-  # Create a new C source file
-  sourceFile="${projectName,,}.c"
-  baseDir="$baseDir/src"
+		# Execute template script
+		"$sourceFileCTpl" "$sourceFile" > "$baseDir/$sourceFile"
 
-  if [ ! -f "$baseDir/$sourceFile" ]; then
-    # Create a new C source file
-    printInfo "Creating $baseDir/$sourceFile"
+		echoOnExit=true
+	fi
 
-    # Set source-file-c.tpl location and make it executable
-    sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
+	# END Create new project
+elif [ "$command" == "new" ]; then
+	# BEGIN Create new file
 
-    # Execute template script
-    "$sourceFileCTpl" "$sourceFile" > "$baseDir/$sourceFile"
+	# Create a new C source file
+	if [[ "$fileName" == *.c ]]; then
+		printInfo "Creating new C source file $fileName"
 
-    echoOnExit=true
-  fi
+		# Set source-file-c.tpl location and make it executable
+		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
 
-  # END Create new project
-elif [ "$1" == "new" ]; then
-  # BEGIN Create new file
+		# Execute template script
+		"$sourceFileCTpl" "$fileName" > "$baseDir/$fileName"
 
-  fileName="$2"
+		echoOnExit=true
 
-  # Display usage if no file name parameter given
-  if [ -z "$fileName" ] || [[ ! "$fileName" =~ ^.+\.(c|h|sh|tpl)$ ]]; then
-    showHelp
+	# Create a new C header file
+	elif [[ "$fileName" == *.h ]]; then
+		printInfo "Creating new C header file $fileName"
 
-    exit 1
-  fi
+		# Set header-file-c.tpl location and make it executable
+		headerFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/header-file-c.tpl)
 
-  # Create a new C source file
-  if [[ "$fileName" == *.c ]]; then
+		# Execute template script
+		"$headerFileCTpl" "$fileName" > "$baseDir/$fileName"
 
-    # Put the new source file in the "$baseDir/src" subdirectory, if present
-    if [ -d "$baseDir/src" ]; then
-      baseDir="$baseDir/src"
-    fi
+		echoOnExit=true
 
-    fileName="${fileName,,}"
-    sourceFile="$fileName"
+	# Create a new Linux configuration file
+	elif [[ "$fileName" == *.conf ]]; then
+		printInfo "Creating new Linux configuration file $fileName"
 
-    printBanner "Creating new C source file $fileName"
+		# Set linux-conf.tpl location and make it executable
+		linuxConfTpl=$(isExecutable "$SCRIPT_DIR"/template/linux-conf.tpl)
 
-    if [ -f "$baseDir/$fileName" ]; then
-      printInfo "$baseDir/$fileName already exists; exiting"
+		# Execute template script
+		"$linuxConfTpl" "$fileName" > "$baseDir/$fileName"
 
-      exit 0
-    else
-      printInfo "Creating $baseDir/$fileName"
+		echoOnExit=true
 
-      $EXEC_MKDIR "$baseDir"
+	# Create a new Bash shell script file
+	elif [[ "$fileName" == *.sh ]]; then
+		printInfo "Creating new Bash shell script $fileName"
 
-      # Set source-file-c.tpl location and make it executable
-      sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
+		# Set bash-script.tpl location and make it executable
+		bashScriptTpl=$(isExecutable "$SCRIPT_DIR"/template/bash-script.tpl)
 
-      # Execute template script
-      "$sourceFileCTpl" "$fileName" > "$baseDir/$sourceFile"
+		# Execute template script and make Bash script executable
+		"$bashScriptTpl" "$fileName" > "$baseDir/$fileName"
+		$EXEC_CHMOD u+x "$baseDir/$fileName"
 
-      echoOnExit=true
-    fi
+		echoOnExit=true
 
-  # Create a new C header file
-  elif [[ "$fileName" == *.h ]]; then
+	# Create a new Bash shell template file
+	elif [[ "$fileName" == *.tpl ]]; then
+		printInfo "Creating new Bash shell template $fileName"
 
-    # Put the new header file in the "$baseDir/src" subdirectory, if present
-    if [ -d "$baseDir/src" ]; then
-      baseDir="$baseDir/src"
-    fi
+		# Set template.tpl location and make it executable
+		bashTemplateTpl=$(isExecutable "$SCRIPT_DIR"/template/bash-template.tpl)
 
-    fileName="${fileName,,}"
-    headerFile="$fileName"
+		# Execute template script
+		"$bashTemplateTpl" "$fileName" > "$baseDir/$templateFile"
 
-    printBanner "Creating new C header file $baseDir/$fileName"
+		$EXEC_CHMOD u+x "$baseDir/$templateFile"
 
-    if [ -f "$baseDir/$fileName" ]; then
-      printInfo "$baseDir/$fileName already exists; exiting"
+		echoOnExit=true
+	fi
 
-      exit 0
-    else
-      printInfo "Creating $baseDir/$fileName"
-
-      $EXEC_MKDIR "$baseDir"
-
-      # Set header-file-c.tpl location and make it executable
-      headerFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/header-file-c.tpl)
-
-      # Execute template script
-      "$headerFileCTpl" "$fileName" > "$baseDir/$headerFile"
-
-      echoOnExit=true
-    fi
-
-  # Create a new Bash shell script file
-  elif [[ "$fileName" == *.sh ]]; then
-
-    printBanner "Creating new Bash shell script $fileName"
-
-    shellScript="$fileName"
-
-    if [ -f "$baseDir/$fileName" ]; then
-      printInfo "$baseDir/$fileName already exists; exiting"
-
-      exit 0
-    else
-      printInfo "Creating $baseDir/$fileName"
-
-      $EXEC_MKDIR "$baseDir"
-
-      # Set bash-script.tpl location and make it executable
-      bashScriptTpl=$(isExecutable "$SCRIPT_DIR"/template/bash-script.tpl)
-
-      # Execute template script
-      "$bashScriptTpl" "$fileName" > "$baseDir/$shellScript"
-
-      $EXEC_CHMOD u+x "$baseDir/$shellScript"
-
-      echoOnExit=true
-    fi
-
-  # Create a new Bash shell template file
-  elif [[ "$fileName" == *.tpl ]]; then
-
-    printBanner "Creating new Bash shell template $fileName"
-
-    templateFile="$fileName"
-
-    if [ -f "$baseDir/$fileName" ]; then
-      printInfo "$baseDir/$fileName already exists; exiting"
-
-      exit 0
-    else
-      printInfo "Creating $baseDir/$fileName"
-
-      $EXEC_MKDIR "$baseDir"
-
-      # Set template.tpl location and make it executable
-      bashTemplateTpl=$(isExecutable "$SCRIPT_DIR"/template/bash-template.tpl)
-
-      # Execute template script
-      "$bashTemplateTpl" "$fileName" > "$baseDir/$templateFile"
-
-      $EXEC_CHMOD u+x "$baseDir/$templateFile"
-
-      echoOnExit=true
-    fi
-
-  fi
-
-  # END Create new file
+	# END Create new file
 fi
 
 if [ "$echoOnExit" == 'true' ]; then

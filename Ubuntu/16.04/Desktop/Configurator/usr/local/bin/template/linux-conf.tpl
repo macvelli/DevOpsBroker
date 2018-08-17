@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# bash-template.tpl - DevOpsBroker template script for generating Bash template files
+# linux-conf.tpl - DevOpsBroker template script for generating Linux configuration files
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -19,7 +19,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-45
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-32
 #
 # -----------------------------------------------------------------------------
 #
@@ -28,21 +28,21 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+ source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+ source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
-# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+# Load /etc/devops/fscriptNameunctions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+ source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
@@ -50,22 +50,22 @@ ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No
 ################################## Variables ##################################
 
 ## Options
-templateName="$1"
+confName="$1"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if no template name parameter specified
-if [ -z "$templateName" ]; then
-  printUsage "bash-template.tpl file.tpl ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+# Display usage if no configuration name parameter specified
+if [ -z "$confName" ]; then
+  printUsage "linux-conf.tpl file.conf ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
 
   exit 1
 fi
 
-# Display error and usage if invalid template name specified
-if [[ "$templateName" != *.tpl ]]; then
-  printError "bash-template.tpl" "Invalid Bash template name: '$templateName'"
+# Display error and usage if invalid configuration name specified
+if [[ "$confName" != *.conf ]]; then
+  printError 'linux-conf.tpl' "Invalid Linux configuration file name: '$confName'"
   echo
-  printUsage "bash-template.tpl file.tpl ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+  printUsage "linux-conf.tpl file.conf ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
 
   exit 1
 fi
@@ -77,11 +77,9 @@ ubuntuRelease=${2:-"$(getUbuntuRelease)"}
 kernelVersion=${3:-"$(getKernelVersion)"}
 
 ## Template
-/bin/cat << TPL
-#!/bin/bash
-
+/bin/cat << EOF
 #
-# $templateName - Description goes here
+# $confName - Description goes here
 #
 # Copyright (C) 2018 AUTHOR_NAME <email@address.com>
 #
@@ -104,26 +102,7 @@ kernelVersion=${3:-"$(getKernelVersion)"}
 # -----------------------------------------------------------------------------
 #
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-################################## Variables ##################################
-
-## Options
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-## Template
-/bin/cat << EOF
-
 
 EOF
 
 exit 0
-
-TPL

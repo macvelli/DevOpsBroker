@@ -40,29 +40,26 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+    source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+    source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+    source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 ################################## Variables ##################################
-
-## Bash exec variables
-EXEC_ETHTOOL=/sbin/ethtool
 
 ## Options
 NIC="$1"
@@ -74,19 +71,19 @@ routeChanges=''
 
 # Display usage if no parameters given
 if [ -z "$NIC" ]; then
-  printUsage 'tune-nic.tpl NIC'
-  echo
+	printUsage 'tune-nic.tpl NIC'
+	echo
 
-  exit 1
+	exit 1
 fi
 
 # Display error if network interface parameter is invalid
 if [ ! -d /proc/sys/net/ipv4/conf/$NIC ]; then
-  printError 'tune-nic.tpl' "Cannot access '$NIC': No such network interface"
-  echo
-  printUsage 'tune-nic.tpl NIC'
+	printError 'tune-nic.tpl' "Cannot access '$NIC': No such network interface"
+	echo
+	printUsage 'tune-nic.tpl NIC'
 
-  exit 1
+	exit 1
 fi
 
 ################################### Actions ###################################
@@ -133,9 +130,9 @@ cat << EOF
 ## Options
 
 if [ -z "$IFACE" ] && [ -z "$MODE" ] && [ -z "$PHASE" ]; then
-  IFACE='$NIC'
-  MODE='start'
-  PHASE='post-up'
+	IFACE='$NIC'
+	MODE='start'
+	PHASE='post-up'
 fi
 
 ################################### Actions ###################################
@@ -143,40 +140,39 @@ fi
 logger -p syslog.notice -i Called tune-$NIC with interface "\$IFACE" mode "\$MODE" and phase "\$PHASE";
 
 if [ "\$IFACE" == '$NIC' ] && [ "\$MODE" == 'start' ] && [ "\$PHASE" == 'post-up' ]; then
-  # Optimize TX Queue Length
-  /sbin/ip link set $NIC txqueuelen $TX_QUEUE_LENGTH
+	# Optimize TX Queue Length
+	/sbin/ip link set $NIC txqueuelen $TX_QUEUE_LENGTH
 
-  # Offload RX/TX/TSO/UFO/SG/GSO Processing
-  /sbin/ethtool --offload $NIC rx on tx on tso on ufo on sg on gso on
+	# Offload RX/TX/TSO/UFO/SG/GSO Processing
+	/sbin/ethtool --offload $NIC rx on tx on tso on ufo on sg on gso on
 
-  # Optimize IPv4 initcwnd and initrwnd values
-  IFS=$'\n'; ipv4RouteList=( \$(/sbin/ip -4 route show) ); unset IFS;
+	# Optimize IPv4 initcwnd and initrwnd values
+	IFS=$'\n'; ipv4RouteList=( \$(/sbin/ip -4 route show) ); unset IFS;
 
-  for ipv4Route in "\${ipv4RouteList[@]}"; do
-    # Process IPv4 routes
-    if [[ "\$ipv4Route" =~ ^default ]]; then
-      defaultRoute=( \$ipv4Route )
-      /sbin/ip route change \${defaultRoute[@]:0:5} initcwnd 22 initrwnd 22
-    elif [[ "\$ipv4Route" == *"proto kernel"* ]]; then
-      kernelRoute=( \$ipv4Route )
-      /sbin/ip route change \${kernelRoute[@]:0:9} initcwnd 44 initrwnd 44
-    fi
-  done
+	for ipv4Route in "\${ipv4RouteList[@]}"; do
+		# Process IPv4 routes
+		if [[ "\$ipv4Route" =~ ^default ]]; then
+			defaultRoute=( \$ipv4Route )
+			/sbin/ip route change \${defaultRoute[@]:0:5} initcwnd 22 initrwnd 22
+		elif [[ "\$ipv4Route" == *"proto kernel"* ]]; then
+			kernelRoute=( \$ipv4Route )
+			/sbin/ip route change \${kernelRoute[@]:0:9} initcwnd 44 initrwnd 44
+		fi
+	done
 
-  # Optimize IPv6 initcwnd and initrwnd values
-  IFS=$'\n'; ipv6RouteList=( \$(/sbin/ip -6 route show) ); unset IFS;
+	# Optimize IPv6 initcwnd and initrwnd values
+	IFS=$'\n'; ipv6RouteList=( \$(/sbin/ip -6 route show) ); unset IFS;
 
-  for ipv6Route in "\${ipv6RouteList[@]}"; do
-    # Process IPv6 routes
-    if [[ "\$ipv6Route" =~ ^default ]]; then
-      defaultRoute=( \$ipv6Route )
-      /sbin/ip route change \${defaultRoute[@]:0:9} initcwnd 22 initrwnd 22
-    elif [[ "\$ipv6Route" == *"proto kernel"* ]]; then
-      kernelRoute=( \$ipv6Route )
-      /sbin/ip route change \${kernelRoute[@]:0:7} initcwnd 44 initrwnd 44
-    fi
-  done
-
+	for ipv6Route in "\${ipv6RouteList[@]}"; do
+		# Process IPv6 routes
+		if [[ "\$ipv6Route" =~ ^default ]]; then
+			defaultRoute=( \$ipv6Route )
+			/sbin/ip route change \${defaultRoute[@]:0:9} initcwnd 22 initrwnd 22
+		elif [[ "\$ipv6Route" == *"proto kernel"* ]]; then
+			kernelRoute=( \$ipv6Route )
+			/sbin/ip route change \${kernelRoute[@]:0:7} initcwnd 44 initrwnd 44
+		fi
+	done
 fi
 
 exit 0

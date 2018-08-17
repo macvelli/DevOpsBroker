@@ -28,6 +28,7 @@
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
+# o /etc/modprobe.d/kvm-amd.conf
 # o /etc/skel/.bash_aliases
 # o /etc/skel/.bash_logout
 # o /etc/skel/.bash_personal
@@ -110,7 +111,6 @@ function installSkeleton() {
 
 }
 
-
 ################################## Variables ##################################
 
 echoOnExit=false
@@ -149,6 +149,9 @@ installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
 installConfig 'profile' "$SCRIPT_DIR" /etc
+
+# Install /etc/modprobe.d/kvm-amd.conf
+installConfig 'kvm-amd.conf' "$SCRIPT_DIR"/modprobe.d /etc/modprobe.d
 
 # Install /etc/skel/.bash_aliases
 installSkeleton 'bash_aliases' '.bash_aliases' '/etc/skel'

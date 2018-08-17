@@ -43,119 +43,146 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}sysctl.conf.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
+if [ "$USER" != 'root' ]; then
+	printError 'sysctl.conf.tpl' 'Permission denied (you must be root)'
 
-  exit 1
+	exit 1
 fi
+
+## Script information
+SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
 
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	calcOptWindow
-# Description:	Calculate the Optimal Window value based on:
-#		    1) The Unscaled Window value
-#		    2) The Maximum BDP
+# Function:     calcOptWindow
+# Description:  Calculate the Optimal Window value
+#
+# Parameter $1: The Unscaled Window value
+# Parameter $2: he Maximum BDP
 # -----------------------------------------------------------------------------
 function calcOptWindow() {
-  local unscaledWin=$1
-  local maxBDP=$2
+	local unscaledWin=$1
+	local maxBDP=$2
 
-  while (( $unscaledWin < $maxBDP )); do
-    unscaledWin=$[ $unscaledWin * 2 ]
-  done
-
-  echo $unscaledWin
+	echo "$[ ($maxBDP / $unscaledWin) * $unscaledWin + $unscaledWin ]"
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	tuneNetwork
-# Description:	Tunes network settings
+# Function:     executePingTest
+# Description:  Execute the ping test to get Round Trip Time
+# -----------------------------------------------------------------------------
+function executePingTest() {
+
+	# Add to the /tmp/ping.job file
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-east-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" > /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-east-2.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-west-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-west-2.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.ca-central-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-gov-west-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+
+	# Also look at GCP
+	echo "$EXEC_PING -c 4 -n -W 1 us-east1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-east4.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-west1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-west2.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-central1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 northamerica-northeast1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+
+	# Execute the /tmp/ping.job in parallel
+	echo "$($EXEC_PARALLEL -j0 --no-notice :::: /tmp/ping.job | $EXEC_SORT -n | $EXEC_TAIL -1)"
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     tuneNetwork
+# Description:  Tunes network settings
 #
-# Note:		Bandwidth Delay Product = Available Bandwidth (byte/sec) x Round Trip Time (ms)
+# Note: Bandwidth Delay Product = Available Bandwidth (KBytes/sec) x Round Trip Time (ms)
 # -----------------------------------------------------------------------------
 function tuneNetwork() {
 
-  # Calculate Bandwidth Delay Product (BDP) of the network interface
-  local NIC_BDP=$[ $NIC_SPEED * 125 * 10 ]
+	# Calculate Bandwidth Delay Product (BDP) of the network interface
+	local NIC_BDP=$[ $NIC_SPEED * 5 ]
 
-  # Calculate Bandwidth Delay Product (BDP) based on Internet Download speed
-  local INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | awk -F '[^0-9]*' '{print $2}')
-  local INET_DL_BDP=$[ $INET_DL_SPEED * 125 * 200 ]
+	# Calculate Bandwidth Delay Product (BDP) based on Internet Download speed
+	local INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | awk -F '[^0-9]*' '{print $2}')
+	local INET_DL_BDP=$[ $INET_DL_SPEED * 125 * $NIC_LATENCY ]
 
-  # Calculate Bandwidth Delay Product (BDP) based on Internet Upload speed
-  local INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | awk -F '[^0-9]*' '{print $2}')
-  local INET_UL_BDP=$[ $INET_UL_SPEED * 125 * 200 ]
+	# Calculate Bandwidth Delay Product (BDP) based on Internet Upload speed
+	local INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | awk -F '[^0-9]*' '{print $2}')
+	local INET_UL_BDP=$[ $INET_UL_SPEED * 125 * $NIC_LATENCY ]
 
-  # Determine the maximum receive BDP value
-  local MAX_RCV_BDP=$[ $NIC_BDP > $INET_DL_BDP ? $NIC_BDP : $INET_DL_BDP ]
+	# Determine the maximum receive BDP value
+	local MAX_RCV_BDP=$[ $NIC_BDP > $INET_DL_BDP ? $NIC_BDP : $INET_DL_BDP ]
 
-  # Determine the maximum send BDP value
-  local MAX_SEND_BDP=$[ $NIC_BDP > $INET_UL_BDP ? $NIC_BDP : $INET_UL_BDP ]
+	# Determine the maximum send BDP value
+	local MAX_SEND_BDP=$[ $NIC_BDP > $INET_UL_BDP ? $NIC_BDP : $INET_UL_BDP ]
 
-  # Calculate the Unscaled TCP Window value (largest even multiple of TCP MSS less than 65535)
-  UNSCALED_TCP_WIN=$[ 65535 / $NIC_TCP_MSS * $NIC_TCP_MSS ]
+	# Calculate the Unscaled TCP Window value (largest even multiple of TCP MSS less than 65535)
+	UNSCALED_TCP_WIN=$[ 65535 / $NIC_TCP_MSS * $NIC_TCP_MSS ]
 
-  # Calculate the Unscaled UDP Window value (largest even multiple of UDP MSS less than 65535)
-  UNSCALED_UDP_WIN=$[ 65535 / $NIC_UDP_MSS * $NIC_UDP_MSS ]
+	# Calculate the Unscaled UDP Window value (largest even multiple of UDP MSS less than 65535)
+	UNSCALED_UDP_WIN=$[ 65535 / $NIC_UDP_MSS * $NIC_UDP_MSS ]
 
-  # Calculate the Optimal Window value based on UNSCALED_TCP_WIN and MAX_RCV_BDP
-  local OPT_WIN=$(calcOptWindow $UNSCALED_TCP_WIN $MAX_RCV_BDP)
+	# Calculate the Optimal Window value based on UNSCALED_TCP_WIN and MAX_RCV_BDP
+	local OPT_WIN=$(calcOptWindow $UNSCALED_TCP_WIN $MAX_RCV_BDP)
 
-  # Configure TCP receive memory default and maximum values
-  TCP_RMEM_DEFAULT=$[ $OPT_WIN / 2 ]
-  TCP_RMEM_MAX=$OPT_WIN
+	# Configure TCP receive memory default and maximum values
+	TCP_RMEM_DEFAULT=$[ $OPT_WIN / 2 ]
+	TCP_RMEM_MAX=$OPT_WIN
 
-  # Calculate the Optimal Window value based on UNSCALED_TCP_WIN and MAX_SEND_BDP
-  OPT_WIN=$(calcOptWindow $UNSCALED_TCP_WIN $MAX_SEND_BDP)
+	# Calculate the Optimal Window value based on UNSCALED_TCP_WIN and MAX_SEND_BDP
+	OPT_WIN=$(calcOptWindow $UNSCALED_TCP_WIN $MAX_SEND_BDP)
 
-  # Configure TCP send memory default and maximum values
-  TCP_WMEM_DEFAULT=$[ $OPT_WIN / 2 ]
-  TCP_WMEM_MAX=$OPT_WIN
+	# Configure TCP send memory default and maximum values
+	TCP_WMEM_DEFAULT=$[ $OPT_WIN / 2 ]
+	TCP_WMEM_MAX=$OPT_WIN
 
-  # Calculate min/pressure/max values for tcp_mem and udp_mem
-  local NET_MEM_MIN=$[ $RAM_TOTAL * 1024 / 20 / $PAGESIZE ]
-  local NET_MEM_PRESSURE=$[ $NET_MEM_MIN / 3 + $NET_MEM_MIN ]
-  local NET_MEM_MAX=$[ $NET_MEM_PRESSURE / 2 + $NET_MEM_PRESSURE ]
+	# Calculate min/pressure/max values for tcp_mem and udp_mem
+	local NET_MEM_MIN=$[ ($TCP_RMEM_MAX + $TCP_WMEM_MAX) / $PAGESIZE * $NUM_CONNECTIONS ]
+	local NET_MEM_PRESSURE=$[ $NET_MEM_MIN + ($NET_MEM_MIN / 3) ]
+	local NET_MEM_MAX=$[ $NET_MEM_MIN * 2 ]
 
-  TCP_MEM_MIN=$[ $NET_MEM_MIN / $NIC_TCP_MSS * $NIC_TCP_MSS ]
-  TCP_MEM_PRESSURE=$[ $NET_MEM_PRESSURE / $NIC_TCP_MSS * $NIC_TCP_MSS ]
-  TCP_MEM_MAX=$[ $NET_MEM_MAX / $NIC_TCP_MSS * $NIC_TCP_MSS ]
+	TCP_MEM_MIN=$[ $NET_MEM_MIN / $NIC_TCP_MSS * $NIC_TCP_MSS ]
+	TCP_MEM_PRESSURE=$[ $NET_MEM_PRESSURE / $NIC_TCP_MSS * $NIC_TCP_MSS ]
+	TCP_MEM_MAX=$[ $NET_MEM_MAX / $NIC_TCP_MSS * $NIC_TCP_MSS ]
 
-  UDP_MEM_MIN=$[ $NET_MEM_MIN / $NIC_UDP_MSS * $NIC_UDP_MSS ]
-  UDP_MEM_PRESSURE=$[ $NET_MEM_PRESSURE / $NIC_UDP_MSS * $NIC_UDP_MSS ]
-  UDP_MEM_MAX=$[ $NET_MEM_MAX / $NIC_UDP_MSS * $NIC_UDP_MSS ]
+	UDP_MEM_MIN=$[ $NET_MEM_MIN / $NIC_UDP_MSS * $NIC_UDP_MSS ]
+	UDP_MEM_PRESSURE=$[ $NET_MEM_PRESSURE / $NIC_UDP_MSS * $NIC_UDP_MSS ]
+	UDP_MEM_MAX=$[ $NET_MEM_MAX / $NIC_UDP_MSS * $NIC_UDP_MSS ]
 
-  # Calculate maximum number of queued incoming packets
-  NETDEV_MAX_BACKLOG=$[ $UNSCALED_UDP_WIN * ($PAGESIZE / 1024) ]
+	# Calculate maximum number of queued incoming packets
+	NETDEV_MAX_BACKLOG=$[ $UNSCALED_UDP_WIN * ($PAGESIZE / 1024) ]
 
-  # Calculate TCP Small Queue limit per TCP socket
-  TCP_LIMIT_OUTPUT_BYTES=$[ $UNSCALED_TCP_WIN * 2 ]
-
+	# Calculate TCP Small Queue limit per TCP socket
+	TCP_LIMIT_OUTPUT_BYTES=$[ $UNSCALED_TCP_WIN * 2 ]
 }
 
-
 ################################## Variables ##################################
+
+## Configuration
+NUM_CONNECTIONS=25
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ General Information ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -176,10 +203,17 @@ FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
 # ---------------------------- Network Information ----------------------------
 
 # Default network interface
-NIC=$(ip route | awk '/^default/{ print $5 }')
+NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
+
+if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
+	printInfo "Default network interface '$NIC' is virtual"
+	printInfo 'Exiting'
+
+	exit 0
+fi
 
 # Actual Mbit/s speed of the network interface
-NIC_SPEED=$(ethtool $NIC | grep -F "Speed:" | awk -F '[^0-9]*' '{print $2}')
+NIC_SPEED=$[ $($EXEC_CAT /sys/class/net/$NIC/speed) * 125 ]
 
 # Maximum Transmission Unit (MTU) of the network interface
 NIC_MTU=$(cat /sys/class/net/$NIC/mtu)
@@ -193,6 +227,10 @@ NIC_TCP_MSS=$[ $NIC_MTU - 20 - 20 ]
 # UDP Maximum Segment Size (MSS) = MTU - 20 (IP Header size) - 8 (UDP Header size)
 NIC_UDP_MSS=$[ $NIC_MTU - 20 - 8 ]
 
+# Call executePingTest()
+printInfo 'Execute ping test to find the slowest site by latency'
+NIC_LATENCY="$(executePingTest)"
+
 # Call tuneNetwork()
 tuneNetwork
 
@@ -201,43 +239,42 @@ tuneNetwork
 # Configure VM Dirty Ratio / VM Dirty Background Ratio / VM VFS Cache Pressure
 case $RAM_GB in
 [1-2]*)
-  VM_DIRTY_RATIO=8
-  VM_DIRTY_BG_RATIO=4
-  VM_VFS_CACHE_PRESSURE=150
-  ;;
+	VM_DIRTY_RATIO=8
+	VM_DIRTY_BG_RATIO=4
+	VM_VFS_CACHE_PRESSURE=150
+	;;
 [3-4]*)
-  VM_DIRTY_RATIO=6
-  VM_DIRTY_BG_RATIO=3
-  VM_VFS_CACHE_PRESSURE=125
-  ;;
+	VM_DIRTY_RATIO=6
+	VM_DIRTY_BG_RATIO=3
+	VM_VFS_CACHE_PRESSURE=125
+	;;
 [5-6]*)
-  VM_DIRTY_RATIO=5
-  VM_DIRTY_BG_RATIO=3
-  VM_VFS_CACHE_PRESSURE=100
-  ;;
+	VM_DIRTY_RATIO=5
+	VM_DIRTY_BG_RATIO=3
+	VM_VFS_CACHE_PRESSURE=100
+	;;
 [7-8]*)
-  VM_DIRTY_RATIO=4
-  VM_DIRTY_BG_RATIO=2
-  VM_VFS_CACHE_PRESSURE=90
-  ;;
+	VM_DIRTY_RATIO=4
+	VM_DIRTY_BG_RATIO=2
+	VM_VFS_CACHE_PRESSURE=90
+	;;
 [9-12]*)
-  VM_DIRTY_RATIO=3
-  VM_DIRTY_BG_RATIO=2
-  VM_VFS_CACHE_PRESSURE=80
-  ;;
+	VM_DIRTY_RATIO=3
+	VM_DIRTY_BG_RATIO=2
+	VM_VFS_CACHE_PRESSURE=80
+	;;
 *)
-  VM_DIRTY_RATIO=2
-  VM_DIRTY_BG_RATIO=1
-  VM_VFS_CACHE_PRESSURE=70
-  ;;
+	VM_DIRTY_RATIO=2
+	VM_DIRTY_BG_RATIO=1
+	VM_VFS_CACHE_PRESSURE=70
+	;;
 esac
 
 # Configure VM Minimum Free Memory (1% of physical RAM)
 VM_MIN_FREE_KB=$[ $RAM_TOTAL / 100 ]
 
-
 ## Template
-cat << EOF
+cat << EOF > "$SCRIPT_DIR"/sysctl.conf
 #
 # sysctl.conf - DevOpsBroker Linux kernel tuning configuration file
 #
@@ -303,11 +340,11 @@ net.core.optmem_max = $UNSCALED_TCP_WIN
 net.ipv6.conf.all.disable_ipv6 = 0
 net.ipv6.conf.default.disable_ipv6 = 0
 
-# Do not accept IPv6 Router Advertisements
-net.ipv6.conf.all.accept_ra = 0
-net.ipv6.conf.default.accept_ra = 0
-net.ipv6.conf.all.autoconf = 0
-net.ipv6.conf.default.autoconf = 0
+# Accept IPv6 Router Advertisements
+net.ipv6.conf.all.accept_ra = 1
+net.ipv6.conf.all.autoconf = 1
+net.ipv6.conf.default.accept_ra = 1
+net.ipv6.conf.default.autoconf = 1
 
 # Do not accept source routed packets
 net.ipv4.conf.all.accept_source_route = 0

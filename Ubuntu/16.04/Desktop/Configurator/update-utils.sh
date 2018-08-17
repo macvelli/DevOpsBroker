@@ -330,6 +330,7 @@ fi
 installTemplate 'bash-script.tpl'
 installTemplate 'bash-template.tpl'
 installTemplate 'header-file-c.tpl'
+installTemplate 'linux-conf.tpl'
 installTemplate 'makefile.tpl'
 installTemplate 'source-file-c.tpl'
 
