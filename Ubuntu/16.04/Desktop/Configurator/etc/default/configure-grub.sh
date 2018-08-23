@@ -110,7 +110,7 @@ echo ${reset}
 #
 # GRUB Configuration
 #
-if ! $EXEC_GREP -Fq 'zswap' /etc/default/grub; then
+if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/default/grub; then
   # BEGIN GRUB Configuration
 
   printBanner 'Installing GRUB configuration'
@@ -139,7 +139,7 @@ echo '
 lz4
 lz4_compress
 
-# Enable z3fold Pool for zswap
+# Enable z3fold Pool for zswapzswap
 z3fold
 ' >> /etc/initramfs-tools/modules
 
@@ -153,7 +153,7 @@ else
 
   currentMaxPoolPct=$($EXEC_SED -n 's/.* zswap.max_pool_percent=([0-9]*) .*/\1/p' /etc/default/grub)
 
-  if [ $currentMaxPoolPct -ne $zswapMaxPoolPct ]; then
+  if [ $currentMaxPoolPct -ne $zswapMaxPoolPct ] || [ "$grubTpl" -nt /etc/default/grub ]; then
 
     printBanner 'Updating GRUB configuration'
 

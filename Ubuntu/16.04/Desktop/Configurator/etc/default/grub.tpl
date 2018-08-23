@@ -56,6 +56,9 @@ fi
 
 ################################## Variables ##################################
 
+## Configuration
+ONLINE_CPUS=$($EXEC_CAT /sys/devices/system/cpu/online)
+
 ## Options
 zswapMaxPoolPct="$1"
 
@@ -80,13 +83,13 @@ if [[ ! "$zswapMaxPoolPct" =~ ^[0-9]+$ ]] || \
   exit 1
 fi
 
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Template variables
 isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
 efiReboot=$([ "$isEfiBoot" = 'true' ] && echo -n 'reboot=efi' || echo -n '')
-defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct nmi_watchdog=0 scsi_mod.use_blk_mq=1"
+defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct"
+defaultCmdLine="$defaultCmdLine nmi_watchdog=0 nohz=on rcu_nocbs=$ONLINE_CPUS rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
 
 if [ "$isEfiBoot" = 'true' ]; then
   defaultCmdLine="acpi=force $defaultCmdLine"
