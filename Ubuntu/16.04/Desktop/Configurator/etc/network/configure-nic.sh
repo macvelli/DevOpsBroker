@@ -52,21 +52,21 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
@@ -77,10 +77,9 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	exit 1
 fi
 
 # Set tune-nic.tpl location and make it executable
@@ -96,31 +95,39 @@ echoOnExit=false
 ## Options
 NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Display error if network interface parameter is invalid
-if [ ! -d /proc/sys/net/ipv4/conf/$NIC ]; then
-  printError "$SCRIPT_EXEC" "Cannot access '$NIC': No such network interface"
-  echo
-  printUsage "$SCRIPT_EXEC NIC"
-
-  exit 1
-fi
-
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-  clear
+	clear
 fi
 
 bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Network Interface Configurator'
 
 echo ${bold} ${wisteria}
 echo '╔══════════════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"					'║'
+echo "║ ${white}$bannerMsg${wisteria}"                                  '║'
 echo '╚══════════════════════════════════════════════════════════════════╝'
 echo ${reset}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display error if network interface parameter is invalid
+if [ ! -d /proc/sys/net/ipv4/conf/$NIC ]; then
+	printError "$SCRIPT_EXEC" "Cannot access '$NIC': No such network interface"
+	echo
+	printUsage "$SCRIPT_EXEC NIC"
+
+	exit 1
+fi
+
+# Exit if default interface is a virtual network device (i.e. bridge, tap, etc)
+if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
+	printInfo "Default network interface '$NIC' is virtual"
+	printInfo 'Exiting'
+
+	exit 0
+fi
 
 #
 # NetworkManager Configuration
@@ -129,39 +136,38 @@ echo ${reset}
 IFS=$'\n'; uuidInterfaceList=( $($EXEC_NMCLI -t --fields UUID connection show) ); unset IFS;
 
 for uuidInterface in "${uuidInterfaceList[@]}"; do
-  # Process UUID interfaces
-  IFS=$'\n'; connectionInfoList=( $($EXEC_NMCLI connection show uuid $uuidInterface) ); unset IFS;
+	# Process UUID interfaces
+	IFS=$'\n'; connectionInfoList=( $($EXEC_NMCLI connection show uuid $uuidInterface) ); unset IFS;
 
-  for connectionInfo in "${connectionInfoList[@]}"; do
+	for connectionInfo in "${connectionInfoList[@]}"; do
 
-    if [[ "$connectionInfo" == connection.interface-name:* ]]; then
-      splitString=( $connectionInfo )
-      interfaceName=${splitString[1]}
-    elif [[ "$connectionInfo" == ipv4.may-fail:* ]]; then
-      splitString=( $connectionInfo )
-      ipv4MayFail=${splitString[1]}
-    elif [[ "$connectionInfo" == ipv6.may-fail:* ]]; then
-      splitString=( $connectionInfo )
-      ipv6MayFail=${splitString[1]}
-    fi
-  done
+		if [[ "$connectionInfo" == connection.interface-name:* ]]; then
+			splitString=( $connectionInfo )
+			interfaceName=${splitString[1]}
+		elif [[ "$connectionInfo" == ipv4.may-fail:* ]]; then
+			splitString=( $connectionInfo )
+			ipv4MayFail=${splitString[1]}
+		elif [[ "$connectionInfo" == ipv6.may-fail:* ]]; then
+			splitString=( $connectionInfo )
+			ipv6MayFail=${splitString[1]}
+		fi
+	done
 
-  if [ "$ipv4MayFail" == 'yes' ]; then
-    printInfo "Setting 'ipv4.may-fail' equal to 'no' on $interfaceName"
+	if [ "$ipv4MayFail" == 'yes' ]; then
+		printInfo "Setting 'ipv4.may-fail' equal to 'no' on $interfaceName"
 
-    $EXEC_NMCLI connection modify uuid $uuidInterface ipv4.may-fail no
+		$EXEC_NMCLI connection modify uuid $uuidInterface ipv4.may-fail no
 
-    echoOnExit=true
-  fi
+		echoOnExit=true
+	fi
 
-  if [ "$ipv6MayFail" == 'yes' ]; then
-    printInfo "Setting 'ipv6.may-fail' equal to 'no' on $interfaceName"
+	if [ "$ipv6MayFail" == 'yes' ]; then
+		printInfo "Setting 'ipv6.may-fail' equal to 'no' on $interfaceName"
 
-    $EXEC_NMCLI connection modify uuid $uuidInterface ipv6.may-fail no
+		$EXEC_NMCLI connection modify uuid $uuidInterface ipv6.may-fail no
 
-    echoOnExit=true
-  fi
-
+		echoOnExit=true
+	fi
 done
 
 #
@@ -169,48 +175,47 @@ done
 #
 
 if [ ! -f /etc/network/if-up.d/tune-$NIC ]; then
-  # BEGIN /etc/network/if-up.d/tune-$NIC
+	# BEGIN /etc/network/if-up.d/tune-$NIC
 
-  printInfo "Installing /etc/network/if-up.d/tune-$NIC"
+	printInfo "Installing /etc/network/if-up.d/tune-$NIC"
 
-  # Execute template script
-  "$tuneNic" $NIC > "$SCRIPT_DIR"/tune-$NIC
+	# Execute template script
+	"$tuneNic" $NIC > "$SCRIPT_DIR"/tune-$NIC
 
-  # Install as root:root with rwxr-xr-x privileges
-  $EXEC_INSTALL -o root -g root -m 755 "$SCRIPT_DIR"/tune-$NIC /etc/network/if-up.d
+	# Install as root:root with rwxr-xr-x privileges
+	$EXEC_INSTALL -o root -g root -m 755 "$SCRIPT_DIR"/tune-$NIC /etc/network/if-up.d
 
-  # Clean up
-  $EXEC_RM "$SCRIPT_DIR"/tune-$NIC
+	# Clean up
+	$EXEC_RM "$SCRIPT_DIR"/tune-$NIC
 
-  printInfo "Restart $NIC interface"
-  echo
-  $EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
+	printInfo "Restart $NIC interface"
+	echo
+	$EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
 
-  echoOnExit=true
-
+	echoOnExit=true
 elif [ "$tuneNic" -nt /etc/network/if-up.d/tune-$NIC ]; then
-  printInfo "Updating /etc/network/if-up.d/tune-$NIC"
+	printInfo "Updating /etc/network/if-up.d/tune-$NIC"
 
-  # Execute template script
-  "$tuneNic" $NIC > "$SCRIPT_DIR"/tune-$NIC
+	# Execute template script
+	"$tuneNic" $NIC > "$SCRIPT_DIR"/tune-$NIC
 
-  # Install as root:root with rwxr-xr-x privileges
-  $EXEC_INSTALL -o root -g root -m 755 "$SCRIPT_DIR"/tune-$NIC /etc/network/if-up.d
+	# Install as root:root with rwxr-xr-x privileges
+	$EXEC_INSTALL -o root -g root -m 755 "$SCRIPT_DIR"/tune-$NIC /etc/network/if-up.d
 
-  # Clean up
-  $EXEC_RM "$SCRIPT_DIR"/tune-$NIC
+	# Clean up
+	$EXEC_RM "$SCRIPT_DIR"/tune-$NIC
 
-  printInfo "Restart $NIC interface"
-  echo
-  $EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
+	printInfo "Restart $NIC interface"
+	echo
+	$EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
 
-  echoOnExit=true
+	echoOnExit=true
 
-  # END /etc/network/if-up.d/tune-$NIC
+	# END /etc/network/if-up.d/tune-$NIC
 fi
 
 if [ $echoOnExit == 'true' ]; then
-  echo
+	echo
 fi
 
 exit 0
