@@ -62,9 +62,17 @@ fi
 
 ################################## Variables ##################################
 
+## Configuration
+RAM_TOTAL=$(getRamTotal)
+
+# Global Maximum Locked-in-Memory Address Space (KB)
+MEMLOCK_MAX_SOFT=$[ $RAM_TOTAL / 4 ]
+MEMLOCK_MAX_HARD=$[ $RAM_TOTAL / 2 ]
+
 # Global Maximum Number Simultaneous Open Files
-FS_FILE_MAX=$[ $(getRamTotal) / 10 ]
-USER_FILE_MAX=$[ $FS_FILE_MAX / 4 ]
+FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
+USER_FILE_MAX_SOFT=$[ $FS_FILE_MAX / 4 ]
+USER_FILE_MAX_HARD=$[ $FS_FILE_MAX / 2 ]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -95,16 +103,20 @@ cat << EOF
 # -----------------------------------------------------------------------------
 #
 
+# <domain>      <type>  <item>          <value>
+
 # Sets the core file size limit to unlimited for all users (except root)
-* soft core unlimited
-* hard core unlimited
+*               soft    core            unlimited
+*               hard    core            unlimited
+
+# Set maximum locked-in-memory address space (KB) for all users (except root)
+*               soft    memlock         $MEMLOCK_MAX_SOFT
+*               hard    memlock         $MEMLOCK_MAX_HARD
 
 # Set maximum number of open files for all users
-* soft nofile $USER_FILE_MAX
-* hard nofile $USER_FILE_MAX
-
-# Set maximum number of open files for the root user
-root soft nofile $USER_FILE_MAX
-root hard nofile $USER_FILE_MAX
+*               soft    nofile          $USER_FILE_MAX_SOFT
+*               hard    nofile          $USER_FILE_MAX_HARD
+root            soft    nofile          $USER_FILE_MAX_HARD
+root            hard    nofile          $USER_FILE_MAX_HARD
 
 EOF
