@@ -193,7 +193,7 @@ RAM_TOTAL=$(getRamTotal)
 RAM_GB=$[ ($RAM_TOTAL + 1048575) / 1048576 ]
 
 # Memory Page Size
-PAGESIZE=$(getconf PAGE_SIZE)
+PAGESIZE=$(/usr/bin/getconf PAGE_SIZE)
 
 # --------------------------- Filesystem Information --------------------------
 
@@ -205,6 +205,7 @@ FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
 # Default network interface
 NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
 
+# Exit if default interface is a virtual network device (i.e. bridge, tap, etc)
 if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
 	printInfo "Default network interface '$NIC' is virtual"
 	printInfo 'Exiting'
@@ -216,10 +217,11 @@ fi
 NIC_SPEED=$[ $($EXEC_CAT /sys/class/net/$NIC/speed) * 125 ]
 
 # Maximum Transmission Unit (MTU) of the network interface
-NIC_MTU=$(cat /sys/class/net/$NIC/mtu)
+NIC_MTU=$($EXEC_CAT /sys/class/net/$NIC/mtu)
 
-# Enable MTU Probing if using Jumbo Frames
-MTU_PROBING=$[ $NIC_MTU > 1500 ? 0 : 1 ]
+# Enable MTU Probing and PMTU Discovery if using Jumbo Frames
+MTU_PROBING=$[ $NIC_MTU > 1500 ? 1 : 0 ]
+NO_PMTU_DISC=$[ $NIC_MTU > 1500 ? 0 : 1 ]
 
 # TCP Maximum Segment Size (MSS) = MTU - 20 (IP Header size) - 20 (TCP Header size)
 NIC_TCP_MSS=$[ $NIC_MTU - 20 - 20 ]
@@ -316,6 +318,17 @@ kernel.nmi_watchdog = 0
 # Disable Magic SysRq Key
 kernel.sysrq = 0
 
+# Limit perf cpu time to 5%
+kernel.perf_cpu_time_max_percent = 5
+
+# Kernel Task Scheduler Optimizations
+kernel.sched_child_runs_first = 1
+kernel.sched_latency_ns = 6000000
+kernel.sched_min_granularity_ns = 4000000
+kernel.sched_schedstats = 0
+kernel.sched_tunable_scaling = 0
+kernel.sched_wakeup_granularity_ns = 2500000
+
 #
 # Filesystem Kernel Tuning Configuration
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -386,11 +399,14 @@ net.ipv6.conf.all.forwarding = 0
 net.ipv4.conf.default.forwarding = 0
 net.ipv6.conf.default.forwarding = 0
 
-# Enable Path MTU Discovery
-net.ipv4.ip_no_pmtu_disc = $MTU_PROBING
+# Enable Path MTU Discovery if using Jumbo Frames
+net.ipv4.ip_no_pmtu_disc = $NO_PMTU_DISC
 
 # Increase the total port range for both TCP and UDP connections
 net.ipv4.ip_local_port_range = 1500 65001
+
+# Divide socket receive buffer space evenly between TCP window and application
+net.ipv4.tcp_adv_win_scale = 1
 
 # Use TCP-LP Congestion Control Algorithm
 net.ipv4.tcp_congestion_control = lp
@@ -404,8 +420,14 @@ net.ipv4.tcp_fastopen = 1
 # Optimize TCP FIN Timeout
 net.ipv4.tcp_fin_timeout = 30
 
+# Disable F-RTO enhanced recovery algorithm (no wireless network)
+net.ipv4.tcp_frto = 0
+
 # Optimize TCP Small Queue Limit Per TCP Socket
 net.ipv4.tcp_limit_output_bytes = $TCP_LIMIT_OUTPUT_BYTES
+
+# Enable TCP Low Latency
+net.ipv4.tcp_low_latency = 1
 
 # Enable TCP Receive Buffer Auto-Tuning
 net.ipv4.tcp_moderate_rcvbuf = 1
@@ -422,6 +444,7 @@ net.ipv4.tcp_rfc1337 = 1
 # Enable TCP Select Acknowledgments
 net.ipv4.tcp_sack = 1
 net.ipv4.tcp_dsack = 1
+net.ipv4.tcp_fack = 1
 
 # Disable TCP Slow Start After Idle
 net.ipv4.tcp_slow_start_after_idle = 0
@@ -429,10 +452,10 @@ net.ipv4.tcp_slow_start_after_idle = 0
 # Enable SYN Flood Attack Protection
 net.ipv4.tcp_max_syn_backlog = 1024
 net.ipv4.tcp_synack_retries = 2
-net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_syncookies = 0
 
 # Optimize TCP SYN Retries
-net.ipv4.tcp_syn_retries = 5
+net.ipv4.tcp_syn_retries = 2
 
 # Disable IPv4 TCP Timestamps
 net.ipv4.tcp_timestamps = 0
