@@ -271,6 +271,9 @@ installUserUtility hypotenuse "$SCRIPT_DIR"/usr/local/bin
 # Install kernel-config user utility
 installUserUtility kernel-config "$SCRIPT_DIR"/usr/local/bin
 
+# Install lwp user utility
+installUserUtility lwp "$SCRIPT_DIR"/usr/local/bin
+
 # Install macaddr user utility
 installUserUtility macaddr "$SCRIPT_DIR"/usr/local/bin
 
