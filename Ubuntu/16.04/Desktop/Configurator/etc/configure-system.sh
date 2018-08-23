@@ -28,6 +28,9 @@
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
+# o /etc/devops/ansi.conf
+# o /etc/devops/exec.conf
+# o /etc/devops/functions.conf
 # o /etc/modprobe.d/kvm-amd.conf
 # o /etc/skel/.bash_aliases
 # o /etc/skel/.bash_logout
@@ -149,6 +152,15 @@ installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
 installConfig 'profile' "$SCRIPT_DIR" /etc
+
+# Install /etc/devops/ansi.conf
+installConfig 'ansi.conf' "$SCRIPT_DIR"/devops /etc/devops
+
+# Install /etc/devops/exec.conf
+installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
+
+# Install /etc/devops/functions.conf
+installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
 
 # Install /etc/modprobe.d/kvm-amd.conf
 installConfig 'kvm-amd.conf' "$SCRIPT_DIR"/modprobe.d /etc/modprobe.d

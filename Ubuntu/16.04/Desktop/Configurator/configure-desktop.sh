@@ -148,9 +148,6 @@ EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 # Default network interface
 DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
 
-# Number of CPUs
-NUM_CPUS=$($EXEC_GREP -c ^processor /proc/cpuinfo)
-
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -381,24 +378,8 @@ installPackage '/usr/sbin/hwinfo' 'hwinfo'
 # Install inkscape
 installSnap '/snap/inkscape' 'inkscape'
 
-#
-# irqbalance
-#   o Install and activate for multi-core/multi-cpu systems
-#
-if [ $NUM_CPUS -gt 1 ]; then
-  # Install irqbalance
-  installPackage '/usr/sbin/irqbalance' 'irqbalance'
-
-  # Start irqbalance service
-  if ! $EXEC_SYSTEMCTL status irqbalance | $EXEC_GREP -Fq 'active (running)'; then
-    printInfo 'Start irqbalance service'
-
-    $EXEC_SYSTEMCTL start irqbalance
-
-    echo
-  fi
-
-fi
+# Uninstall irqbalance
+uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
 
 # Install libaio-dev
 installPackage '/usr/include/libaio.h' 'libaio-dev'
@@ -578,19 +559,6 @@ installPackage '/usr/bin/yad' 'yad'
 
 # Configure /etc/default/grub with configure-grub.sh script
 "$SCRIPT_DIR"/etc/default/configure-grub.sh
-
-#
-# DevOpsBroker Configration Files
-#
-
-# Install /etc/devops/ansi.conf
-installConfig 'ansi.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
-
-# Install /etc/devops/exec.conf
-installConfig 'exec.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
-
-# Install /etc/devops/functions.conf
-installConfig 'functions.conf' "$SCRIPT_DIR"/etc/devops /etc/devops
 
 #
 # Network Interface Card Configuration
