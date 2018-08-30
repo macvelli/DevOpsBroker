@@ -209,6 +209,9 @@ fi
 # Install addUserToGroup system administration utility
 installSystemUtility addUserToGroup "$SCRIPT_DIR"/usr/local/sbin
 
+# Install dirchmod system administration utility
+installSystemUtility dirchmod "$SCRIPT_DIR"/usr/local/sbin
+
 # Install disableJournal system administration utility
 installSystemUtility disableJournal "$SCRIPT_DIR"/usr/local/sbin
 
@@ -301,9 +304,6 @@ installUserUtility scriptinfo "$SCRIPT_DIR"/C
 # Install showFileFormat user utility
 installUserUtility showFileFormat "$SCRIPT_DIR"/usr/local/bin
 
-# Install sig user utility
-installUserUtility sig "$SCRIPT_DIR"/usr/local/bin
-
 # Install ssh-key user utility
 installUserUtility ssh-key "$SCRIPT_DIR"/usr/local/bin
 
@@ -315,6 +315,9 @@ installUserUtility uuid "$SCRIPT_DIR"/usr/local/bin
 
 # Install venture user utility
 installUserUtility venture "$SCRIPT_DIR"/usr/local/bin
+
+# Install verify user utility
+installUserUtility verify "$SCRIPT_DIR"/usr/local/bin
 
 # Install verifyip user utility
 installUserUtility verifyip "$SCRIPT_DIR"/C

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# kernel-config - DevOpsBroker script to display the current Linux kernel configuration
+# dirchmod - DevOpsBroker utility for changing only directory mode bits
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -19,7 +19,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-30
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-33
 #
 # -----------------------------------------------------------------------------
 #
@@ -47,24 +47,46 @@ fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
+# Display error if not running as root
+if [ "$USER" != 'root' ]; then
+	printError 'dirchmod' 'Permission denied (you must be root)'
+	exit 1
+fi
+
 ################################## Variables ##################################
 
 ## Options
-configParam="$1"
+dirMode="$1"
+dirName="$2"
 
-## Variables
-configFile="/boot/config-$(/bin/uname -r)"
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if [ -z "$dirMode" ]; then
+	printUsage 'dirchmod MODE DIR'
+	exit 1
+fi
+
+if [[ ! "$dirMode" =~ ^(4|2|1|0)?[0-7]{3}$ ]]; then
+	printError 'dirchmod' "Invalid mode '$dirMode'"
+	echo
+	printUsage 'dirchmod MODE DIR'
+
+	exit 1
+fi
+
+errorMessage=$(isValidDirectory 'dirchmod' "$dirName")
+
+# Display error if directory parameter is missing or invalid
+if [ "$errorMessage" != '0' ]; then
+	echo "$errorMessage"
+	echo
+	printUsage "dirchmod $dirMode DIR"
+
+	exit 1
+fi
 
 ################################### Actions ###################################
 
-if [ -f "$configFile" ]; then
-	if [ -z "$configParam" ]; then
-		$EXEC_CAT "$configFile"
-	else
-		$EXEC_GREP "$configParam" "$configFile"
-	fi
-else
-  printError 'kernel-config' "Cannot find '$configFile' kernel configuration file"
-fi
+$EXEC_FIND $dirName/ -type d -execdir $EXEC_CHMOD $dirMode {} +
 
 exit 0

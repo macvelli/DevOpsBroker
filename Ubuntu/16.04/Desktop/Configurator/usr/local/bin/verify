@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# sig - DevOpsBroker utility for creating and verifying PGP signatures of files
+# verify - DevOpsBroker utility for creating and verifying file hashes and signatures
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -36,21 +36,21 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
@@ -58,130 +58,144 @@ ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	showHelp
-# Description:	Displays help message to the user
+# Function:     showMissingFilename
+# Description:  Displays usage information when the filename is missing
 # -----------------------------------------------------------------------------
-function showHelp() {
-  # BEGIN showHelp function
+function showMissingFilename() {
+	# BEGIN showMissingFilename function
 
-  if [ -z "$command" ]; then
-    printUsage "sig sign ${gold}[-a] ${yellow}FILE"
-    printUsage 'false' 'sig verify PGP_SIG FILE'
+	if [ "$command" == 'sha256' ]; then
+		printUsage "verify sha256 FILE ${gold}[SHA256_HASH]"
+	elif [ "$command" == 'sign' ]; then
+		printUsage "verify sign ${gold}[OPTION] ${yellow}FILE"
+		echo ${bold}
+		echo "Valid Options:${romantic}"
+		echo -e '  -a\t'       'Create an ASCII-format detached signature file'
+		echo ${reset}
+	elif [ "$command" == 'pgp' ]; then
+		printUsage 'verify pgp FILE SIG_FILE'
+	fi
 
-    echo ${bold}
-    echo "Valid Commands:${romantic}"
-    echo '  sign  	Create a detached signature of the specified FILE'
-    echo '  verify	Verify the specified FILE was signed using the detached signature PGP_SIG'
-    echo ${reset}
-
-  elif [ $command == 'sign' ]; then
-    printUsage "sig sign ${gold}[-a] ${yellow}FILE"
-
-    echo ${bold}
-    echo "Valid Options:${romantic}"
-    echo '  -a	Create an ASCII-format detached signature file'
-    echo ${reset}
-
-  elif [ $command == 'verify' ]; then
-    if [ -z "$sigFile" ]; then
-      printUsage 'sig verify PGP_SIG FILE'
-    else
-      printUsage "sig verify $sigFile FILE"
-    fi
-
-    echo
-  fi
-
-  # END showHelp function
+	# END showMissingFilename function
 }
 
 ################################## Variables ##################################
 
-validCommands=("sign" "verify")
+## Bash exec variables
+EXEC_SHA256SUM=/usr/bin/sha256sum
 
-# Options
+## Options
 command="$1"
-fileName=''
-asciiFormat='false'
+
+## Variables
+validCommands=('pgp' 'sha256' 'sign')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-  showHelp
-
-  exit 1
+	printUsage 'verify { pgp | sha256 | sign }'
+	exit 1
 fi
 
 # Display error if invalid command
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-  printError 'sig' "Invalid command: '$command'"
-  command=''
-  echo
+	printError 'verify' "Invalid command: $command"
+	echo
+	printUsage 'verify { pgp | sha256 | sign }'
 
-  showHelp
-
-  exit 1
+	exit 1
 fi
 
-if [ $command == 'sign' ]; then
+if [ "$command" == 'sha256' ]; then
+	# File is the second parameter
+	fileName="$2"
 
-  if [ "$2" == '-a' ]; then
-    asciiFormat=true
+	# SHA256 Hash is the third parameter
+	sha256Hash="$3"
 
-    # File is the third parameter
-    fileName="$3"
-  else
-    # File is the second parameter
-    fileName="$2"
-  fi
+elif [ "$command" == 'sign' ]; then
 
-elif [ $command == 'verify' ]; then
+	if [ "$2" == '-a' ]; then
+		asciiFormat='true'
 
-  # Signature file is the second parameter
-  sigFile="$2"
+		# File is the third parameter
+		fileName="$3"
+	else
+		asciiFormat='false'
 
-  # File is the third parameter
-  fileName="$3"
+		# File is the second parameter
+		fileName="$2"
+	fi
 
-  errorMessage=$(isValidFile 'sig' "$sigFile")
+elif [ "$command" == 'pgp' ]; then
+	# File is the second parameter
+	fileName="$2"
 
-  # Display error if signature file parameter is missing or invalid
-  if [ "$errorMessage" != '0' ]; then
-    echo "$errorMessage"
-    echo
-    showHelp
+	# Signature file is the third parameter
+	sigFile="$3"
 
-    exit 1
-  fi
+	errorMessage=$(isValidFile 'verify' "$sigFile")
 
+	# Display error if signature file parameter is missing or invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage 'verify pgp FILE SIG_FILE'
+
+		exit 1
+	fi
 fi
 
-errorMessage=$(isValidFile 'sig' "$fileName")
+errorMessage=$(isValidFile 'verify' "$fileName")
 
 # Display error if file parameter is missing or invalid
 if [ "$errorMessage" != '0' ]; then
-  echo "$errorMessage"
-  echo
-  showHelp
+	echo "$errorMessage"
+	echo
+	showMissingFilename
 
-  exit 1
+	exit 1
 fi
 
 ################################### Actions ###################################
 
-if [ "$command" == 'sign' ]; then
+if [ "$command" == 'pgp' ]; then
 
-  if [ "$asciiFormat" == 'false' ]; then
-    $EXEC_GPG --detach-sig "$fileName"
-  else
-    $EXEC_GPG --detach-sig -a "$fileName"
-  fi
+	$EXEC_GPG --verify "$sigFile" "$fileName"
 
-elif [ "$command" == 'verify' ]; then
+elif [ "$command" == 'sha256' ]; then
 
-  $EXEC_GPG --verify "$sigFile" "$fileName"
+	if [ -z "$sha256Hash" ]; then
 
+		# Compute SHA256 Hash for the given filename
+		$EXEC_SHA256SUM "$fileName"
+
+	else
+		if [ -f "$sha256Hash" ]; then
+
+			if ! $EXEC_GREP -Fq "$fileName" "$sha256Hash"; then
+				printError 'verify' "Cannot verify SHA256 hash for '$fileName': No such entry in '$sha256Hash'"
+				echo
+				exit 1
+			fi
+
+			$EXEC_SHA256SUM --check "$sha256Hash"
+
+		else
+			echo "$sha256Hash"  "$fileName" > verify-sha256sum.txt
+			$EXEC_SHA256SUM --check verify-sha256sum.txt
+			$EXEC_RM verify-sha256sum.txt
+		fi
+	fi
+
+elif [ "$command" == 'sign' ]; then
+
+	if [ "$asciiFormat" == 'false' ]; then
+		$EXEC_GPG --detach-sig "$fileName"
+	else
+		$EXEC_GPG --detach-sig -a "$fileName"
+	fi
 fi
 
 exit 0

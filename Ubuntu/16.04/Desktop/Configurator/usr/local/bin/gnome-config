@@ -30,66 +30,306 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
 
-## Script information
-SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
-
 # Display error if running as root
-if [ "$EUID" -eq 0 ]; then
-  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you cannot be root)${reset}"
-
-  exit 1
+if [ "$USER" == 'root' ]; then
+	printError 'gnome-config' 'Permission denied (you cannot be root)'
+	exit 1
 fi
 
 ################################## Variables ##################################
 
 ## Bash exec variables
 EXEC_DCONF=/usr/bin/dconf
+EXEC_GSETTINGS=/usr/bin/gsettings
 
-################################## Questions ##################################
+## Options
+command=${1:-'unity'}
+
+## Variables
+echoOnExit=false
+validCommands=('compiz' 'gnome' 'nautilus' 'unity')
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display error if invalid command
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+	printError 'gnome-config' "Invalid command: $command"
+	echo
+	printUsage 'gnome-config { compiz | gnome | nautilus | unity }'
+
+	exit 1
+fi
+
+################################### Actions ###################################
 
 # Clear screen and print banner only if called from command line
 if [ $SHLVL -eq 2 ]; then
-  clear
+	clear
 
-  bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop GSettings Configurator'
+	bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop GSettings Configurator'
 
-  echo ${bold} ${wisteria}
-  echo '╔══════════════════════════════════════════════════════════╗'
-  echo "║ ${white}$bannerMsg${wisteria}"			  '║'
-  echo '╚══════════════════════════════════════════════════════════╝'
-  echo ${reset}
-
+	echo ${bold} ${wisteria}
+	echo '╔══════════════════════════════════════════════════════════╗'
+	echo "║ ${white}$bannerMsg${wisteria}"                          '║'
+	echo '╚══════════════════════════════════════════════════════════╝'
+	echo ${reset}
 fi
 
-#
-# Show application menus in window title bar
-#   o System Settings -> Appearance -> Behavior
-#
-echo 'Want the menus in the title bar for a window?'
-select titleBarMenus in 'Yes' 'No'; do
-  break;
-done
 
-echo
+if [ "$command" == 'compiz' ]; then
+
+	#
+	# Enable workspaces
+	#   o System Settings -> Appearance -> Behavior
+	#
+	echo 'Want to enable workspaces?'
+	select workspaces in 'Yes' 'No'; do
+		if [ "$workspaces" == 'Yes' ]; then
+			printInfo 'Enabling workspaces'
+
+			# Enable workspaces
+			$EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 2
+			$EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 2
+		else
+			printInfo 'Disabling workspaces'
+
+			# Disable workspaces
+			$EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 1
+			$EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 1
+		fi
+	done
+
+	echo
+
+	# Set 'Detect Refresh Rate' to 'false'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/composite/detect-refresh-rate) != 'false' ]; then
+		printInfo "Setting 'Detect Refresh Rate' to 'false'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/composite/detect-refresh-rate false
+	fi
+
+	# Set 'Default Moving Window Mode' to 'Rectangle'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/mode) != '2' ]; then
+		printInfo "Setting 'Default Moving Window Mode' to 'Rectangle'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/move/mode 2
+	fi
+
+	# Set 'Use a double-border when moving window' to 'false'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/increase-border-contrast) != 'false' ]; then
+		printInfo "Setting 'Use a double-border when moving window' to 'false'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/move/increase-border-contrast false
+	fi
+
+	# Set 'Use desktop average colors when moving window' to 'true'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/use-desktop-average-color) != 'true' ]; then
+		printInfo "Setting 'Use desktop average colors when moving window' to 'true'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/move/use-desktop-average-color true
+	fi
+
+	# Set 'Sync to VBlank' to 'false'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/opengl/sync-to-vblank) != 'false' ]; then
+		printInfo "Setting 'Sync to VBlank' to 'false'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/opengl/sync-to-vblank false
+	fi
+
+	# Set 'Default Resize Window Mode' to 'Rectangle'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/mode) != '2' ]; then
+		printInfo "Setting 'Default Resize Window Mode' to 'Rectangle'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/resize/mode 2
+	fi
+
+	# Set 'Use a double-border when resizing window' to 'false'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/increase-border-contrast) != 'false' ]; then
+		printInfo "Setting 'Use a double-border when resizing window' to 'false'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/resize/increase-border-contrast false
+	fi
+
+	# Set 'Use desktop average colors when resizing window' to 'true'
+	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/use-desktop-average-color) != 'true' ]; then
+		printInfo "Setting 'Use desktop average colors when resizing window' to 'true'"
+
+		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/resize/use-desktop-average-color true
+	fi
+
+elif [ "$command" == 'gnome' ]; then
+
+	printBanner 'Gnome Terminal Settings'
+
+	profilePath='/org/gnome/terminal/legacy/profiles:/'
+	profilePath="${profilePath}$($EXEC_DCONF list $profilePath)"
+
+	# Set 'Default Columns Size' to '160'
+	if [ $($EXEC_DCONF read "${profilePath}default-size-columns") != '160' ]; then
+		printInfo "Setting 'Default Columns Size' to '160'"
+
+		$EXEC_DCONF write "${profilePath}default-size-columns" 160
+		echoOnExit=true
+	fi
+
+	# Set 'Default Rows Size' to '40'
+	if [ $($EXEC_DCONF read "${profilePath}default-size-rows") != '40' ]; then
+		printInfo "Setting 'Default Rows Size' to '40'"
+
+		$EXEC_DCONF write "${profilePath}default-size-rows" 40
+		echoOnExit=true
+	fi
+
+	# Set 'Scrollback Lines' to '16384'
+	if [ $($EXEC_DCONF read "${profilePath}scrollback-lines") != '16384' ]; then
+		printInfo "Setting 'Scrollback Lines' to '16384'"
+
+		$EXEC_DCONF write "${profilePath}scrollback-lines" 16384
+		echoOnExit=true
+	fi
+
+	# Set 'Use Theme Colors' to 'true'
+	if [ $($EXEC_DCONF read "${profilePath}use-theme-colors") != 'true' ]; then
+		printInfo "Setting 'Use Theme Colors' to 'true'"
+
+		$EXEC_DCONF write "${profilePath}use-theme-colors" true
+		echoOnExit=true
+	fi
+
+	# Set 'Use Theme Transparency' to 'true'
+	if [ $($EXEC_DCONF read "${profilePath}use-theme-transparency") != 'true' ]; then
+		printInfo "Setting 'Use Theme Transparency' to 'true'"
+
+		$EXEC_DCONF write "${profilePath}use-theme-transparency" true
+		echoOnExit=true
+	fi
+
+	# Set 'Profile Name' to 'Default'
+	if [ $($EXEC_DCONF read "${profilePath}visible-name") != 'Default' ]; then
+		printInfo "Setting 'Profile Name' to 'Default'"
+
+		$EXEC_DCONF write "${profilePath}visible-name" \"Default\"
+		echoOnExit=true
+	fi
+
+elif [ "$command" == 'nautilus' ]; then
+
+	# Set 'Show Hidden Files' to 'false' in Nautilus
+	if [ $($EXEC_DCONF read /org/gtk/settings/file-chooser/show-hidden) == 'true' ]; then
+		printInfo "Setting 'Show Hidden Files' Nautilus default to 'false'"
+
+		$EXEC_GSETTINGS set org.gtk.Settings.FileChooser show-hidden false
+
+		echo
+	fi
+
+elif [ "$command" == 'unity' ]; then
+
+	#
+	# Show application menus in window title bar
+	#   o System Settings -> Appearance -> Behavior
+	#
+	echo 'Want the menus in the title bar for a window?'
+	select titleBarMenus in 'Yes' 'No'; do
+		if [ ! -z "$titleBarMenus" ]; then
+			echo
+			if [ "$titleBarMenus" == 'Yes' ]; then
+				printInfo 'Enabling title bar menus'
+
+				# Enable integrated menus
+				$EXEC_GSETTINGS set com.canonical.Unity integrated-menus true
+			else
+				printInfo 'Disabling title bar menus'
+
+				# Disable integrated menus
+				$EXEC_GSETTINGS set com.canonical.Unity integrated-menus false
+			fi
+
+			echo
+			break;
+		fi
+	done
+
+	#
+	# Screen Inactivity Period
+	#   o System Settings -> Brightness & Lock
+	#
+	echo 'How many minutes of inactivity before turning screen off?'
+	select inactivePeriod in '1' '3' '5' '10' '15' '20' '30' '45' '60' 'Never'; do
+		if [ ! -z "$inactivePeriod" ]; then
+			echo
+			if [ "$inactivePeriod" == 'Never' ]; then
+				printInfo "Setting 'Screen Inactive Period' to 'Never'"
+
+				$EXEC_GSETTINGS set org.gnome.desktop.session idle-delay 0
+			else
+				printInfo "Setting 'Screen Inactive Period' to '$inactivePeriod minutes'"
+
+				$EXEC_GSETTINGS set org.gnome.desktop.session idle-delay $[ 60 * $inactivePeriod ]
+
+				echo
+				echo 'Want to enable locking the screen when it turns off?'
+				select lockScreen in 'Yes' 'No'; do
+					if [ ! -z "$lockScreen" ]; then
+						echo
+						if [ "$lockScreen" == 'Yes' ]; then
+							printInfo 'Enabling screen locking'
+
+							$EXEC_GSETTINGS set org.gnome.desktop.screensaver lock-enabled true
+						elif [ "$lockScreen" == 'No' ]; then
+							printInfo 'Disabling screen locking'
+
+							$EXEC_GSETTINGS set org.gnome.desktop.screensaver lock-enabled false
+						fi
+
+						break;
+					fi
+				done
+			fi
+
+			echo
+			break;
+		fi
+	done
+
+	# Set Xft-dpi for unity-greeter
+	if [ $($EXEC_GSETTINGS get com.canonical.unity-greeter xft-dpi) == '96.0' ]; then
+		# Question
+		echo -n "What DPI do you want to use for the Unity greeter (96.0)? "
+		read dpi
+		echo
+
+		if [ ! -z "$dpi" ] && [ "$dpi" != '96.0' ]; then
+			$EXEC_GSETTINGS set com.canonical.unity-greeter xft-dpi $dpi
+		fi
+	fi
+
+	# Turn off Remote Content Search
+	if [ $($EXEC_GSETTINGS get com.canonical.Unity.Lenses remote-content-search) != "'none'" ]; then
+		printInfo 'Turning off Remote Content Search'
+
+		$EXEC_GSETTINGS set com.canonical.Unity.Lenses remote-content-search 'none'
+	fi
+fi
 
 #
 # Window Controls Location
@@ -101,61 +341,12 @@ echo
 #
 #echo
 
-#
-# Enable workspaces
-#   o System Settings -> Appearance -> Behavior
-#
-echo 'Want to enable workspaces?'
-select workspaces in 'Yes' 'No'; do
-  break;
-done
-
-echo
-
-#
-# Screen Inactivity Period
-#   o System Settings -> Brightness & Lock
-#
-#echo 'How long inactivity do you want before turning the screen off?'
-#select inactivePeriod in '1' '2' '3' '5' '10' '15' '20' '30' '45' '60' 'Never'; do
-#  if [ $inactivePeriod == 'Never' ]; then
-#    inactivePeriod='0'
-#  else
-#    # Screen Lock
-#    inactivePeriod=$[ $inactivePeriod * 60 ]
-#    echo
-#    echo 'Want to enable locking the screen when it turns off?'
-#    select locking in 'Yes' 'No'; do
-#      break;
-#    done
-#  fi
-#  break;
-#done
-#
-#echo
-
-################################### Actions ###################################
-
-# Title bar menus
-if [ "$titleBarMenus" == 'Yes' ]; then
-  printInfo 'Enabling title bar menus'
-
-  # Enable integrated menus
-  $EXEC_DCONF write /com/canonical/unity/integrated-menus true
-
-else
-  printInfo 'Disabling title bar menus'
-
-  # Disable integrated menus
-  $EXEC_DCONF write /com/canonical/unity/integrated-menus false
-
-fi
-
 # Window Controls Location
 #if [ "$windowControls" == 'Right' ]; then
 #  printInfo 'Placing the window controls on the right'
 #
-#  # minimize,maximize,close
+#  # minimize,maximize,close	printInfo 'Enabling workspaces'
+
 #  $EXEC_DCONF write /org/gnome/desktop/wm/preferences/button-layout "':minimize,maximize,close'"
 #
 #else
@@ -166,43 +357,8 @@ fi
 #
 #fi
 
-# Workspaces
-if [ "$workspaces" == 'Yes' ]; then
-  printInfo 'Enabling workspaces'
-
-  # Enable workspaces
-  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 2
-  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 2
-
-else
-  printInfo 'Disabling workspaces'
-
-  # Disable workspaces
-  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 1
-  $EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 1
-
+if [ "$echoOnExit" == 'true' ]; then
+	echo
 fi
-
-# Screen Inactivity Period
-#printInfo "Setting Screen Inactive Period to $inactivePeriod"
-#
-#$EXEC_DCONF write /org/gnome/desktop/session/idle-delay $inactivePeriod
-
-# Screen Lock
-#if [ "$locking" == 'Yes' ]; then
-#  printInfo 'Enabling screen locking'
-#
-#  # Enable screen locking
-#  $EXEC_DCONF write /org/gnome/desktop/screensaver/lock-enabled true
-#
-#elif [ "$locking" == 'No' ]; then
-#  printInfo 'Disabling screen locking'
-#
-#  # Disable screen locking
-#  $EXEC_DCONF write /org/gnome/desktop/screensaver/lock-enabled false
-#
-#fi
-
-echo
 
 exit 0
