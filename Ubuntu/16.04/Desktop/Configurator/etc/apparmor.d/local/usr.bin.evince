@@ -1,5 +1,5 @@
 #
-# profile - DevOpsBroker configuration file for /etc/profile
+# usr.bin.evince - DevOpsBroker AppArmor overrides for usr.bin.evince
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -17,36 +17,13 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-33
 #
-# System-wide .profile file for the Bourne shell (sh(1)) and Bourne compatible
-# shells (bash(1), ksh(1), ash(1), ...).
-#
-# When the login shell starts and reads its shell-specific configuration files,
-# bash first reads /etc/profile to get values that are defined for all users.
+# Site-specific additions and overrides for usr.bin.evince. For more details,
+# please see /etc/apparmor.d/local/README.
 # -----------------------------------------------------------------------------
 #
 
-if [ "$PS1" ]; then
-	if [ "$BASH" ] && [ "$BASH" != "/bin/sh" ]; then
-		# The file bash.bashrc already sets the default PS1
-		if [ -f /etc/bash.bashrc ]; then
-			source /etc/bash.bashrc
-		else
-			PS1='\h:\w\$ '
-		fi
-	elif [ "$(/usr/bin/id -u)" -eq 0 ]; then
-		PS1='# '
-	else
-		PS1='$ '
-	fi
-fi
-
-if [ -d /etc/profile.d ]; then
-	for script in /etc/profile.d/*.sh; do
-		if [ -r $script ]; then
-			source $script
-		fi
-	done
-	unset script
-fi
+/mnt/ramdisk/tmp/** rw,
+/cache/**           rw,
+/var/lib/snapd/desktop/applications/mimeinfo.cache r,
