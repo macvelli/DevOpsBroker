@@ -28,26 +28,25 @@
 # -----------------------------------------------------------------------------
 #
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
@@ -56,99 +55,106 @@ ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No
 SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" !=  'root' ]; then
+	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Variables ##################################
 
 ## Bash exec variables
 EXEC_DRIVERS=/usr/bin/ubuntu-drivers
-EXEC_PERL=/usr/bin/perl
 
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-  clear
+	clear
 fi
 
 bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Proprietary Drivers Installer'
 
 echo ${bold} ${wisteria}
 echo '╔═════════════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"				       '║'
+echo "║ ${white}$bannerMsg${wisteria}"                                 '║'
 echo '╚═════════════════════════════════════════════════════════════════╝'
 echo ${reset}
 
 # Exit if proprietary drivers already installed
 if [ -f /etc/devops/device-drivers.info ] && [ "$1" != '-f' ]; then
-  printInfo 'Proprietary drivers already installed'
-  echo
-  printUsage "$SCRIPT_EXEC ${gold}[-f]"
+	printInfo 'Proprietary drivers already installed'
+	echo
+	printUsage "$SCRIPT_EXEC ${gold}[-f]"
 
-  echo ${bold}
-  echo "Valid Options:${romantic}"
-  echo '  -f	Force reevaluation of proprietary drivers'
-  echo ${reset}
+	echo -n ${bold}
+	echo "Valid Options:${romantic}"
+	echo -e ${gold}'  -f\t'  ${romantic}'Force reevaluation of proprietary drivers'
+	echo ${reset}
 
-  exit 0
+	exit 0
 fi
 
 #
 # Proprietary Drivers Installation
 #
 
-printBanner 'Proprietary Drivers Installation'
-
 # Make the /etc/devops directory
-$EXEC_MKDIR --mode=0755 /etc/devops
+if [ ! -d /etc/devops ]; then
+	$EXEC_MKDIR --mode=0755 /etc/devops
+fi
 
-declare -a deviceArray
-declare -a driverArray
-declare -a installList
-
-printInfo 'Gather devices with available drivers to install'
+printInfo 'Gathering devices with available drivers to install'
 $EXEC_DRIVERS devices | $EXEC_TEE /etc/devops/device-drivers.info
 $EXEC_CHMOD 644 /etc/devops/device-drivers.info
+echo
 
-mapfile -t deviceArray < <($EXEC_CAT /etc/devops/device-drivers.info | $EXEC_PERL -n -e'/^vendor.+:.(.+)/ && print "\n$1";' -e'/^driver.+:.([a-z0-9-]+)/ && print "\t$1";')
+mapfile -t deviceArray < <($EXEC_GREP -E '^(vendor|driver)' /etc/devops/device-drivers.info)
+declare -A vendorDriverMap
+declare -a installList
 
-IFS=$'\t'
-for i in "${!deviceArray[@]}"; do
+IFS=': '
+for device in "${deviceArray[@]}"; do
+	if [[ "$device" == vendor* ]]; then
+		vendorName=( $device )
+		vendor="${vendorName[@]:1}"
+	elif [[ "$device" == driver* ]]; then
+		driverName=( $device )
+		vendorDriverList="${vendorDriverMap[$vendor]}"
 
-  # Zero index is always empty
-  if [ $i -gt 0 ]; then
-    vendorDrivers=( ${deviceArray[i]} )
-
-    if [ ${#vendorDrivers[@]} -gt 2 ]; then
-      echo "${bold}Which driver do you want to install for the device from ${vendorDrivers[0]}?${reset}"
-
-      select selectedDriver in "${vendorDrivers[@]:1}"; do
-	installList+=( "$selectedDriver" )
-
-	break;
-      done
-    else
-      installList+=( "${vendorDrivers[1]}" )
-    fi
-  fi
+		if [ -z "$vendorDriverList" ]; then
+			vendorDriverMap[$vendor]="${driverName[1]}"
+		else
+			vendorDriverMap[$vendor]="$vendorDriverList:${driverName[1]}"
+		fi
+	fi
 done
 
+for key in "${!vendorDriverMap[@]}"; do
+	vendorDriverList=( ${vendorDriverMap[$key]} )
+	vendorDriverList+=( "Skip" )
+	COLUMNS=${#vendorDriverList[@]}
+
+	echo "${bold}Which driver do you want to install for the device from '${pastelGreen}$key${white}'?${reset}"
+	select selectedDriver in "${vendorDriverList[@]}"; do
+		if [ "$selectedDriver" != 'Skip' ]; then
+			installList+=( "$selectedDriver" )
+		fi
+		break;
+	done
+done
+
+echo
+
 if [ ${#installList[@]} -eq 0 ]; then
-  printInfo 'No devices with available proprietary drivers found'
-
+	printInfo 'No proprietary drivers to install'
 else
-  echo
-  for driver in "${installList[@]}"; do
-    printBanner "Installing $driver"
-
-    $EXEC_APT -y install $driver
-
-    echo
-  done
+	for driver in "${installList[@]}"; do
+		printBanner "Installing $driver"
+		$EXEC_APT -y install $driver
+		echo
+	done
 fi
+
+echo
 
 exit 0
