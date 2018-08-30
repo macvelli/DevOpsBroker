@@ -42,81 +42,73 @@ source "$SCRIPT_DIR"/etc/devops/exec.conf
 source "$SCRIPT_DIR"/etc/devops/functions.conf
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}install.sh: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError 'install.sh' 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	createSymlink
-# Description:	Creates a symbolic link to the specified file
+# Function:     createSymlink
+# Description:  Creates a symbolic link to the specified file
 #
-# Parameter $1:	The name of the symbolic link to create
-# Parameter $2:	The target file to link to
+# Parameter $1: The name of the symbolic link to create
+# Parameter $2: The target file to link to
 # -----------------------------------------------------------------------------
 function createSymlink() {
-  # BEGIN create symbolic link
+	local symlink="$1"
+	local targetFile="$2"
 
-  local symlink="$1"
-  local targetFile="$2"
+	if [ ! -L "$symlink" ]; then
+		printInfo "Creating symbolic link $symlink"
+		$EXEC_LN -s "$targetFile" "$symlink"
 
-  if [ ! -L "$symlink" ]; then
-    printInfo "Creating symbolic link $symlink"
-    $EXEC_LN -s "$targetFile" "$symlink"
-
-    if [[ "$symlink" == /usr/local/sbin* ]]; then
-      $EXEC_CHOWN --no-dereference root:devops "$symlink"
-    elif [[ "$symlink" == /usr/local/bin* ]]; then
-      $EXEC_CHOWN --no-dereference root:users "$symlink"
-    fi
-  fi
-
-  # END create symbolic link
+		if [[ "$symlink" == /usr/local/sbin* ]]; then
+			$EXEC_CHOWN --no-dereference root:devops "$symlink"
+		elif [[ "$symlink" == /usr/local/bin* ]]; then
+			$EXEC_CHOWN --no-dereference root:users "$symlink"
+		fi
+	fi
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	installConfFile
-# Description:	Installs the specified DevOpsBroker configuration file
+# Function:     installConfFile
+# Description:  Installs the specified DevOpsBroker configuration file
 #
-# Parameter $1:	The DevOpsBroker configuration file to install
+# Parameter $1: The DevOpsBroker configuration file to install
 # -----------------------------------------------------------------------------
 function installConfFile() {
-    if [ ! -f /etc/devops/$1 ]; then
-        printInfo "Installing /etc/devops/$1"
+	if [ ! -f /etc/devops/$1 ]; then
+		printInfo "Installing /etc/devops/$1"
 
-        # Install as root:root with rw-r--r-- privileges
-        $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/etc/devops/$1 /etc/devops
-    fi
+		# Install as root:root with rw-r--r-- privileges
+		$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/etc/devops/$1 /etc/devops
+	fi
 }
-
-################################## Variables ##################################
-
-## Variables
-bindMounts=false
 
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-  clear
+	clear
 fi
 
 bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Configurator Installer'
 
 echo ${bold} ${wisteria}
 echo '╔══════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"				'║'
+echo "║ ${white}$bannerMsg${wisteria}"                          '║'
 echo '╚══════════════════════════════════════════════════════════╝'
 echo ${reset}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Build and install scriptinfo C language utility
-/usr/bin/make -s --directory="$SCRIPT_DIR"/C scriptinfo
-$EXEC_INSTALL -o root -g users -m 755 "$SCRIPT_DIR"/C/scriptinfo /usr/local/bin
+if [ ! -f /usr/local/bin/scriptinfo ]; then
+	/usr/bin/make -s --directory="$SCRIPT_DIR"/C scriptinfo
+	$EXEC_INSTALL -o root -g users -m 755 "$SCRIPT_DIR"/C/scriptinfo /usr/local/bin
+fi
 
 # Set file ownership permissions
 $EXEC_CHOWN -R $SUDO_USER:$SUDO_USER "$SCRIPT_DIR"
@@ -124,90 +116,104 @@ echo
 
 # Add devops group
 if [ -z "$($EXEC_GETENT group devops)" ]; then
-  printInfo 'Adding devops group'
-  $EXEC_ADDGROUP 'devops'
-  echo
+	printInfo 'Adding devops group'
+	$EXEC_ADDGROUP 'devops'
+	echo
 fi
 
 # Add user to devops group, if necessary
-userGroupList=$($EXEC_GROUPS $SUDO_USER)
+userGroups=$($EXEC_GROUPS $SUDO_USER)
 
-if [[ ! "$userGroupList" =~ devops ]]; then
-  printInfo "Adding $SUDO_USER to the devops group"
-  $EXEC_ADDUSER $SUDO_USER 'devops'
-  echo
+regExpr="\\bdevops\\b"
+if [[ ! "$userGroups" =~ $regExpr ]]; then
+	printInfo "Adding $SUDO_USER to the 'devops' group"
+	$EXEC_ADDUSER $username 'devops'
 fi
 
 # Create /cache directory for user cache
 if [ ! -d /cache ]; then
-  printInfo 'Creating /cache directory'
+	printInfo 'Creating /cache directory'
 
-  $EXEC_MKDIR --mode=0755 /cache
-  $EXEC_CHOWN root:users /cache
+	$EXEC_MKDIR --mode=0755 /cache
+	$EXEC_CHOWN root:users /cache
 fi
 
 if [ -d /mnt/ssd ]; then
+	fstabEntries="$($EXEC_GREP -E '^# Bind mounts|^/mnt/ssd/(cache|opt|snap)' /etc/fstab)"
 
-  # Create /mnt/ssd/cache directory for user cache
-  if [ ! -d /mnt/ssd/cache ]; then
-    printInfo 'Creating /mnt/ssd/cache directory'
+	addCacheEntry=false
+	addOptEntry=false
+	addSnapEntry=false
 
-    $EXEC_MKDIR --mode=0755 /mnt/ssd/cache
-    $EXEC_CHOWN root:users /mnt/ssd/cache
-    $EXEC_MOUNT --bind /mnt/ssd/cache /cache
+	# Create /mnt/ssd/cache directory for user cache
+	if [ ! -d /mnt/ssd/cache ]; then
+		printInfo 'Creating /mnt/ssd/cache directory'
 
-    bindMounts=true
-  fi
+		$EXEC_MKDIR --mode=0755 /mnt/ssd/cache
+		$EXEC_CHOWN root:users /mnt/ssd/cache
+		$EXEC_MOUNT --bind /mnt/ssd/cache /cache
 
-  # Move /opt directory to /mnt/ssd/opt
-  if [ ! -d /mnt/ssd/opt ]; then
-    printInfo 'Copying /opt directory to /mnt/ssd'
+		addCacheEntry=true
+	fi
 
-    $EXEC_CP -a /opt /mnt/ssd
-    $EXEC_RM -rf /opt/{*,.*}
-    $EXEC_MOUNT --bind /mnt/ssd/opt /opt
+	# Move /opt directory to /mnt/ssd/opt
+	if [ ! -d /mnt/ssd/opt ]; then
+		printInfo 'Copying /opt directory to /mnt/ssd'
 
-    bindMounts=true
-  fi
+		$EXEC_CP -a /opt /mnt/ssd
+		$EXEC_RM -rf /opt/{*,.*}
+		$EXEC_MOUNT --bind /mnt/ssd/opt /opt
 
-  # Move /snap directory to /mnt/ssd/snap
-  if [ ! -d /mnt/ssd/snap ]; then
-    printInfo 'Copying /snap directory to /mnt/ssd'
+		addOptEntry=true
+	fi
 
-    $EXEC_CP -a /snap /mnt/ssd
-    $EXEC_RM -rf /snap/{*,.*}
-    $EXEC_MOUNT --bind /mnt/ssd/snap /snap
+	# Move /snap directory to /mnt/ssd/snap
+	if [ ! -d /mnt/ssd/snap ]; then
+		printInfo 'Copying /snap directory to /mnt/ssd'
 
-    bindMounts=true
-  fi
+		$EXEC_CP -a /snap /mnt/ssd
+		$EXEC_RM -rf /snap/{*,.*}
+		$EXEC_MOUNT --bind /mnt/ssd/snap /snap
 
-  if [ "$bindMounts" == 'true' ]; then
-    if ! $EXEC_GREP -q '^# Bind mounts' /etc/fstab; then
-      echo '# Bind mounts' >> /etc/fstab
-    fi
+		addSnapEntry=true
+	fi
 
-    if ! $EXEC_GREP -q '^/mnt/ssd/cache' /etc/fstab; then
-      echo '/mnt/ssd/cache	/cache	none	bind	0	0' >> /etc/fstab
-    fi
+	regExpr='^# Bind mounts'
+	if [[ ! "$fstabEntries" =~ $regExpr ]]; then
+		echo '# Bind mounts' >> /etc/fstab
 
-    if ! $EXEC_GREP -q '^/mnt/ssd/opt' /etc/fstab; then
-      echo '/mnt/ssd/opt	/opt	none	bind	0	0' >> /etc/fstab
-    fi
+		addCacheEntry=true
+		addOptEntry=true
+		addSnapEntry=true
+	fi
 
-    if ! $EXEC_GREP -q '^/mnt/ssd/snap' /etc/fstab; then
-      echo '/mnt/ssd/snap	/snap	none	bind	0	0' >> /etc/fstab
-    fi
-  fi
+	regExpr='/mnt/ssd/cache'
+	if [ "$addCacheEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
+		printInfo "Adding /mnt/ssd/cache bind mount"
+		echo '/mnt/ssd/cache	/cache	none	bind	0	0' >> /etc/fstab
+	fi
+
+	regExpr='/mnt/ssd/opt'
+	if [ "$addOptEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
+		printInfo "Adding /mnt/ssd/opt bind mount"
+		echo '/mnt/ssd/opt	/opt	none	bind	0	0' >> /etc/fstab
+	fi
+
+	regExpr='/mnt/ssd/snap'
+	if [ "$addSnapEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
+		printInfo "Adding /mnt/ssd/snap bind mount"
+		echo '/mnt/ssd/snap	/snap	none	bind	0	0' >> /etc/fstab
+	fi
 fi
 
 # Create /opt/devopsbroker/xenial/desktop/configurator directory
 if [ ! -d $INSTALL_DIR ]; then
-  printInfo "Creating $INSTALL_DIR directory"
+	printInfo "Creating $INSTALL_DIR directory"
 
-  echo -n ${perano}
-  $EXEC_MKDIR --mode=2755 $INSTALL_DIR
-  $EXEC_CHOWN -R root:devops /opt/devopsbroker
-  echo ${reset}
+	echo -n ${perano}
+	$EXEC_MKDIR --mode=2755 $INSTALL_DIR
+	$EXEC_CHOWN -R root:devops /opt/devopsbroker
+	echo ${reset}
 fi
 
 # Copy files into the /opt/devopsbroker/xenial/desktop/configurator directory
@@ -278,8 +284,8 @@ createSymlink /usr/local/sbin/configure-user "$INSTALL_DIR"/home/configure-user.
 
 # Create /etc/devops directory
 if [ ! -d /etc/devops ]; then
-  printInfo 'Creating /etc/devops directory'
-  $EXEC_MKDIR --mode=0755 /etc/devops
+	printInfo 'Creating /etc/devops directory'
+	$EXEC_MKDIR --mode=0755 /etc/devops
 fi
 
 # Install /etc/devops/ansi.conf

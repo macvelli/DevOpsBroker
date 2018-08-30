@@ -82,6 +82,9 @@
 # o Scan the 192.168.0.0/24 subnet for every device with an open port 631:
 # nmap -p T:631 192.168.0.0/24 | grep -B4 open
 #
+# o View shared object dependencies
+# ldd /usr/bin/glxgears
+#
 # TODO: Test everything...again!!!
 # -----------------------------------------------------------------------------
 #
@@ -90,21 +93,21 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
 ${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 ${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
 ${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
@@ -115,10 +118,9 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ubuntu Version Check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -151,68 +153,62 @@ DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	installPackage
-# Description:	Installs the specified package, if not already installed
+# Function:     installPackage
+# Description:  Installs the specified package, if not already installed
 #
-# Parameter $1:	The file to check for existence; install if not present
-# Parameter $2: The name of the package to install~/Development/GitHub/DevOpsBroker/Ubuntu/16.04/Desktop/Configurator
+# Parameter $1: The file to check for existence; install if not present
+# Parameter $2: The name of the package to install
 # -----------------------------------------------------------------------------
 function installPackage() {
-  if [ ! -f "$1" ]; then
-    printBanner "Installing $2"
-
-    $EXEC_APT -y install $2
-
-    echo
-  fi
+	if [ ! -f "$1" ]; then
+		printBanner "Installing $2"
+		$EXEC_APT -y install $2
+		echo
+	fi
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	installSnap
-# Description:	Installs the specified snap, if not already installed
+# Function:     installSnap
+# Description:  Installs the specified snap, if not already installed
 #
-# Parameter $1:	The directory to check for existence; install if not present
+# Parameter $1: The directory to check for existence; install if not present
 # Parameter $2: The name of the snap to install
 # -----------------------------------------------------------------------------
 function installSnap() {
-  if [ ! -d "$1" ]; then
-    printBanner "Installing $2"
-
-    $EXEC_SNAP install $2
-
-    echo
-  fi
+	if [ ! -d "$1" ]; then
+		printBanner "Installing $2"
+		$EXEC_SNAP install $2
+		echo
+	fi
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	uninstallPackage
-# Description:	Uninstalls the specified package, if already installed
+# Function:     uninstallPackage
+# Description:  Uninstalls the specified package, if already installed
 #
-# Parameter $1:	The file to check for existence; uninstall if present
+# Parameter $1: The file to check for existence; uninstall if present
 # Parameter $2: The name of the package to uninstall
 # -----------------------------------------------------------------------------
 function uninstallPackage() {
-  if [ -f "$1" ]; then
-    printBanner "Uninstalling $2"
-
-    $EXEC_APT -y purge $2
-
-    echo
-  fi
+	if [ -f "$1" ]; then
+		printBanner "Uninstalling $2"
+		$EXEC_APT -y purge $2
+		echo
+	fi
 }
 
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-  clear
+	clear
 fi
 
 bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Configurator'
 
 echo ${bold} ${wisteria}
 echo '╔════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"		      '║'
+echo "║ ${white}$bannerMsg${wisteria}"                '║'
 echo '╚════════════════════════════════════════════════╝'
 echo ${reset}
 
@@ -246,6 +242,9 @@ fi
 
 #~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
 
+# Install apparmor-utils
+installPackage '/usr/sbin/aa-genprof' 'apparmor-utils'
+
 # Install arp-scan
 installPackage '/usr/bin/arp-scan' 'arp-scan'
 
@@ -263,11 +262,17 @@ if [ ! -L /usr/bin/clang ]; then
   $EXEC_LN -s /usr/lib/llvm-5.0/bin/clang /usr/bin/clang
 fi
 
+# Install compizconfig-settings-manager
+installPackage '/usr/bin/ccsm' 'compizconfig-settings-manager'
+
 # Install curl
 installPackage '/usr/bin/curl' 'curl'
 
 # Install dconf-editor
 installPackage '/usr/bin/dconf-editor' 'dconf-editor'
+
+# Install dkms
+installPackage '/usr/sbin/dkms' 'dkms'
 
 # Uninstall dnsmasq
 uninstallPackage '/etc/dnsmasq.conf' 'dnsmasq'
@@ -341,13 +346,13 @@ if [ ! -f /usr/bin/mmdblookup ]; then
 fi
 
 # Install gimp
-installSnap '/snap/gimp' 'gimp'
+installPackage '/usr/bin/gimp' 'gimp'
 
 # Install git
 if [ ! -f /usr/bin/git ]; then
   printBanner 'Installing git'
 
-  printInfo 'Add Git stable release PPA'
+  printInfo 'Adding Git stable release PPA'
   $EXEC_ADD_APT_REPO ppa:git-core/ppa
   $EXEC_APT update
   echo
@@ -376,7 +381,18 @@ installPackage '/usr/bin/htop' 'htop'
 installPackage '/usr/sbin/hwinfo' 'hwinfo'
 
 # Install inkscape
-installSnap '/snap/inkscape' 'inkscape'
+if [ ! -f /usr/bin/inkscape ]; then
+  printBanner 'Installing inkscape'
+
+  printInfo 'Adding Inkscape stable release PPA'
+  $EXEC_ADD_APT_REPO ppa:inkscape.dev/stable
+  $EXEC_APT update
+  echo
+
+  $EXEC_APT -y install inkscape
+
+  echo
+fi
 
 # Uninstall irqbalance
 uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
@@ -392,6 +408,9 @@ installPackage '/usr/include/magic.h' 'libmagic-dev'
 
 # Install libpam-modules
 installPackage '/usr/share/doc/libpam-modules/copyright' 'libpam-modules'
+
+# Install libpixman-1-0
+installPackage '/usr/share/doc/libpixman-1-0/copyright' 'libpixman-1-0'
 
 # Install linux-generic-hwe-16.04
 installPackage '/usr/share/doc/linux-generic-hwe-16.04/copyright' 'linux-generic-hwe-16.04'
@@ -476,6 +495,9 @@ installPackage '/usr/sbin/smbd' 'samba'
 
 # Install speedtest-cli
 installPackage '/usr/bin/speedtest-cli' 'speedtest-cli'
+
+# Install sudo
+installPackage '/usr/bin/sudo' 'sudo'
 
 # Install sysfsutils
 installPackage '/usr/bin/systool' 'sysfsutils'

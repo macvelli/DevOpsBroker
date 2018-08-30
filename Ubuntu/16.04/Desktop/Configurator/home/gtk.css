@@ -27,43 +27,28 @@
  */
 
 * {
-    -GtkRange-slider-width: 21px;
+	-GtkRange-slider-width: 18px;
 }
 
 GtkScale {
-    -GtkRange-slider-width: 21px;
+	-GtkRange-slider-width: 18px;
 }
 
 .scrollbar {
-    -GtkRange-slider-width: 21px;
+	-GtkRange-slider-width: 18px;
 }
 
-.scrollbar.vertical:hover:dir(ltr),
-.scrollbar.vertical.dragging:dir(ltr) {
-    margin-left: 0px;
-}
-
-.scrollbar.vertical:hover:dir(rtl),
-.scrollbar.vertical.dragging:dir(rtl) {
-    margin-right: 0px;
-}
-
-.scrollbar.horizontal:hover,
-.scrollbar.horizontal.dragging,
-.scrollbar.horizontal.slider:hover,
-.scrollbar.horizontal.slider.dragging {
-    margin-top: 0px;
-}
-
+/* Adding margins, so actual visible size is: -GtkRange-slider-width - margin
+ * this allows to define some kind of proximity effect also on mouse-enter
+ */
 .scrollbar.slider.vertical:dir(ltr):not(:hover):not(.dragging) {
-    margin-left: 0px;
+    margin-left: 12px;
 }
 
 .scrollbar.slider.vertical:dir(rtl):not(:hover):not(.dragging) {
-    margin-right: 0px;
+    margin-right: 12px;
 }
 
 .scrollbar.slider.horizontal:not(:hover):not(.dragging) {
-    margin-top: 0px;
+    margin-top: 12px;
 }
-
