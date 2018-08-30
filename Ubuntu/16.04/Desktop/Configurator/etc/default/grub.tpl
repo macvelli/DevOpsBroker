@@ -89,7 +89,8 @@ fi
 isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
 efiReboot=$([ "$isEfiBoot" = 'true' ] && echo -n 'reboot=efi' || echo -n '')
 defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct"
-defaultCmdLine="$defaultCmdLine nmi_watchdog=0 nohz=on rcu_nocbs=$ONLINE_CPUS rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
+defaultCmdLine="$defaultCmdLine iommu=memaper=3,noagp,allowdac nmi_watchdog=0 nohz=on"
+defaultCmdLine="$defaultCmdLine rcu_nocbs=$ONLINE_CPUS rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
 
 if [ "$isEfiBoot" = 'true' ]; then
   defaultCmdLine="acpi=force $defaultCmdLine"
