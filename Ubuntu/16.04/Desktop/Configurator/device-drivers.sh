@@ -86,7 +86,7 @@ if [ -f /etc/devops/device-drivers.info ] && [ "$1" != '-f' ]; then
 	echo
 	printUsage "$SCRIPT_EXEC ${gold}[-f]"
 
-	echo -n ${bold}
+	echo ${bold}
 	echo "Valid Options:${romantic}"
 	echo -e ${gold}'  -f\t'  ${romantic}'Force reevaluation of proprietary drivers'
 	echo ${reset}

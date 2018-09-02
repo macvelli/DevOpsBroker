@@ -326,9 +326,9 @@ elif [ "$command" == "new" ]; then
 		bashTemplateTpl=$(isExecutable "$SCRIPT_DIR"/template/bash-template.tpl)
 
 		# Execute template script
-		"$bashTemplateTpl" "$fileName" > "$baseDir/$templateFile"
+		"$bashTemplateTpl" "$fileName" > "$baseDir/$fileName"
 
-		$EXEC_CHMOD u+x "$baseDir/$templateFile"
+		$EXEC_CHMOD u+x "$baseDir/$fileName"
 
 		echoOnExit=true
 	fi

@@ -276,6 +276,9 @@ createSymlink /usr/local/sbin/configure-security "$INSTALL_DIR"/etc/security/con
 # Make symlink to etc/udev/configure-udev.sh
 createSymlink /usr/local/sbin/configure-udev "$INSTALL_DIR"/etc/udev/configure-udev.sh
 
+# Make symlink to etc/udev/rules.d/tune-diskio.tpl
+createSymlink /usr/local/sbin/tune-diskio "$INSTALL_DIR"/etc/udev/rules.d/tune-diskio.tpl
+
 # Make symlink to etc/unbound/configure-unbound.sh
 createSymlink /usr/local/sbin/configure-unbound "$INSTALL_DIR"/etc/unbound/configure-unbound.sh
 

@@ -49,6 +49,7 @@
 #   o New Systemd.service
 #
 # Adds the user to the 'users' group (if necessary)
+# Adds the user to the 'audio' group (if necessary)
 # Adds the user to the 'video' group (if necessary)
 # Adds the user to the 'kvm' group
 #
@@ -318,6 +319,14 @@ if [[ ! "$userGroups" =~ $regExpr ]]; then
 	printInfo "Adding $username to the 'users' group"
 
 	$EXEC_ADDUSER $username 'users'
+fi
+
+# Add $username to the 'audio' group
+regExpr="\\baudio\\b"
+if [[ ! "$userGroups" =~ $regExpr ]]; then
+	printInfo "Adding $username to the 'audio' group"
+
+	$EXEC_ADDUSER $username 'audio'
 fi
 
 # Add $username to the 'video' group
