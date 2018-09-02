@@ -25,27 +25,27 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Show the complete list of all sysctl parameters:
-# sysctl -a
+# Show the complete list of all sysctl parameters:
+#   o sysctl -a
 #
-# o Set the MTU on a network interface:
-# ifconfig enp4s0 mtu NNNN
+# Set the MTU on a network interface:
+#   o ifconfig enp4s0 mtu NNNN
 #
-# o Monitor kernel behavior with regard to the VM dirty pages:
-# grep -A 1 dirty /proc/vmstat
+# Monitor kernel behavior with regard to the VM dirty pages:
+#   o grep -A 1 dirty /proc/vmstat
 #
-# o Check cwnd runtime value:
-# ss -nli | fgrep cwnd
+# Check cwnd runtime value:
+#   o ss -nli | fgrep cwnd
 #
-# o Determine Connection States:
-# netstat -tan | grep ':80 ' | awk '{print $6}' | sort | uniq -c
+# Determine Connection States:
+#   o netstat -tan | grep ':80 ' | awk '{print $6}' | sort | uniq -c
 #
-# o View TCP/UDP/IP Session Information:
-# ss -s
+# View TCP/UDP/IP Session Information:
+#   o ss -s
 #
 # TODO: Audit kernel parameters to ensure they are properly set
 # TODO: Audit security settings (i.e. umask) to ensure they are properly set,
-#	especially for someone in the sudo group
+#       especially for someone in the sudo group
 # -----------------------------------------------------------------------------
 #
 
@@ -53,24 +53,24 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-    source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-    source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-    source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -78,10 +78,9 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
-
-    exit 1
+if [ "$USER" != 'root' ]; then
+	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	exit 1
 fi
 
 # Ensure the sysctl.conf.tpl script is executable
@@ -90,27 +89,24 @@ sysctlConf=$(isExecutable "$SCRIPT_DIR"/sysctl.conf.tpl)
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	execSpeedTest
-# Description:	Executes the Internet Speed Test
+# Function:     execSpeedTest
+# Description:  Executes the Internet Speed Test
 # -----------------------------------------------------------------------------
 function execSpeedTest() {
-    # Install speedtest-cli if necessary
-    if [ ! -f $EXEC_SPEED_TEST ]; then
-        printBanner 'Installing speedtest-cli'
+	# Install speedtest-cli if necessary
+	if [ ! -f $EXEC_SPEED_TEST ]; then
+		printBanner 'Installing speedtest-cli'
+		$EXEC_APT -y install speedtest-cli
+		echo
+	fi
 
-        $EXEC_APT -y install speedtest-cli
+	if [ ! -f /etc/devops/speedtest.info ]; then
+		printInfo 'Executing Internet speed test'
+		$EXEC_SPEED_TEST | tee /etc/devops/speedtest.info
 
-        echo
-    fi
-
-    if [ ! -f /etc/devops/speedtest.info ]; then
-        printInfo 'Executing Internet speed test'
-
-        $EXEC_SPEED_TEST | tee /etc/devops/speedtest.info
-
-        printInfo 'Internet speed test finished'
-        echo
-    fi
+		printInfo 'Internet speed test finished'
+		echo
+	fi
 }
 
 ################################## Variables ##################################
@@ -120,94 +116,91 @@ EXEC_SPEED_TEST=/usr/bin/speedtest-cli
 EXEC_SYSCTL=/sbin/sysctl
 
 ## Variables
-tunedKernel=false
+export TMPDIR=${TMPDIR:-'/tmp'}
+echoOnExit=false
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Delete /etc/devops/speedtest.info on force kernel retune
 if [ "$1" == '-f' ]; then
-    $EXEC_RM /etc/devops/speedtest.info 2>/dev/null
+	$EXEC_RM /etc/devops/speedtest.info 2>/dev/null
 fi
 
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-    clear
+	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Kernel Tuning'
+printBox "DevOpsBroker $UBUNTU_RELEASE Kernel Tuning Configurator" 'true'
 
-echo ${bold} ${wisteria}
-echo '╔═════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                 '║'
-echo '╚═════════════════════════════════════════════════╝'
-echo ${reset}
+# Exit if /etc/sysctl.conf already configured
+if [ -f /etc/sysctl.conf.orig ] && [ "$1" != '-f' ]; then
+	printInfo '/etc/sysctl.conf already configured'
+	echo
+	printUsage "$SCRIPT_EXEC ${gold}[-f]"
+
+	echo ${bold}
+	echo "Valid Options:${romantic}"
+	echo -e ${gold}'  -f\t'  ${romantic}'Force /etc/sysctl.conf reconfiguration'
+	echo ${reset}
+
+	exit 0
+fi
 
 #
 # Linux Kernel Tuning
 #
 if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
-    # BEGIN /etc/sysctl.conf
 
-    printBanner 'Installing /etc/sysctl.conf'
+	printBanner 'Installing /etc/sysctl.conf'
 
-    # Execute Internet speed test
-    execSpeedTest
+	# Execute Internet speed test
+	execSpeedTest
 
-    # Execute template script
-    "$sysctlConf"
+	# Execute template script
+	"$sysctlConf" > "$TMPDIR"/sysctl.conf
 
-	if [ -f "$SCRIPT_DIR"/sysctl.conf ]; then
-    	# Install as root:root with rw-r--r-- privileges
-    	$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$SCRIPT_DIR"/sysctl.conf /etc
+	if [ -f "$TMPDIR"/sysctl.conf ]; then
+		# Install as root:root with rw-r--r-- privileges
+		$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/sysctl.conf /etc
 
-    	# Clean up
-    	$EXEC_RM "$SCRIPT_DIR"/sysctl.conf
+		# Clean up
+		$EXEC_RM "$TMPDIR"/sysctl.conf
 
-    	printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
-    	$EXEC_SYSCTL -p
+		printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
+		$EXEC_SYSCTL -p
 
-    	tunedKernel=true
+		echoOnExit=true
 	fi
 
 elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "$1" == '-f' ]; then
 
-    printBanner 'Updating /etc/sysctl.conf'
+	printBanner 'Updating /etc/sysctl.conf'
 
-    # Execute Internet speed test
-    execSpeedTest
+	# Execute Internet speed test
+	execSpeedTest
 
-    # Execute template script
-    "$sysctlConf"
+	# Execute template script
+	"$sysctlConf" > "$TMPDIR"/sysctl.conf
 
-	if [ -f "$SCRIPT_DIR"/sysctl.conf ]; then
+	if [ -f "$TMPDIR"/sysctl.conf ]; then
 		# Install as root:root with rw-r--r-- privileges
-	    $EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/sysctl.conf /etc
+		$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/sysctl.conf /etc
 
-    	# Clean up
-    	$EXEC_RM "$SCRIPT_DIR"/sysctl.conf
+		# Clean up
+		$EXEC_RM "$TMPDIR"/sysctl.conf
 
-    	printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
-    	$EXEC_SYSCTL -p
+		printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
+		$EXEC_SYSCTL -p
 
-    	tunedKernel=true
+		echoOnExit=true
 	fi
-
-    # END /etc/sysctl.conf
 fi
 
-if [ "$tunedKernel" == 'true' ]; then
-    echo
-else
-    printInfo 'Linux kernel already tuned'
-    echo
-    printUsage "$SCRIPT_EXEC ${gold}[-f]"
-
-    echo ${bold}
-    echo "Valid Options:${romantic}"
-    echo '  -f	Force retuning of Linux kernel'
-    echo ${reset}
+if [ "$echoOnExit" == 'true' ]; then
+	echo
 fi
 
 exit 0

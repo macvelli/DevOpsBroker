@@ -23,13 +23,6 @@
 #
 # See https://www.gnu.org/software/grub/manual/grub/grub.html for more
 # information on GRUB.
-#
-# o Enable lz4 Compression for zswap
-# o Enable z3fold Pool for zswap
-# o Set GRUB Timeout to 2 seconds
-# o Enable zswap (lz4 compressor / z3fold zpool)
-# o Disable NMI Watchdog
-# o Enable Multi-Queue Block I/O Queueing
 # -----------------------------------------------------------------------------
 #
 
@@ -37,24 +30,24 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -62,10 +55,9 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	exit 1
 fi
 
 # Ensure the grub.tpl script is executable
@@ -77,6 +69,8 @@ grubTpl=$(isExecutable "$SCRIPT_DIR"/grub.tpl)
 EXEC_UPDATE_GRUB=/usr/sbin/update-grub
 EXEC_UPDATE_INITRAMFS=/usr/sbin/update-initramfs
 
+## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
 echoOnExit=false
 
 # Amount of RAM available in GB
@@ -84,99 +78,78 @@ RAM_GB=$[ ($(getRamTotal) + 1048575) / 1048576 ]
 
 # Configure ZSwap Max Pool Percentage
 if [ $RAM_GB -le 8 ]; then
-  zswapMaxPoolPct=20
+	zswapMaxPoolPct=20
 elif [ $RAM_GB -le 16 ]; then
-  zswapMaxPoolPct=15
+	zswapMaxPoolPct=15
 else
-  zswapMaxPoolPct=10
+	zswapMaxPoolPct=10
 fi
-
 
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-  clear
+	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop GRUB Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔═════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"			   '║'
-echo '╚═════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE GRUB Configurator" 'true'
 
 #
 # GRUB Configuration
 #
 if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/default/grub; then
-  # BEGIN GRUB Configuration
 
-  printBanner 'Installing GRUB configuration'
+	printBanner 'Installing GRUB configuration'
 
-  # Execute template script
-  "$grubTpl" $zswapMaxPoolPct > "$SCRIPT_DIR"/grub
+	# Execute template script
+	"$grubTpl" $zswapMaxPoolPct > "$TMPDIR"/grub
 
-  # Install as root:root with rw-r--r-- privileges
-  $EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$SCRIPT_DIR"/grub /etc/default
+	# Install as root:root with rw-r--r-- privileges
+	$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/grub /etc/default
 
-  # Clean up
-  $EXEC_RM "$SCRIPT_DIR"/grub
+	# Clean up
+	$EXEC_RM "$TMPDIR"/grub
 
-  printInfo 'Generate a new GRUB configuration file'
-  $EXEC_UPDATE_GRUB
+	printInfo 'Generate a new GRUB configuration file'
+	$EXEC_UPDATE_GRUB
 
-  if ! $EXEC_GREP -Fq '# Enable lz4 Compression for zswap' /etc/initramfs-tools/modules; then
+	if ! $EXEC_GREP -Fq '# Enable lz4 Compression for zswap' /etc/initramfs-tools/modules; then
+		# Backup original /etc/initramfs-tools/modules file
+		$EXEC_CP /etc/initramfs-tools/modules /etc/initramfs-tools/modules.orig
 
-    # Backup original /etc/initramfs-tools/modules file
-    $EXEC_CP /etc/initramfs-tools/modules /etc/initramfs-tools/modules.orig
+		printInfo 'Enable lz4 compression z3fold pool for zswap'
+		echo -e "\n# Enable lz4 Compression for zswap\nlz4\nlz4_compress" >> /etc/initramfs-tools/modules
+		echo -e "\n# Enable z3fold Pool for zswap\nz3fold" >> /etc/initramfs-tools/modules
 
-    printInfo 'Enable lz4 compression z3fold pool for zswap'
+		printInfo 'Generate a new initramfs image'
+		$EXEC_UPDATE_INITRAMFS -u
+	fi
 
-echo '
-# Enable lz4 Compression for zswap
-lz4
-lz4_compress
-
-# Enable z3fold Pool for zswapzswap
-z3fold
-' >> /etc/initramfs-tools/modules
-
-    printInfo 'Generate a new initramfs image'
-    $EXEC_UPDATE_INITRAMFS -u
-  fi
-
-  echoOnExit=true
+	echoOnExit=true
 
 else
+	currentMaxPoolPct=$($EXEC_CAT /sys/module/zswap/parameters/max_pool_percent)
 
-  currentMaxPoolPct=$($EXEC_SED -n 's/.* zswap.max_pool_percent=([0-9]*) .*/\1/p' /etc/default/grub)
+	if [ $currentMaxPoolPct -ne $zswapMaxPoolPct ] || [ "$grubTpl" -nt /etc/default/grub ]; then
+		printBanner 'Updating GRUB configuration'
 
-  if [ $currentMaxPoolPct -ne $zswapMaxPoolPct ] || [ "$grubTpl" -nt /etc/default/grub ]; then
+		# Execute template script
+		"$grubTpl" $zswapMaxPoolPct > "$TMPDIR"/grub
 
-    printBanner 'Updating GRUB configuration'
+		# Install as root:root with rw-r--r-- privileges
+		$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/grub /etc/default
 
-    # Execute template script
-    "$grubTpl" $zswapMaxPoolPct > "$SCRIPT_DIR"/grub
+		# Clean up
+		$EXEC_RM "$TMPDIR"/grub
 
-    # Install as root:root with rw-r--r-- privileges
-    $EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/grub /etc/default
-
-    # Clean up
-    $EXEC_RM "$SCRIPT_DIR"/grub
-
-    printInfo 'Generate a new GRUB configuration file'
-    $EXEC_UPDATE_GRUB
-
-    echoOnExit=true
-  fi
-
-  # END GRUB Configuration
+		printInfo 'Generate a new GRUB configuration file'
+		$EXEC_UPDATE_GRUB
+		echoOnExit=true
+	fi
 fi
 
 if [ "$echoOnExit" == 'true' ]; then
-  echo
+	echo
 fi
 
 exit 0

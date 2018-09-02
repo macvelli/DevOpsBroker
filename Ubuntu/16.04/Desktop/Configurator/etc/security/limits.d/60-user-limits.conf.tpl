@@ -1,8 +1,7 @@
 #!/bin/bash
 
 #
-# 60-user-limits.conf.tpl - DevOpsBroker script for generating the configuration
-#			   /etc/security/limits.d/60-user-limits.conf
+# 60-user-limits.conf.tpl - DevOpsBroker script for generating /etc/security/limits.d/60-user-limits.conf
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -24,9 +23,8 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Display user limits:
-# ulimit -a
-#
+# Display user limits:
+#   o ulimit -a
 # -----------------------------------------------------------------------------
 #
 
@@ -34,30 +32,29 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}60-user-limits.conf.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError '60-user-limits.conf.tpl' 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Variables ##################################
@@ -75,7 +72,6 @@ USER_FILE_MAX_SOFT=$[ $FS_FILE_MAX / 4 ]
 USER_FILE_MAX_HARD=$[ $FS_FILE_MAX / 2 ]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 ## Template
 cat << EOF

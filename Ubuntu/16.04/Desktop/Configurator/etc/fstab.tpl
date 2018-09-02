@@ -23,8 +23,8 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Find a filesystem:
-# findmnt
+# Find a filesystem:
+#   o findmnt
 # -----------------------------------------------------------------------------
 #
 
@@ -32,46 +32,41 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}fstab.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError 'fstab.tpl' 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	printEntryList
-# Description:	Prints the /etc/fstab entry list for the template
+# Function:     printEntryList
+# Description:  Prints the /etc/fstab entry list for the template
 # -----------------------------------------------------------------------------
 function printEntryList() {
-  # BEGIN printEntryList function
-
-  for fstabEntry in "${fstabEntryList[@]}"; do
-    echo -e "$fstabEntry"
-  done
-
-  # END printEntryList function
+	for fstabEntry in "${fstabEntryList[@]}"; do
+		echo -e "$fstabEntry"
+	done
 }
 
 ################################## Variables ##################################
@@ -84,17 +79,17 @@ index=0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load current /etc/fstab settings
-IFS=$'\n'; fstabEntryList=( $($EXEC_CAT /etc/fstab) ); unset IFS;
+mapfile -t fstabEntryList < <($EXEC_CAT /etc/fstab)
 
 for fstabEntry in "${fstabEntryList[@]}"; do
-  if [[ "$fstabEntry" == "# <file system>"* ]]; then
-    recordEntries=true
-  fi
+	if [[ "$fstabEntry" == "# <file system>"* ]]; then
+		recordEntries=true
+	fi
 
-  if [ "$recordEntries" == 'true' ]; then
-    captureEntryList[index]="$fstabEntry"
-    index=$((index + 1))
-  fi
+	if [ "$recordEntries" == 'true' ]; then
+		captureEntryList[index]="$fstabEntry"
+		index=$((index + 1))
+	fi
 done
 
 # Clear fstabEntryList for reuse
@@ -102,75 +97,74 @@ fstabEntryList=()
 
 # Process captured entries
 for capturedEntry in "${captureEntryList[@]}"; do
-  if [[ "$capturedEntry" == "# <file system>"* ]]; then
-    header=( $capturedEntry )
+	if [[ "$capturedEntry" == "# <file system>"* ]]; then
+		header=( $capturedEntry )
 
-    fstabEntryList+=( "${header[0]} ${header[1]} ${header[2]}\t\t\t\t  ${header[3]} ${header[4]}   ${header[5]}\t${header[6]}\t\t${header[7]}\t${header[8]}" )
-  elif [[ "$capturedEntry" == "#"* ]]; then
-    fstabEntryList+=( "$capturedEntry" )
-  else
-    entryList=( $capturedEntry )
+		fstabEntryList+=( "${header[0]} ${header[1]} ${header[2]}\t\t\t\t  ${header[3]} ${header[4]}   ${header[5]}\t${header[6]}\t\t${header[7]}\t${header[8]}" )
+	elif [[ "$capturedEntry" == "#"* ]]; then
+		fstabEntryList+=( "$capturedEntry" )
+	else
+		entryList=( $capturedEntry )
 
-    entry="${entryList[0]}"
-    entryLength=${#entry}
-    while [ $entryLength -lt 40 ]; do
-      entry="$entry\t"
-      entryLength=$(( (($entryLength + 8) / 8) * 8 ))
-    done
+		entry="${entryList[0]}"
+		entryLength=${#entry}
+		while [ $entryLength -lt 40 ]; do
+			entry="$entry\t"
+			entryLength=$(( (($entryLength + 8) / 8) * 8 ))
+		done
 
-    if [ $entryLength -eq 40 ]; then
-      entry="$entry "
-      entryLength=$((entryLength + 1))
-    fi
+		if [ $entryLength -eq 40 ]; then
+			entry="$entry "
+			entryLength=$((entryLength + 1))
+		fi
 
-    entry="$entry ${entryList[1]}"
-    entryLength=$((entryLength + ${#entryList[1]} + 1))
+		entry="$entry ${entryList[1]}"
+		entryLength=$((entryLength + ${#entryList[1]} + 1))
 
-    if [ "$entryLength" -lt 48 ]; then
-      entry="$entry\t\t  ${entryList[2]}"
-    else
-      entry="$entry\t  ${entryList[2]}"
-    fi
+		if [ "$entryLength" -lt 48 ]; then
+			entry="$entry\t\t  ${entryList[2]}"
+		else
+			entry="$entry\t  ${entryList[2]}"
+		fi
 
-    entryLength=$(( 58 + ${#entryList[2]} ))
+		entryLength=$(( 58 + ${#entryList[2]} ))
 
-    if [ "$entryLength" -lt 64 ]; then
-      entry="$entry\t\t"
-    else
-      entry="$entry\t"
-    fi
+		if [ "$entryLength" -lt 64 ]; then
+			entry="$entry\t\t"
+		else
+			entry="$entry\t"
+		fi
 
-    entryLength=72
+		entryLength=72
 
-    if [ "${entryList[3]}" == 'defaults' ]; then
-      if [ "${entryList[1]}" == '/tmp' ]; then
-	# disableTmpJournal
-	entry="${entry}nosuid,nodev,noatime,noblock_validity,delalloc,nobarrier"
-	entryLength=$(( entryLength + 56 ))
-      else
-	entry="${entry}defaults,noatime"
-	entryLength=$(( entryLength + 16 ))
-      fi
-    else
-      entry="$entry${entryList[3]}"
-      entryLength=$(( entryLength + ${#entryList[3]} ))
-    fi
+		if [ "${entryList[3]}" == 'defaults' ]; then
+			if [ "${entryList[1]}" == '/tmp' ]; then
+				entry="${entry}nosuid,nodev,noatime,noblock_validity,delalloc,nobarrier"
+				entryLength=$(( entryLength + 56 ))
+			else
+				entry="${entry}defaults,noatime"
+				entryLength=$(( entryLength + 16 ))
+			fi
+		else
+			entry="$entry${entryList[3]}"
+			entryLength=$(( entryLength + ${#entryList[3]} ))
+		fi
 
-    while [ $entryLength -lt 96 ]; do
-      entry="$entry\t"
-      entryLength=$(( (($entryLength + 8) / 8) * 8 ))
-    done
+		while [ $entryLength -lt 96 ]; do
+			entry="$entry\t"
+			entryLength=$(( (($entryLength + 8) / 8) * 8 ))
+		done
 
-    if [ $entryLength -gt 96 ]; then
-      entry="$entry\t${entryList[4]}"
-    else
-      entry="$entry${entryList[4]}"
-    fi
+		if [ $entryLength -gt 96 ]; then
+			entry="$entry\t${entryList[4]}"
+		else
+			entry="$entry${entryList[4]}"
+		fi
 
-    entry="$entry\t${entryList[5]}"
+		entry="$entry\t${entryList[5]}"
 
-    fstabEntryList+=( "$entry" )
-  fi
+		fstabEntryList+=( "$entry" )
+	fi
 done
 
 

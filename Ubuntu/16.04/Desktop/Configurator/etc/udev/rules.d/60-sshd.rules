@@ -1,5 +1,5 @@
 #
-# modules - DevOpsBroker configuration for /etc/modules
+# 60-sshd.rules - DevOpsBroker udev rules for handling SSHD drives
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -17,21 +17,11 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-33
 #
-# This file contains the names of kernel modules that should be loaded at boot
-# time, one per line.
+# The following SSHD models have been added to this udev rule file:
+#   o Seagate FireCuda Gaming SSHD 1TB (ST1000DX002)
 # -----------------------------------------------------------------------------
 #
 
-# Enable tcp_lp congestion control algorithm
-tcp_lp
-
-# Load Fair Queuing Controlled Delay (FQ_Codel) Scheduler
-sch_fq_codel
-
-# Load Kyber I/O Scheduler
-kyber-iosched
-
-# Load BFQ I/O Scheduler
-bfq
+ACTION=="add|change", SUBSYSTEM=="block", ATTRS{model}=="ST1000DX002-2DV1", ATTR{queue/rotational}="0"

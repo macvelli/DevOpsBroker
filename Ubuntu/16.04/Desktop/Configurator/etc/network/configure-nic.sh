@@ -23,28 +23,28 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Display the initcwnd/initrwnd values for the default interface:
-# ip route show
+# Display the initcwnd/initrwnd values for the default interface:
+#   o ip route show
 #
-# o Display network interface configuration including txqueuelength:
-# ifconfig enp4s0
+# Display network interface configuration including txqueuelength:
+#   o ifconfig enp4s0
 #
-# o Display or change Ethernet adapter settings:
-# sudo ethtool --show-features enp4s0
-# sudo ethtool --offload enp4s0 tx-checksum-ipv4 on tx-checksum-ipv6 on tx-nocache-copy off
-# sudo ethtool --offload enp4s0 rx on tx on tso on ufo on sg on gso on
+# Display or change Ethernet adapter settings:
+#   o sudo ethtool --show-features enp4s0
+#   o sudo ethtool --offload enp4s0 tx-checksum-ipv4 on tx-checksum-ipv6 on tx-nocache-copy off
+#   o sudo ethtool --offload enp4s0 rx on tx on tso on ufo on sg on gso on
 #
-# o Bounce the network interface:
-# sudo ifdown enp4s0 && sudo ifup enp4s0
+# Bounce the network interface:
+#   o sudo ifdown enp4s0 && sudo ifup enp4s0
 #
-# o NetworkManager Man Pages
-# man NetworkManager
-# man nmcli
-# man nm-online
+# NetworkManager Man Pages
+#   o man NetworkManager
+#   o man nmcli
+#   o man nm-online
 #
-# o NetworkManager command-line
-# nmcli -t --fields UUID connection show
-# nmcli connection show uuid 604f6d5f-4780-4ee8-806e-d06dacf8702f | grep -F 'connection.interface-name'
+# NetworkManager command-line
+#   o nmcli -t --fields UUID connection show
+#   o nmcli connection show uuid 604f6d5f-4780-4ee8-806e-d06dacf8702f | grep -F 'connection.interface-name'
 # -----------------------------------------------------------------------------
 #
 
@@ -55,21 +55,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -90,10 +90,23 @@ tuneNic=$(isExecutable "$SCRIPT_DIR"/if-up.d/tune-nic.tpl)
 ## Bash exec variables
 EXEC_NMCLI=/usr/bin/nmcli
 
-echoOnExit=false
-
 ## Options
 NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
+
+## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
+echoOnExit=false
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display error if network interface parameter is invalid
+if [ ! -L /sys/class/net/$NIC ]; then
+	printError "$SCRIPT_EXEC" "Cannot access '$NIC': No such network interface"
+	echo
+	printUsage "$SCRIPT_EXEC NIC"
+
+	exit 1
+fi
 
 ################################### Actions ###################################
 
@@ -102,24 +115,7 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Network Interface Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔══════════════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                                  '║'
-echo '╚══════════════════════════════════════════════════════════════════╝'
-echo ${reset}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Display error if network interface parameter is invalid
-if [ ! -d /proc/sys/net/ipv4/conf/$NIC ]; then
-	printError "$SCRIPT_EXEC" "Cannot access '$NIC': No such network interface"
-	echo
-	printUsage "$SCRIPT_EXEC NIC"
-
-	exit 1
-fi
+printBox "DevOpsBroker $UBUNTU_RELEASE Network Interface Configurator" 'true'
 
 # Exit if default interface is a virtual network device (i.e. bridge, tap, etc)
 if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
@@ -133,14 +129,13 @@ fi
 # NetworkManager Configuration
 #
 
-IFS=$'\n'; uuidInterfaceList=( $($EXEC_NMCLI -t --fields UUID connection show) ); unset IFS;
+mapfile -t uuidInterfaceList < <($EXEC_NMCLI -t --fields UUID connection show)
 
 for uuidInterface in "${uuidInterfaceList[@]}"; do
-	# Process UUID interfaces
-	IFS=$'\n'; connectionInfoList=( $($EXEC_NMCLI connection show uuid $uuidInterface) ); unset IFS;
+
+	mapfile -t connectionInfoList < <($EXEC_NMCLI connection show uuid $uuidInterface)
 
 	for connectionInfo in "${connectionInfoList[@]}"; do
-
 		if [[ "$connectionInfo" == connection.interface-name:* ]]; then
 			splitString=( $connectionInfo )
 			interfaceName=${splitString[1]}
@@ -175,43 +170,40 @@ done
 #
 
 if [ ! -f /etc/network/if-up.d/tune-$NIC ]; then
-	# BEGIN /etc/network/if-up.d/tune-$NIC
-
 	printInfo "Installing /etc/network/if-up.d/tune-$NIC"
 
 	# Execute template script
-	"$tuneNic" $NIC > "$SCRIPT_DIR"/tune-$NIC
+	"$tuneNic" $NIC > "$TMPDIR"/tune-$NIC
 
 	# Install as root:root with rwxr-xr-x privileges
-	$EXEC_INSTALL -o root -g root -m 755 "$SCRIPT_DIR"/tune-$NIC /etc/network/if-up.d
+	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/network/if-up.d
 
 	# Clean up
-	$EXEC_RM "$SCRIPT_DIR"/tune-$NIC
+	$EXEC_RM "$TMPDIR"/tune-$NIC
 
 	printInfo "Restart $NIC interface"
 	echo
 	$EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
 
 	echoOnExit=true
+
 elif [ "$tuneNic" -nt /etc/network/if-up.d/tune-$NIC ]; then
 	printInfo "Updating /etc/network/if-up.d/tune-$NIC"
 
 	# Execute template script
-	"$tuneNic" $NIC > "$SCRIPT_DIR"/tune-$NIC
+	"$tuneNic" $NIC > "$TMPDIR"/tune-$NIC
 
 	# Install as root:root with rwxr-xr-x privileges
-	$EXEC_INSTALL -o root -g root -m 755 "$SCRIPT_DIR"/tune-$NIC /etc/network/if-up.d
+	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/network/if-up.d
 
 	# Clean up
-	$EXEC_RM "$SCRIPT_DIR"/tune-$NIC
+	$EXEC_RM "$TMPDIR"/tune-$NIC
 
 	printInfo "Restart $NIC interface"
 	echo
 	$EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
 
 	echoOnExit=true
-
-	# END /etc/network/if-up.d/tune-$NIC
 fi
 
 if [ $echoOnExit == 'true' ]; then

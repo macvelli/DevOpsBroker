@@ -1,8 +1,7 @@
 #!/bin/bash
 
 #
-# tune-nic.tpl - DevOpsBroker script for generating network configuration file
-#		 /etc/network/if-up.d/tune-$NIC
+# tune-nic.tpl - DevOpsBroker script for generating /etc/network/if-up.d/tune-$NIC
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -29,10 +28,14 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Display or change Ethernet adapter settings:
-# sudo ethtool --show-features enp4s0
-# sudo ethtool --offload enp4s0 tx-checksum-ipv4 on tx-checksum-ipv6 on tx-nocache-copy off
-# sudo ethtool --offload enp4s0 rx on tx on tso on ufo on sg on gso on
+# Display or change Ethernet adapter settings:
+#   o sudo ethtool --show-features enp4s0
+#   o sudo ethtool --offload enp4s0 tx-checksum-ipv4 on tx-checksum-ipv6 on tx-nocache-copy off
+#   o sudo ethtool --offload enp4s0 rx on tx on tso on ufo on sg on gso on
+#
+# Routing tables under /proc:
+#   o /proc/net/route
+#   o /proc/net/ipv6_route
 # -----------------------------------------------------------------------------
 #
 
@@ -40,45 +43,40 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-    source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-    source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-    source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ################################## Variables ##################################
 
 ## Options
 NIC="$1"
 
-## Variables
-routeChanges=''
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$NIC" ]; then
 	printUsage 'tune-nic.tpl NIC'
-	echo
-
 	exit 1
 fi
 
 # Display error if network interface parameter is invalid
-if [ ! -d /proc/sys/net/ipv4/conf/$NIC ]; then
+if [ ! -L /sys/class/net/$NIC ]; then
 	printError 'tune-nic.tpl' "Cannot access '$NIC': No such network interface"
 	echo
 	printUsage 'tune-nic.tpl NIC'
@@ -89,13 +87,13 @@ fi
 ################################### Actions ###################################
 
 # Actual Mbit/s speed of the network interface
-NIC_SPEED=$($EXEC_ETHTOOL $NIC 2>/dev/null | $EXEC_GREP -F 'Speed:' | $EXEC_AWK -F '[^0-9]*' '{print $2}')
+NIC_SPEED=$($EXEC_CAT /sys/class/net/$NIC/speed)
 
 # Calculate the TX Queue Length
-TX_QUEUE_LENGTH=$[ $NIC_SPEED >= 1000 ? 10000 : 1000 ]
+TX_QUEUE_LENGTH=$[ $NIC_SPEED * 10 ]
 
 ## Template
-cat << EOF
+/bin/cat << EOF
 #!/bin/bash
 
 #
@@ -137,7 +135,7 @@ fi
 
 ################################### Actions ###################################
 
-logger -p syslog.notice -i Called tune-$NIC with interface "\$IFACE" mode "\$MODE" and phase "\$PHASE";
+/usr/bin/logger -p syslog.notice -i Called tune-$NIC with interface "\$IFACE" mode "\$MODE" and phase "\$PHASE";
 
 if [ "\$IFACE" == '$NIC' ] && [ "\$MODE" == 'start' ] && [ "\$PHASE" == 'post-up' ]; then
 	# Optimize TX Queue Length
@@ -146,33 +144,8 @@ if [ "\$IFACE" == '$NIC' ] && [ "\$MODE" == 'start' ] && [ "\$PHASE" == 'post-up
 	# Offload RX/TX/TSO/UFO/SG/GSO Processing
 	/sbin/ethtool --offload $NIC rx on tx on tso on ufo on sg on gso on
 
-	# Optimize IPv4 initcwnd and initrwnd values
-	IFS=$'\n'; ipv4RouteList=( \$(/sbin/ip -4 route show) ); unset IFS;
-
-	for ipv4Route in "\${ipv4RouteList[@]}"; do
-		# Process IPv4 routes
-		if [[ "\$ipv4Route" =~ ^default ]]; then
-			defaultRoute=( \$ipv4Route )
-			/sbin/ip route change \${defaultRoute[@]:0:5} initcwnd 22 initrwnd 22
-		elif [[ "\$ipv4Route" == *"proto kernel"* ]]; then
-			kernelRoute=( \$ipv4Route )
-			/sbin/ip route change \${kernelRoute[@]:0:9} initcwnd 44 initrwnd 44
-		fi
-	done
-
-	# Optimize IPv6 initcwnd and initrwnd values
-	IFS=$'\n'; ipv6RouteList=( \$(/sbin/ip -6 route show) ); unset IFS;
-
-	for ipv6Route in "\${ipv6RouteList[@]}"; do
-		# Process IPv6 routes
-		if [[ "\$ipv6Route" =~ ^default ]]; then
-			defaultRoute=( \$ipv6Route )
-			/sbin/ip route change \${defaultRoute[@]:0:9} initcwnd 22 initrwnd 22
-		elif [[ "\$ipv6Route" == *"proto kernel"* ]]; then
-			kernelRoute=( \$ipv6Route )
-			/sbin/ip route change \${kernelRoute[@]:0:7} initcwnd 44 initrwnd 44
-		fi
-	done
+	# Optimize IPv4/IPv6 initcwnd and initrwnd values
+	/usr/bin/sudo /usr/local/sbin/initcrwnd $NIC &
 fi
 
 exit 0

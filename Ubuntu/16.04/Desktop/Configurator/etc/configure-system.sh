@@ -43,18 +43,15 @@
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
 #
-# Also creates the following directories for users of the system to utilize:
-# o /cache
-#
 # Other configuration tasks include:
+# o Disable root login
 # o Fix Default Applications for Common MIME Types
 # o Show Hidden Startup Applications
-# o Disable root login
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Print all or part of the Bash shell environment
-# printenv
+# Print all or part of the Bash shell environment
+#   o printenv
 # -----------------------------------------------------------------------------
 #
 
@@ -65,21 +62,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -121,6 +118,7 @@ EXEC_LSPCI=/usr/bin/lspci
 EXEC_PASSWD=/usr/bin/passwd
 
 ## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
 echoOnExit=false
 
 ################################### Actions ###################################
@@ -130,13 +128,7 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop System Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔═══════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                       '║'
-echo '╚═══════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE System Configurator" 'true'
 
 # Create /etc/skel/.config/gtk-3.0 directory
 if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
@@ -170,8 +162,8 @@ installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
 # Install /etc/devops/functions.conf
 installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
 
+# Install /etc/modprobe.d/kvm-amd.conf
 if $EXEC_LSCPU | $EXEC_GREP -q 'AMD'; then
-	# Install /etc/modprobe.d/kvm-amd.conf
 	installConfig 'kvm-amd.conf' "$SCRIPT_DIR"/modprobe.d /etc/modprobe.d
 fi
 
@@ -209,6 +201,37 @@ if [ ! -f /etc/sudoers.d/20-env_keep ]; then
 
 	# Install as root:root with r--r----- privileges
 	$EXEC_INSTALL -o root -g root -m 440 "$SCRIPT_DIR"/sudoers.d/20-env_keep /etc/sudoers.d
+	echoOnExit=true
+fi
+
+#
+# UMASK Configuration
+#
+
+umaskModule=$($EXEC_GREP 'pam_umask.so' /etc/pam.d/common-session)
+if [ -z "$umaskModule" ] ; then
+	printInfo 'Enabling pam_umask module'
+
+	echo -e '\nsession optional\t\t\tpam_umask.so umask=022' >> /etc/pam.d/common-session
+
+	echoOnExit=true
+
+elif [[ "$umaskModule" != *umask=022 ]]; then
+	printInfo "Setting global umask to '022' on pam_umask.so module"
+
+	$EXEC_SED --in-place -e 's/.+pam_umask.so$/& umask=022/' /etc/pam.d/common-session
+
+	echoOnExit=true
+fi
+
+#
+# Disable root login
+#
+
+if [[ $($EXEC_PASSWD -S root) != "root L"* ]]; then
+	printInfo 'Disabling root login'
+
+	$EXEC_PASSWD -l root
 
 	echoOnExit=true
 fi
@@ -230,42 +253,10 @@ if [ ! -f /etc/X11/xorg.conf ]; then
 fi
 
 #
-# UMASK Configuration
-#
-
-umaskModule=$($EXEC_GREP 'pam_umask.so' /etc/pam.d/common-session)
-if [ -z "$umaskModule" ] ; then
-	printInfo 'Enabling pam_umask module'
-
-	echo -e '\nsession optional\t\t\tpam_umask.so umask=022' >> /etc/pam.d/common-session
-
-	echoOnExit=true
-elif [[ "$umaskModule" != *umask=022 ]]; then
-	printInfo "Setting global umask to '022' on pam_umask.so module"
-
-	$EXEC_SED --in-place -e 's/.+pam_umask.so$/& umask=022/' /etc/pam.d/common-session
-
-	echoOnExit=true
-fi
-
-#if [ ! -f /etc/login.defs.orig ]; then
-#	printInfo 'Configuring global umask'
-#
-#	# Backup original /etc/login.defs file
-#	$EXEC_CP /etc/login.defs /etc/login.defs.orig
-#
-#	# Modify /etc/login.defs to configure global umask
-#	$EXEC_SED -i -e 's/^(UMASK[[:blank:]]*)[0-7]{3}/\1027/' -e 's/^(USERGROUPS_ENAB[[:blank:]]*)yes/\1no/' /etc/login.defs
-#
-#	echoOnExit=true
-#fi
-
-#
 # Fix Default Applications for Common MIME Types
 #
 
 if (( $($EXEC_GREP -F 'audio/mp4=rhythmbox.desktop' /usr/share/applications/defaults.list /etc/gnome/defaults.list | $EXEC_WC -l) < 2 )); then
-	# BEGIN Fix Default Applications
 
 	printBanner 'Fixing Default Applications for Common MIME Types'
 
@@ -286,29 +277,17 @@ if (( $($EXEC_GREP -F 'audio/mp4=rhythmbox.desktop' /usr/share/applications/defa
 	$EXEC_SED -i 's/^(.*video.*=).+/\1vlc_vlc.desktop/' /etc/gnome/defaults.list
 
 	echoOnExit=true
-
-	# END Fix Default Applications
 fi
 
 #
 # Show Hidden Startup Applications
 #   o Ubuntu Search -> Startup Applications
 #
+
 if $EXEC_GREP -Fq 'NoDisplay=true' /etc/xdg/autostart/*.desktop; then
 	printInfo 'Show hidden startup applications under Ubuntu Search -> Startup Applications'
 
 	$EXEC_SED -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
-
-	echoOnExit=true
-fi
-
-#
-# Disable root login
-#
-if [[ $($EXEC_PASSWD -S root) != "root L"* ]]; then
-	printInfo 'Disabling root login'
-
-	$EXEC_PASSWD -l root
 
 	echoOnExit=true
 fi

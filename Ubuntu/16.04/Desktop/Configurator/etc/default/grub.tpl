@@ -21,6 +21,14 @@
 # -----------------------------------------------------------------------------
 # Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
 #
+# GRUB Kernel configurations include:
+#   o Enable zswap (lz4 compressor / z3fold zpool)
+#   o Enable 'tickless' scheduling-clock interrupts
+#   o Enable Multi-Queue Block I/O Queueing
+#   o Enable Virtual Dynamic Shared Object (VDSO) support
+#   o Configure the IOMMU
+#   o Offload all RCU Callbacks to the kernel
+#   o Disable NMI Watchdog
 # -----------------------------------------------------------------------------
 #
 
@@ -28,30 +36,29 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}grub.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError 'grub.tpl' 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Variables ##################################
@@ -67,38 +74,37 @@ zswapMaxPoolPct="$1"
 
 # Display usage if no parameters given
 if [ -z "$zswapMaxPoolPct" ]; then
-  printUsage "grub.tpl ZSWAP_MAX_POOL_PCT"
-
-  exit 1
+	printUsage "grub.tpl ZSWAP_MAX_POOL_PCT"
+	exit 1
 fi
 
 # Display error if invalid zswap max pool percent specified
 if [[ ! "$zswapMaxPoolPct" =~ ^[0-9]+$ ]] || \
-      [ "$zswapMaxPoolPct" -lt 0 ] || \
-      [ "$zswapMaxPoolPct" -gt 100 ]; then
-  printError 'grub.tpl' "Invalid ZSwap max pool percent $zswapMaxPoolPct"
-  echo
-  printUsage 'grub.tpl ZSWAP_MAX_POOL_PCT'
+		[ "$zswapMaxPoolPct" -lt 0 ] || \
+		[ "$zswapMaxPoolPct" -gt 100 ]; then
+	printError 'grub.tpl' "Invalid ZSwap max pool percentage $zswapMaxPoolPct"
+	echo
+	printUsage 'grub.tpl ZSWAP_MAX_POOL_PCT'
 
-  exit 1
+	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Template variables
 isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
-efiReboot=$([ "$isEfiBoot" = 'true' ] && echo -n 'reboot=efi' || echo -n '')
+efiReboot=$([ "$isEfiBoot" == 'true' ] && echo -n 'reboot=efi' || echo -n '')
+
 defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct"
 defaultCmdLine="$defaultCmdLine iommu=memaper=3,noagp,allowdac nmi_watchdog=0 nohz=on"
 defaultCmdLine="$defaultCmdLine rcu_nocbs=$ONLINE_CPUS rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
 
 if [ "$isEfiBoot" = 'true' ]; then
-  defaultCmdLine="acpi=force $defaultCmdLine"
+	defaultCmdLine="acpi=force $defaultCmdLine"
 fi
 
-
 ## Template
-cat << EOF
+/bin/cat << EOF
 #
 # grub - DevOpsBroker configuration for /etc/default/grub
 #
@@ -148,7 +154,8 @@ GRUB_CMDLINE_LINUX="$efiReboot"
 # The resolution used on graphical terminal
 # note that you can use only modes which your graphic card supports via VBE
 # you can see them in real GRUB with the command 'vbeinfo'
-#GRUB_GFXMODE=640x480
+#GRUB_GFXMODE=1280x960x16
+#GRUB_GFXPAYLOAD_LINUX=keep
 
 # Uncomment if you don't want GRUB to pass "root=UUID=xxx" parameter to Linux
 #GRUB_DISABLE_LINUX_UUID=true

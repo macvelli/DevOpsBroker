@@ -30,30 +30,29 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}sources-list.tpl: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError 'sources-list.tpl' 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Variables ##################################
@@ -65,16 +64,15 @@ aptMirrorSite="$1"
 
 # Display usage if no parameters given
 if [ -z "$aptMirrorSite" ]; then
-  printUsage "sources-list.tpl APT_MIRROR_SITE"
-
-  exit 1
+	printUsage 'sources-list.tpl APT_MIRROR_SITE'
+	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Backup original /etc/apt/sources.list
 if [ ! -f /etc/apt/sources.list.orig ]; then
-  $EXEC_CP /etc/apt/sources.list /etc/apt/sources.list.orig
+	$EXEC_CP /etc/apt/sources.list /etc/apt/sources.list.orig
 fi
 
 ## Template variables

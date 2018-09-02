@@ -39,33 +39,32 @@
 # -----------------------------------------------------------------------------
 #
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
 	printError 'sysctl.conf.tpl' 'Permission denied (you must be root)'
-
 	exit 1
 fi
 
@@ -79,9 +78,9 @@ SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
 # Description:  Calculate the Optimal Window value
 #
 # Parameter $1: The Unscaled Window value
-# Parameter $2: he Maximum BDP
+# Parameter $2: The Maximum BDP
 # -----------------------------------------------------------------------------
-function calcOptWindow() {
+function calcOptWindow() {function calcOptWindow() {
 	local unscaledWin=$1
 	local maxBDP=$2
 
@@ -93,25 +92,24 @@ function calcOptWindow() {
 # Description:  Execute the ping test to get Round Trip Time
 # -----------------------------------------------------------------------------
 function executePingTest() {
-
 	# Add to the /tmp/ping.job file
-	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-east-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" > /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-east-2.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-west-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-west-2.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 ec2.ca-central-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-gov-west-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-east-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" > "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-east-2.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-west-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-west-2.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.ca-central-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 ec2.us-gov-west-1.amazonaws.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
 
 	# Also look at GCP
-	echo "$EXEC_PING -c 4 -n -W 1 us-east1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 us-east4.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 us-west1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 us-west2.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 us-central1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
-	echo "$EXEC_PING -c 4 -n -W 1 northamerica-northeast1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> /tmp/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-east1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-east4.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-west1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-west2.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 us-central1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
+	echo "$EXEC_PING -c 4 -n -W 1 northamerica-northeast1.googleusercontent.com | $EXEC_AWK -F '/' 'END {printf \"%1.0f\n\", \$5}'" >> "$TMPDIR"/ping.job
 
 	# Execute the /tmp/ping.job in parallel
-	echo "$($EXEC_PARALLEL -j0 --no-notice :::: /tmp/ping.job | $EXEC_SORT -n | $EXEC_TAIL -1)"
+	echo "$($EXEC_PARALLEL -j0 --no-notice :::: "$TMPDIR"/ping.job | $EXEC_SORT -n | $EXEC_TAIL -1)"
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -183,6 +181,9 @@ function tuneNetwork() {
 
 ## Configuration
 NUM_CONNECTIONS=25
+
+## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ General Information ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -276,7 +277,7 @@ esac
 VM_MIN_FREE_KB=$[ $RAM_TOTAL / 100 ]
 
 ## Template
-cat << EOF > "$SCRIPT_DIR"/sysctl.conf
+/bin/cat << EOF
 #
 # sysctl.conf - DevOpsBroker Linux kernel tuning configuration file
 #
@@ -315,11 +316,14 @@ kernel.core_uses_pid = 1
 # Disable NMI Watchdog
 kernel.nmi_watchdog = 0
 
-# Disable Magic SysRq Key
-kernel.sysrq = 0
+# Set the kernel panic timeout to autoreboot
+kernel.panic = 10
 
 # Limit perf cpu time to 5%
 kernel.perf_cpu_time_max_percent = 5
+
+# Increase the PID_MAX limit
+kernel.pid_max = 1048576
 
 # Kernel Task Scheduler Optimizations
 kernel.sched_child_runs_first = 1
@@ -328,6 +332,9 @@ kernel.sched_min_granularity_ns = 4000000
 kernel.sched_schedstats = 0
 kernel.sched_tunable_scaling = 0
 kernel.sched_wakeup_granularity_ns = 2500000
+
+# Disable Magic SysRq Key
+kernel.sysrq = 0
 
 #
 # Filesystem Kernel Tuning Configuration
@@ -348,6 +355,9 @@ net.core.netdev_max_backlog = $NETDEV_MAX_BACKLOG
 
 # Optimize Maximum Amount of Option Memory Buffers
 net.core.optmem_max = $UNSCALED_TCP_WIN
+
+# Optimize Connection Backlog
+net.core.somaxconn = $[ $RAM_GB * 1024 ]
 
 # Enable IPv6
 net.ipv6.conf.all.disable_ipv6 = 0
@@ -429,6 +439,10 @@ net.ipv4.tcp_limit_output_bytes = $TCP_LIMIT_OUTPUT_BYTES
 # Enable TCP Low Latency
 net.ipv4.tcp_low_latency = 1
 
+# Optimize TCP Max Orphans and TCP Max TIME_WAIT Buckets
+net.ipv4.tcp_max_orphans = $[ $RAM_GB * 4096 ]
+net.ipv4.tcp_max_tw_buckets = $[ $RAM_GB * 8192 ]
+
 # Enable TCP Receive Buffer Auto-Tuning
 net.ipv4.tcp_moderate_rcvbuf = 1
 
@@ -450,7 +464,7 @@ net.ipv4.tcp_fack = 1
 net.ipv4.tcp_slow_start_after_idle = 0
 
 # Enable SYN Flood Attack Protection
-net.ipv4.tcp_max_syn_backlog = 1024
+net.ipv4.tcp_max_syn_backlog = $(min $[ $RAM_GB * 1024 ] 65535)
 net.ipv4.tcp_synack_retries = 2
 net.ipv4.tcp_syncookies = 0
 
@@ -494,9 +508,6 @@ net.ipv4.route.min_adv_mss = 512
 # Virtual Memory Kernel Tuning Configuration
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-# Optimize VM Swappiness
-vm.swappiness = 10
-
 # Optimize VM Dirty Ratio
 vm.dirty_ratio = $VM_DIRTY_RATIO
 
@@ -505,6 +516,16 @@ vm.dirty_background_ratio = $VM_DIRTY_BG_RATIO
 
 # Optimize VM Minimum Free Memory
 vm.min_free_kbytes = $VM_MIN_FREE_KB
+
+# Do not allow Virtual Memory overcommit
+vm.overcommit_memory = 2
+vm.overcommit_ratio = 100
+
+# Do not panic on Out-of-Memory condition
+vm.panic_on_oom = 0
+
+# Optimize VM Swappiness
+vm.swappiness = 10
 
 # Optimize VM VFS Cache Pressure
 vm.vfs_cache_pressure = $VM_VFS_CACHE_PRESSURE

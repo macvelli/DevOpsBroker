@@ -23,11 +23,11 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Use DNS lookup utility to see unbound in action (run twice)
-# dig ubuntu.com
+# Use DNS lookup utility to see unbound in action (run twice):
+#   o dig ubuntu.com
 #
-# o Query Internet name servers interactively
-# nslookup google.com
+# Query Internet name servers interactively:
+#   o nslookup google.com
 # -----------------------------------------------------------------------------
 #
 
@@ -35,24 +35,24 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -60,39 +60,33 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "${bold}$SCRIPT_EXEC: ${bittersweet}Permission denied (you must be root)${reset}"
-
-  exit 1
+if [ "$USER" != 'root' ]; then
+	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	exit 1
 fi
 
 ################################## Variables ##################################
 
+## Variables
 echoOnExit=false
 
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
 if [ $SHLVL -eq 1 ]; then
-  clear
+	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Unbound Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"			      '║'
-echo '╚════════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE Unbound Configurator" 'true'
 
 #
 # unbound User Configuration
 #
 if ! $EXEC_GROUPS unbound | $EXEC_GREP -Fq 'syslog'; then
-  printInfo 'Adding unbound user to the syslog group'
-  $EXEC_ADDUSER unbound syslog
+	printInfo 'Adding unbound user to the syslog group'
+	$EXEC_ADDUSER unbound syslog
 
-  echoOnExit=true
+	echoOnExit=true
 fi
 
 #
@@ -101,48 +95,44 @@ fi
 
 # Install /etc/unbound/unbound.conf.d/dns-cache-server.conf
 if [ ! -f /etc/unbound/unbound.conf.d/dns-cache-server.conf ]; then
-  # BEGIN /etc/unbound/unbound.conf.d/dns-cache-server.conf
+	printInfo 'Configuring unbound DNS cache server'
 
-  printInfo 'Configuring unbound DNS cache server'
+	# Delete any default configurations in /etc/unbound/unbound.conf.d
+	$EXEC_RM /etc/unbound/unbound.conf.d/*
 
-  # Delete any default configurations in /etc/unbound/unbound.conf.d
-  $EXEC_RM /etc/unbound/unbound.conf.d/*
+	# Install as root:root with rw-r--r-- privileges
+	$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf /etc/unbound/unbound.conf.d
 
-  # Install as root:root with rw-r--r-- privileges
-  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf /etc/unbound/unbound.conf.d
+	printInfo 'Restart unbound service'
+	$EXEC_SYSTEMCTL restart unbound.service
 
-  printInfo 'Restart unbound service'
-  $EXEC_SYSTEMCTL restart unbound.service
-
-  echoOnExit=true
+	echoOnExit=true
 
 elif [ "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf -nt /etc/unbound/unbound.conf.d/dns-cache-server.conf ]; then
-  printInfo 'Updating unbound DNS cache server configuration'
+	printInfo 'Updating unbound DNS cache server configuration'
 
-  # Install as root:root with rw-r--r-- privileges
-  $EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf /etc/unbound/unbound.conf.d
+	# Install as root:root with rw-r--r-- privileges
+	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf /etc/unbound/unbound.conf.d
 
-  printInfo 'Restart unbound service'
-  $EXEC_SYSTEMCTL restart unbound.service
+	printInfo 'Restart unbound service'
+	$EXEC_SYSTEMCTL restart unbound.service
 
-  echoOnExit=true
-
-  # END /etc/unbound/unbound.conf.d/dns-cache-server.conf
+	echoOnExit=true
 fi
 
 #
 # Reconfigure Network Manager to use unbound
 #
 
-if grep -Fq 'dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf; then
-  printInfo 'Configuring Network Manager to use unbound'
-  sed -i 's/dns=dnsmasq/dns=unbound/' /etc/NetworkManager/NetworkManager.conf
+if $EXEC_GREP -Fq 'dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf; then
+	printInfo 'Configuring Network Manager to use unbound'
+	$EXEC_SED -i 's/dns=dnsmasq/dns=unbound/' /etc/NetworkManager/NetworkManager.conf
 
-  echoOnExit=true
+	echoOnExit=true
 fi
 
 if [ "$echoOnExit" == 'true' ]; then
-  echo
+	echo
 fi
 
 exit 0

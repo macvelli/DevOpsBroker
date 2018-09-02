@@ -34,21 +34,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -56,9 +56,8 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
-if [ "$EUID" -ne 0 ]; then
+if [ "$USER" != 'root' ]; then
 	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
-
 	exit 1
 fi
 
@@ -70,6 +69,9 @@ sourcesListTpl=$(isExecutable "$SCRIPT_DIR"/sources-list.tpl)
 ## Bash exec variables
 EXEC_TRUNCATE=/usr/bin/truncate
 
+## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
+
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
@@ -77,13 +79,7 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop APT Mirror Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔═══════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                           '║'
-echo '╚═══════════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE APT Mirror Configurator" 'true'
 
 if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
 	# BEGIN Configure apt mirror site
@@ -152,22 +148,22 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
 		printInfo 'Installing /etc/apt/sources.list'
 
 		# Execute template script
-		"$sourcesListTpl" $fastestMirror > "$SCRIPT_DIR"/sources.list
+		"$sourcesListTpl" $fastestMirror > "$TMPDIR"/sources.list
 
 		# Install as root:root with rw-r--r-- privileges
-		$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/sources.list /etc/apt
+		$EXEC_INSTALL -o root -g root -m 644 "$TMPDIR"/sources.list /etc/apt
 	else
 		printInfo 'Updating /etc/apt/sources.list'
 
 		# Execute template script
-		"$sourcesListTpl" $fastestMirror > "$SCRIPT_DIR"/sources.list
+		"$sourcesListTpl" $fastestMirror > "$TMPDIR"/sources.list
 
 		# Install as root:root with rw-r--r-- privileges
-		$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/sources.list /etc/apt
+		$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/sources.list /etc/apt
 	fi
 
 	# Clean up
-	$EXEC_RM "$SCRIPT_DIR"/sources.list
+	$EXEC_RM "$TMPDIR"/sources.list
 
 	printInfo 'Download package information from new apt mirror site'
 	$EXEC_APT update

@@ -31,6 +31,8 @@
 
 ################################### Actions ###################################
 
+logger -p syslog.notice -i Called iface-preup-config.sh with interface "$IFACE" mode "$MODE" and phase "$PHASE";
+
 #
 # Load iptables and ip6tables rules
 #
@@ -38,35 +40,48 @@
 /sbin/iptables-restore < /etc/network/iptables.rules
 /sbin/ip6tables-restore < /etc/network/ip6tables.rules
 
+# Enable acceptance of IPv6 default router advertisements
+/sbin/sysctl -w net.ipv6.conf.$IFACE.accept_ra_defrtr=1
+
 #
 # Configure the nf_conntrack kernel module
 #
 
 # Optimize generic timeout to 2 minutes
-sysctl -w net.netfilter.nf_conntrack_generic_timeout=120
+/sbin/sysctl -w net.netfilter.nf_conntrack_generic_timeout=120
 
-# Disable TCP Strict Policy
-sysctl -w net.netfilter.nf_conntrack_tcp_loose=1
+# Disable Conntrack Helpers
+/sbin/sysctl -w net.netfilter.nf_conntrack_helper=0
+
+# Enable TCP Strict Policy
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_loose=0
+
+# Optimize TCP Timeout Close and Close-Wait
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_close=10
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_close_wait=20
 
 # Optimize TCP Established Timeout to 12 hours
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=43200
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=43200
 
-# Optimize TCP FIN_WAIT Timeout to 60 seconds
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_fin_wait=60
+# Optimize TCP FIN_WAIT Timeout to 20 seconds
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_fin_wait=20
+
+# Optimize TCP Last ACK Timeout to 10 seconds
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_last_ack=10
 
 # Optimize TCP Maximum Retransmit Timeout to 60 seconds
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_max_retrans=60
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_max_retrans=60
 
-# Optimize TCP SYN Receive Timeout to 30 seconds
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_syn_recv=30
+# Optimize TCP SYN Receive Timeout to 15 seconds
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_syn_recv=15
 
-# Optimize TCP SYN Send Timeout to 60 seconds
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_syn_sent=60
+# Optimize TCP SYN Send Timeout to 30 seconds
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_syn_sent=30
 
 # Optimize TCP TIME_WAIT Timeout to 60 seconds
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=60
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=60
 
 # Optimize TCP Unacknowledged Timeout to 60 seconds
-sysctl -w net.netfilter.nf_conntrack_tcp_timeout_unacknowledged=60
+/sbin/sysctl -w net.netfilter.nf_conntrack_tcp_timeout_unacknowledged=60
 
 exit 0
