@@ -435,8 +435,8 @@ net.ipv4.tcp_congestion_control = lp
 # Enable TCP Explicit Congestion Notification (ECN)
 net.ipv4.tcp_ecn = 1
 
-# Enable Client/Server TCP Fast Open (TFO)
-net.ipv4.tcp_fastopen = 1027
+# Enable TCP Fast Open (TFO)
+net.ipv4.tcp_fastopen = 1
 
 # Optimize TCP FIN Timeout
 net.ipv4.tcp_fin_timeout = 20
@@ -513,10 +513,10 @@ net.ipv4.tcp_mem = $TCP_MEM_MIN $TCP_MEM_PRESSURE $TCP_MEM_MAX
 net.ipv4.udp_mem = $UDP_MEM_MIN $UDP_MEM_PRESSURE $UDP_MEM_MAX
 
 # Set the IPv4 Route Minimum PMTU
-net.ipv4.route.min_pmtu = 576
+net.ipv4.route.min_pmtu = 552
 
 # Set the IPv4 Minimum Advertised MSS
-net.ipv4.route.min_adv_mss = 536
+net.ipv4.route.min_adv_mss = 512
 
 #
 # Virtual Memory Kernel Tuning Configuration
