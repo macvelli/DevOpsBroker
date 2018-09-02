@@ -34,6 +34,7 @@
 #   o .bash_personal
 #   o .bashrc
 #   o .config/gtk-3.0/gtk.css
+#   o .config/gtk-3.0/settings.ini
 #   o .gitconfig
 #   o .profile
 #
@@ -47,6 +48,16 @@
 #   o New LibreOffice Math.odf
 #   o New LibreOffice Writer.odt
 #   o New Systemd.service
+#
+# Manages the following /etc/skel configurations:
+#   o /etc/skel/.bash_aliases
+#   o /etc/skel/.bash_logout
+#   o /etc/skel/.bash_personal
+#   o /etc/skel/.bashrc
+#   o /etc/skel/.gitconfig
+#   o /etc/skel/.profile
+#   o /etc/skel/.config/gtk-3.0/gtk.css
+#   o /etc/skel/.config/gtk-3.0/settings.ini
 #
 # Adds the user to the 'users' group (if necessary)
 # Adds the user to the 'audio' group (if necessary)
@@ -72,21 +83,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -133,14 +144,28 @@ userhome="${userInfo[5]}"
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     installSkeleton
+# Description:  Installs the user configuration file into the /etc/skel directory
+#
+# Parameter $1: Name of the configuration file to install
+# Parameter $2: Name of the /etc/skel file
+# -----------------------------------------------------------------------------
+function installSkeleton() {
+	if [ ! -f "/etc/skel/$2" ] || [ "$SCRIPT_DIR/$1" -nt "/etc/skel/$2" ]; then
+		printInfo "Installing /etc/skel/$2"
+
+		# Install as root:root with rw-r--r-- privileges
+		$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$1" "/etc/skel/$2"
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     installTemplate
 # Description:  Installs the template file into the $userhome/Templates directory
 #
 # Parameter $1: Name of the template file to install
 # -----------------------------------------------------------------------------
 function installTemplate() {
-	# BEGIN install template function
-
 	local templateFile="$1"
 
 	if [ ! -f "$userhome/Templates/$templateFile" ]; then
@@ -149,8 +174,6 @@ function installTemplate() {
 		# Install as $username:$username with rw-r----- privileges
 		$EXEC_INSTALL -o $username -g $username -m 640 "$SCRIPT_DIR"/Templates/$templateFile "$userhome"/Templates
 	fi
-
-	# END install template function
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -161,8 +184,6 @@ function installTemplate() {
 # Parameter $2: Name of the source configuration file
 # -----------------------------------------------------------------------------
 function installUserConfig() {
-	# BEGIN install user config function
-
 	local configFile="$1"
 	local sourceFile="$2"
 
@@ -178,8 +199,6 @@ function installUserConfig() {
 		# Install as $username:$username with rw-r----- privileges
 		$EXEC_INSTALL -b --suffix .bak -o $username -g $username -m 640 "$SCRIPT_DIR/$sourceFile" "$userhome/$configFile"
 	fi
-
-	# END install user config function
 }
 
 ################################### Actions ###################################
@@ -189,13 +208,7 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop User Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔═════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                     '║'
-echo '╚═════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE User Configurator" 'true'
 
 # Create $userhome/bin
 if [ ! -d "$userhome"/bin ]; then
@@ -270,19 +283,10 @@ installUserConfig '.gitconfig' 'gitconfig'
 installUserConfig '.profile' 'profile'
 
 # Install $userhome/.config/gtk-3.0/gtk.css
-#   o Fix scrollbar widths
-if [ ! -f "$userhome"/.config/gtk-3.0/gtk.css ]; then
-	printInfo "Installing $userhome/.config/gtk-3.0/gtk.css"
+installConfig 'gtk.css' "$SCRIPT_DIR/config/gtk-3.0" "$userhome/.config/gtk-3.0"
 
-	# Install as $username:$username with rw-r----- privileges
-	$EXEC_INSTALL -o $username -g $username -m 640 "$SCRIPT_DIR"/gtk.css "$userhome"/.config/gtk-3.0/gtk.css
-
-elif [ "$SCRIPT_DIR"/gtk.css -nt "$userhome"/.config/gtk-3.0/gtk.css ]; then
-	printInfo "Updating $userhome/.config/gtk-3.0/gtk.css"
-
-	# Install as $username:$username with rw-r----- privileges
-	$EXEC_INSTALL -b --suffix .bak -o $username -g $username -m 640 "$SCRIPT_DIR"/gtk.css "$userhome"/.config/gtk-3.0/gtk.css
-fi
+# Install $userhome/.config/gtk-3.0/settings.ini
+installConfig 'settings.ini' "$SCRIPT_DIR/config/gtk-3.0" "$userhome/.config/gtk-3.0"
 
 # Install $userhome/Templates/New CSS.css
 installTemplate 'New CSS.css'
@@ -311,6 +315,35 @@ installTemplate 'New LibreOffice Writer.odt'
 # Install $userhome/Templates/New Systemd.service
 installTemplate 'New Systemd.service'
 
+# Create /etc/skel/.config/gtk-3.0 directory
+if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
+	$EXEC_MKDIR --mode=0755 /etc/skel/.config/gtk-3.0
+fi
+
+# Install /etc/skel/.bash_aliases
+installSkeleton 'bash_aliases' '.bash_aliases'
+
+# Install /etc/skel/.bash_logout
+installSkeleton 'bash_logout' '.bash_logout'
+
+# Install /etc/skel/.bash_personal
+installSkeleton 'bash_personal' '.bash_personal'
+
+# Install /etc/skel/.bashrc
+installSkeleton 'bashrc' '.bashrc'
+
+# Install /etc/skel/.gitconfig
+installSkeleton 'gitconfig' '.gitconfig'
+
+# Install /etc/skel/.profile
+installSkeleton 'profile' '.profile'
+
+# Install /etc/skel/.config/gtk-3.0/gtk.css
+installSkeleton 'config/gtk-3.0/gtk.css' '.config/gtk-3.0/gtk.css'
+
+# Install /etc/skel/.config/gtk-3.0/settings.ini
+installSkeleton 'config/gtk-3.0/settings.ini' '.config/gtk-3.0/settings.ini'
+
 userGroups=$( $EXEC_GROUPS $username )
 
 # Add $username to the 'users' group
@@ -331,7 +364,7 @@ fi
 
 # Add $username to the 'video' group
 regExpr="\\bvideo\\b"
-if [[ ! "$userGroups" =~ $regExpr ]]; then
+if [ ! -z "$($EXEC_GETENT group 'video')" ] &&  [[ ! "$userGroups" =~ $regExpr ]]; then
 	printInfo "Adding $username to the 'video' group"
 
 	$EXEC_ADDUSER $username 'video'
@@ -339,7 +372,7 @@ fi
 
 # Add $username to the 'kvm' group
 regExpr="\\bkvm\\b"
-if [[ ! "$userGroups" =~ $regExpr ]]; then
+if [ ! -z "$($EXEC_GETENT group 'kvm')" ] && [[ ! "$userGroups" =~ $regExpr ]]; then
 	printInfo "Adding $username to the 'kvm' group"
 
 	$EXEC_ADDUSER $username 'kvm'

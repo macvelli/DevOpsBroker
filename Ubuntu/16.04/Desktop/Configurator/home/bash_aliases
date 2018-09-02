@@ -27,35 +27,33 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o View all Bash complete configurations
-# complete -p
+# View all Bash complete configurations
+#   o complete -p
 #
-# o View Bash completion configuration for a given command
-# complete -p vi
-#
+# View Bash completion configuration for a given command
+#   o complete -p vi
 # -----------------------------------------------------------------------------
 #
-
 
 ################################### Aliases ###################################
 
 # Enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
-  test -r ~/.dircolors && eval "$(/usr/bin/dircolors -b ~/.dircolors)" || eval "$(/usr/bin/dircolors -b)"
+	/usr/bin/test -r ~/.dircolors && eval "$(/usr/bin/dircolors -b ~/.dircolors)" || eval "$(/usr/bin/dircolors -b)"
 
-  alias ls='/bin/ls -lh --color=auto --group-directories-first'
-  alias la='/bin/ls -lha --color=auto --group-directories-first'
+	alias ls='/bin/ls -lh --color=auto --group-directories-first'
+	alias la='/bin/ls -lha --color=auto --group-directories-first'
 
-  alias grep='/bin/grep --color=auto'
-  alias fgrep='/bin/fgrep --color=auto'
-  alias egrep='/bin/egrep --color=auto'
+	alias grep='/bin/grep --color=auto'
+	alias fgrep='/bin/fgrep --color=auto'
+	alias egrep='/bin/egrep --color=auto'
 else
-  alias ls='/bin/ls -lh --group-directories-first'
-  alias la='/bin/ls -lha --group-directories-first'
+	alias ls='/bin/ls -lh --group-directories-first'
+	alias la='/bin/ls -lha --group-directories-first'
 
-  alias grep='/bin/grep'
-  alias fgrep='/bin/fgrep'
-  alias egrep='/bin/egrep'
+	alias grep='/bin/grep'
+	alias fgrep='/bin/fgrep'
+	alias egrep='/bin/egrep'
 fi
 
 # Add an "alert" alias for long running commands.  Use like so:

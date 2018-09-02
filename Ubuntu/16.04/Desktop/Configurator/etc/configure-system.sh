@@ -33,13 +33,6 @@
 # o /etc/devops/exec.conf
 # o /etc/devops/functions.conf
 # o /etc/modprobe.d/kvm-amd.conf
-# o /etc/skel/.bash_aliases
-# o /etc/skel/.bash_logout
-# o /etc/skel/.bash_personal
-# o /etc/skel/.bashrc
-# o /etc/skel/.gitconfig
-# o /etc/skel/.profile
-# o /etc/skel/.config/gtk-3.0/gtk.css
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
 #
@@ -89,27 +82,6 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
-################################## Functions ##################################
-
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:     installSkeleton
-# Description:  Installs the DevOpsBroker settings file in the /etc/skel directory
-#
-# Parameter $1: The name of the DevOpsBroker settings file to install
-# Parameter $2: The name of the /etc/skel file
-# Parameter $3: The directory where to install the file
-# -----------------------------------------------------------------------------
-function installSkeleton() {
-	if [ "$SCRIPT_DIR/../home/$1" -nt $3/$2 ]; then
-		printInfo "Installing $3/$2"
-
-		# Install as root:root with rw-r--r-- privileges
-		$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/../home/$1" $3/$2
-
-		echoOnExit=true
-	fi
-}
-
 ################################## Variables ##################################
 
 ## Bash exec variables
@@ -129,11 +101,6 @@ if [ $SHLVL -eq 1 ]; then
 fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE System Configurator" 'true'
-
-# Create /etc/skel/.config/gtk-3.0 directory
-if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
-	$EXEC_MKDIR --mode=0700 /etc/skel/.config/gtk-3.0
-fi
 
 # Install /etc/adduser.conf
 installConfig 'adduser.conf' "$SCRIPT_DIR" /etc
@@ -163,27 +130,9 @@ installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
 installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
 
 # Install /etc/modprobe.d/kvm-amd.conf
-if $EXEC_LSCPU | $EXEC_GREP -q 'AMD'; then
+if $EXEC_LSMOD | $EXEC_GREP -Eq '^kvm\b' && $EXEC_LSCPU | $EXEC_GREP -q 'AMD'; then
 	installConfig 'kvm-amd.conf' "$SCRIPT_DIR"/modprobe.d /etc/modprobe.d
 fi
-
-# Install /etc/skel/.bash_aliases
-installSkeleton 'bash_aliases' '.bash_aliases' '/etc/skel'
-
-# Install /etc/skel/.bash_logout
-installSkeleton 'bash_logout' '.bash_logout' '/etc/skel'
-
-# Install /etc/skel/.bash_personal
-installSkeleton 'bash_personal' '.bash_personal' '/etc/skel'
-
-# Install /etc/skel/.bashrc
-installSkeleton 'bashrc' '.bashrc' '/etc/skel'
-
-# Install /etc/skel/.gitconfig
-installSkeleton 'gitconfig' '.gitconfig' '/etc/skel'
-
-# Install /etc/skel/.profile
-installSkeleton 'profile' '.profile' '/etc/skel'
 
 # Install /etc/sudoers.d/10-umask
 if [ ! -f /etc/sudoers.d/10-umask ]; then
