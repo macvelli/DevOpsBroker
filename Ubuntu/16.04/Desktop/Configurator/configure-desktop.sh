@@ -96,21 +96,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -126,29 +126,14 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ubuntu Version Check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Check which version of Ubuntu is installed
-EXEC_LSB_RELEASE=/usr/bin/lsb_release
-
-IFS=$'\n'
-DISTRO_INFO=($($EXEC_LSB_RELEASE -sirc))
-IFS=' '
+DISTRO_INFO="$(/usr/bin/lsb_release -sirc)"
+DISTRO_INFO=${DISTRO_INFO//${newline}/ }
 
 # Display error if not running on Ubuntu 16.04 xenial
-if [ ${#DISTRO_INFO[@]} -ne 3 ] || \
-      [ "${DISTRO_INFO[0]}" != 'Ubuntu' ] || \
-      [ "${DISTRO_INFO[1]}" != '16.04' ] || \
-      [ "${DISTRO_INFO[2]}" != 'xenial' ]; then
-  printError 'configure-desktop.sh' "Invalid Linux distribution ${DISTRO_INFO[@]}"
-
-  exit 1
+if [ "$DISTRO_INFO" != 'Ubuntu 16.04 xenial' ]; then
+	printError "$SCRIPT_EXEC" "Invalid Linux distribution '$DISTRO_INFO'"
+	exit 1
 fi
-
-################################## Variables ##################################
-
-## Bash exec variables
-EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
-
-# Default network interface
-DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
 
 ################################## Functions ##################################
 
@@ -197,6 +182,14 @@ function uninstallPackage() {
 	fi
 }
 
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
+
+# Default network interface
+DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
+
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
@@ -221,18 +214,16 @@ installPackage '/sbin/iptables' 'iptables'
 if [ ! -f /etc/network/iptables.rules ] || \
 	[ "$SCRIPT_DIR"/etc/network/iptables-desktop.sh -nt /etc/network/iptables.rules ]; then
 
-  "$SCRIPT_DIR"/etc/network/iptables-desktop.sh
-
-  echo
+	"$SCRIPT_DIR"/etc/network/iptables-desktop.sh
+	echo
 fi
 
 # Configure IPv6 firewall with ip6tables-desktop.sh script
 if [ ! -f /etc/network/ip6tables.rules ] || \
 	[ "$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh -nt /etc/network/ip6tables.rules ]; then
 
-  "$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh
-
-  echo
+	"$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh
+	echo
 fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ DevOpsBroker Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~
