@@ -135,20 +135,6 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Kernel Tuning Configurator" 'true'
 
-# Exit if /etc/sysctl.conf already configured
-if [ -f /etc/sysctl.conf.orig ] && [ "$1" != '-f' ]; then
-	printInfo '/etc/sysctl.conf already configured'
-	echo
-	printUsage "$SCRIPT_EXEC ${gold}[-f]"
-
-	echo ${bold}
-	echo "Valid Options:${romantic}"
-	echo -e ${gold}'  -f\t'  ${romantic}'Force /etc/sysctl.conf reconfiguration'
-	echo ${reset}
-
-	exit 0
-fi
-
 #
 # Linux Kernel Tuning
 #
@@ -170,6 +156,7 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
 		$EXEC_RM "$TMPDIR"/sysctl.conf
 
 		printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
+		echo
 		$EXEC_SYSCTL -p
 
 		echoOnExit=true
@@ -193,6 +180,7 @@ elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "$1" == '-f' ]; then
 		$EXEC_RM "$TMPDIR"/sysctl.conf
 
 		printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
+		echo
 		$EXEC_SYSCTL -p
 
 		echoOnExit=true
@@ -201,6 +189,15 @@ fi
 
 if [ "$echoOnExit" == 'true' ]; then
 	echo
+else
+	printInfo '/etc/sysctl.conf already configured'
+	echo
+	printUsage "$SCRIPT_EXEC ${gold}[-f]"
+
+	echo ${bold}
+	echo "Valid Options:${romantic}"
+	echo -e ${gold}'  -f\t'  ${romantic}'Force /etc/sysctl.conf reconfiguration'
+	echo ${reset}
 fi
 
 exit 0

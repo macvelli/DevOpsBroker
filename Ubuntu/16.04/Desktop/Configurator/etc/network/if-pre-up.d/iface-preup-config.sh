@@ -31,7 +31,7 @@
 
 ################################### Actions ###################################
 
-logger -p syslog.notice -i Called iface-preup-config.sh with interface "$IFACE" mode "$MODE" and phase "$PHASE";
+/usr/bin/logger -p syslog.notice -i Called iface-preup-config.sh with interface "$IFACE" mode "$MODE" and phase "$PHASE";
 
 #
 # Load iptables and ip6tables rules

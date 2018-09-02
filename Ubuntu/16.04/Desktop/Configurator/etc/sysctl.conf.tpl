@@ -80,7 +80,7 @@ SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
 # Parameter $1: The Unscaled Window value
 # Parameter $2: The Maximum BDP
 # -----------------------------------------------------------------------------
-function calcOptWindow() {function calcOptWindow() {
+function calcOptWindow() {
 	local unscaledWin=$1
 	local maxBDP=$2
 
@@ -195,6 +195,17 @@ RAM_GB=$[ ($RAM_TOTAL + 1048575) / 1048576 ]
 
 # Memory Page Size
 PAGESIZE=$(/usr/bin/getconf PAGE_SIZE)
+
+# --------------------------- Scheduler Information ---------------------------
+
+# CPU Maximum Frequency
+CPU_MAX_FREQ=$[ $($EXEC_CAT /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq) * 1000 ]
+
+# Task Scheduling Calculations
+SCHED_LATENCY_NS=$(echo "scale=8; (16777216 / $CPU_MAX_FREQ) * 1000000000" | $EXEC_BC)
+SCHED_LATENCY_NS=${SCHED_LATENCY_NS::-9}
+SCHED_MIN_GRANULARITY_NS=$[ $SCHED_LATENCY_NS / 3 * 2 ]
+SCHED_WAKEUP_GRANULARITY_NS=$[ $SCHED_LATENCY_NS / 10 * 4 ]
 
 # --------------------------- Filesystem Information --------------------------
 
@@ -327,11 +338,11 @@ kernel.pid_max = 1048576
 
 # Kernel Task Scheduler Optimizations
 kernel.sched_child_runs_first = 1
-kernel.sched_latency_ns = 6000000
-kernel.sched_min_granularity_ns = 4000000
+kernel.sched_latency_ns = $SCHED_LATENCY_NS
+kernel.sched_min_granularity_ns = $SCHED_MIN_GRANULARITY_NS
 kernel.sched_schedstats = 0
 kernel.sched_tunable_scaling = 0
-kernel.sched_wakeup_granularity_ns = 2500000
+kernel.sched_wakeup_granularity_ns = $SCHED_WAKEUP_GRANULARITY_NS
 
 # Disable Magic SysRq Key
 kernel.sysrq = 0
@@ -424,11 +435,11 @@ net.ipv4.tcp_congestion_control = lp
 # Enable TCP Explicit Congestion Notification (ECN)
 net.ipv4.tcp_ecn = 1
 
-# Enable TCP Fast Open (TFO)
-net.ipv4.tcp_fastopen = 1
+# Enable Client/Server TCP Fast Open (TFO)
+net.ipv4.tcp_fastopen = 1027
 
 # Optimize TCP FIN Timeout
-net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_fin_timeout = 20
 
 # Disable F-RTO enhanced recovery algorithm (no wireless network)
 net.ipv4.tcp_frto = 0
@@ -451,6 +462,9 @@ net.ipv4.tcp_mtu_probing = $MTU_PROBING
 
 # Enable TCP Metrics Cache
 net.ipv4.tcp_no_metrics_save = 0
+
+# How may times to retry before killing TCP connection, closed by our side
+# net.ipv4.tcp_orphan_retries = 1
 
 # Enable TCP Time-Wait Attack Protection
 net.ipv4.tcp_rfc1337 = 1
@@ -499,10 +513,10 @@ net.ipv4.tcp_mem = $TCP_MEM_MIN $TCP_MEM_PRESSURE $TCP_MEM_MAX
 net.ipv4.udp_mem = $UDP_MEM_MIN $UDP_MEM_PRESSURE $UDP_MEM_MAX
 
 # Set the IPv4 Route Minimum PMTU
-net.ipv4.route.min_pmtu = 552
+net.ipv4.route.min_pmtu = 576
 
 # Set the IPv4 Minimum Advertised MSS
-net.ipv4.route.min_adv_mss = 512
+net.ipv4.route.min_adv_mss = 536
 
 #
 # Virtual Memory Kernel Tuning Configuration
