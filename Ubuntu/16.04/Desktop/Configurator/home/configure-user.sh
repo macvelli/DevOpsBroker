@@ -288,6 +288,8 @@ installConfig 'gtk.css' "$SCRIPT_DIR/config/gtk-3.0" "$userhome/.config/gtk-3.0"
 # Install $userhome/.config/gtk-3.0/settings.ini
 installConfig 'settings.ini' "$SCRIPT_DIR/config/gtk-3.0" "$userhome/.config/gtk-3.0"
 
+$EXEC_CHOWN -R $username:$username "$userhome/.config/gtk-3.0"
+
 # Install $userhome/Templates/New CSS.css
 installTemplate 'New CSS.css'
 
