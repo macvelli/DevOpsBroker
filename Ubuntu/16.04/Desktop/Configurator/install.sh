@@ -94,25 +94,9 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Configurator Installer'
-
-echo ${bold} ${wisteria}
-echo '╔══════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                          '║'
-echo '╚══════════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE Configurator Installer" 'true'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Build and install scriptinfo C language utility
-if [ ! -f /usr/local/bin/scriptinfo ]; then
-	/usr/bin/make -s --directory="$SCRIPT_DIR"/C scriptinfo
-	$EXEC_INSTALL -o root -g users -m 755 "$SCRIPT_DIR"/C/scriptinfo /usr/local/bin
-fi
-
-# Set file ownership permissions
-$EXEC_CHOWN -R $SUDO_USER:$SUDO_USER "$SCRIPT_DIR"
-echo
 
 # Add devops group
 if [ -z "$($EXEC_GETENT group devops)" ]; then
@@ -206,6 +190,8 @@ if [ -d /mnt/ssd ]; then
 	fi
 fi
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Installation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Create /opt/devopsbroker/xenial/desktop/configurator directory
 if [ ! -d $INSTALL_DIR ]; then
 	printInfo "Creating $INSTALL_DIR directory"
@@ -217,17 +203,26 @@ if [ ! -d $INSTALL_DIR ]; then
 fi
 
 # Copy files into the /opt/devopsbroker/xenial/desktop/configurator directory
-printInfo "Copying files to $INSTALL_DIR/"
+printBanner "Copying files to $INSTALL_DIR/"
 
-echo ${perano}
-$EXEC_RSYNC -r -t -v --include='/C/makefile' --include='/C/*/' --exclude='/C/*' --exclude='*.o' --exclude='/install.sh' --exclude='.keep' "$SCRIPT_DIR"/ "$INSTALL_DIR"/
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/configure-desktop.sh "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/device-drivers.sh "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/ttf-msclearfonts.sh "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/update-utils.sh "$INSTALL_DIR"
+
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/doc "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/etc "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/home "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/perf "$INSTALL_DIR"
+/bin/cp -ruvL --preserve=timestamps "$SCRIPT_DIR"/usr "$INSTALL_DIR"
+
 echo
 $EXEC_FIND "$INSTALL_DIR"/ -type f \( ! -name "*.sh" ! -name "*.tpl" \) -exec $EXEC_CHMOD 640 {} +
 echo
 $EXEC_FIND "$INSTALL_DIR"/ -type f \( -name "*.sh" -o -name "*.tpl" \) -exec $EXEC_CHMOD 750 {} +
 echo
 $EXEC_CHOWN -R root:devops "$INSTALL_DIR"/
-echo -n ${reset}
+echo
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Shell Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

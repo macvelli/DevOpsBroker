@@ -85,11 +85,10 @@ function createSymlink() {
 # Description:  Installs the system administration utility into /usr/local/sbin
 #
 # Parameter $1: The name of the utility to install
-# Parameter $2: The source directory (where to find the utility to install)
 # -----------------------------------------------------------------------------
 function installSystemUtility() {
 	local utility="$1"
-	local sourceDir="$2"
+	local sourceDir="$SCRIPT_DIR/usr/local/sbin"
 
 	if [ ! -f /usr/local/sbin/$utility ]; then
 		printInfo "Installing system utility /usr/local/sbin/$utility"
@@ -112,11 +111,10 @@ function installSystemUtility() {
 # Description:  Installs the user utility into /usr/local/bin
 #
 # Parameter $1: The name of the utility to install
-# Parameter $2: The source directory (where to find the utility to install)
 # -----------------------------------------------------------------------------
 function installUserUtility() {
 	local utility="$1"
-	local sourceDir="$2"
+	local sourceDir="$SCRIPT_DIR/usr/local/bin"
 
 	if [ ! -f /usr/local/bin/$utility ]; then
 		printInfo "Installing user utility /usr/local/bin/$utility"
@@ -174,46 +172,39 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Desktop Utility Updater" 'true'
 
-# Build all C language utilties
-/usr/bin/make -s --directory="$SCRIPT_DIR"/C
-
-if [ "$SCRIPT_DIR" != "$INSTALL_DIR" ]; then
-	$EXEC_CHOWN -R $SUDO_USER:$SUDO_USER "$SCRIPT_DIR"/C
-fi
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ System Administration ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install addUserToGroup system administration utility
-installSystemUtility addUserToGroup "$SCRIPT_DIR"/usr/local/sbin
+installSystemUtility addUserToGroup
 
 # Install dirchmod system administration utility
-installSystemUtility dirchmod "$SCRIPT_DIR"/usr/local/sbin
+installSystemUtility dirchmod
 
 # Install disableJournal system administration utility
-installSystemUtility disableJournal "$SCRIPT_DIR"/usr/local/sbin
+installSystemUtility disableJournal
 
 # Install firewall system administration utility
-installSystemUtility firewall "$SCRIPT_DIR"/usr/local/sbin
+installSystemUtility firewall
 
 # Install initcrwnd system administration utility
-installSystemUtility initcrwnd "$SCRIPT_DIR"/usr/local/sbin
+installSystemUtility initcrwnd
 
 # Install pms system administration utility
-installSystemUtility pms "$SCRIPT_DIR"/usr/local/sbin
+installSystemUtility pms
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ User Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install archive user utility
-installUserUtility archive "$SCRIPT_DIR"/usr/local/bin
+installUserUtility archive
 
 # Install between user utility
-installUserUtility between "$SCRIPT_DIR"/C
+installUserUtility between
 
 # Install bgedit user utility
-installUserUtility bgedit "$SCRIPT_DIR"/usr/local/bin
+installUserUtility bgedit
 
 # Install convert-number user utility
-installUserUtility convert-number "$SCRIPT_DIR"/usr/local/bin
+installUserUtility convert-number
 
 # Create symbolic links to the convert-number user utility
 createSymlink /usr/local/bin/binary /usr/local/bin/convert-number
@@ -222,88 +213,88 @@ createSymlink /usr/local/bin/hex /usr/local/bin/convert-number
 createSymlink /usr/local/bin/octal /usr/local/bin/convert-number
 
 # Install decrypt user utility
-installUserUtility decrypt "$SCRIPT_DIR"/usr/local/bin
+installUserUtility decrypt
 
 # Install encrypt user utility
-installUserUtility encrypt "$SCRIPT_DIR"/usr/local/bin
+installUserUtility encrypt
 
 # Install extract user utility
-installUserUtility extract "$SCRIPT_DIR"/usr/local/bin
+installUserUtility extract
 
 # Install favicon user utility
-installUserUtility favicon "$SCRIPT_DIR"/usr/local/bin
+installUserUtility favicon
 
 # Install firelog user utility
-installUserUtility firelog "$SCRIPT_DIR"/C
+installUserUtility firelog
 
 # Install geoip user utility
-installUserUtility geoip "$SCRIPT_DIR"/usr/local/bin
+installUserUtility geoip
 
 # Install git-config user utility
-installUserUtility git-config "$SCRIPT_DIR"/usr/local/bin
+installUserUtility git-config
 
 # Install gnome-config user utility
-installUserUtility gnome-config "$SCRIPT_DIR"/usr/local/bin
+installUserUtility gnome-config
 
 # Install hexToRgb user utility
-installUserUtility hexToRgb "$SCRIPT_DIR"/usr/local/bin
+installUserUtility hexToRgb
 
 # Install hypotenuse user utility
-installUserUtility hypotenuse "$SCRIPT_DIR"/usr/local/bin
+installUserUtility hypotenuse
 
 # Install kernel-config user utility
-installUserUtility kernel-config "$SCRIPT_DIR"/usr/local/bin
+installUserUtility kernel-config
 
 # Install lwp user utility
-installUserUtility lwp "$SCRIPT_DIR"/usr/local/bin
+installUserUtility lwp
 
 # Install macaddr user utility
-installUserUtility macaddr "$SCRIPT_DIR"/usr/local/bin
+installUserUtility macaddr
 
 # Install printAnsi256 user utility
-installUserUtility printAnsi256 "$SCRIPT_DIR"/usr/local/bin
+installUserUtility printAnsi256
 
 # Install public-ip user utility
-installUserUtility public-ip "$SCRIPT_DIR"/usr/local/bin
+installUserUtility public-ip
 
 # Install qemu-config user utility
-installUserUtility qemu-config "$SCRIPT_DIR"/usr/local/bin
+installUserUtility qemu-config
 
 # Install random-password user utility
-installUserUtility random-password "$SCRIPT_DIR"/usr/local/bin
+installUserUtility random-password
 
 # Install reverse-dns user utility
-installUserUtility reverse-dns "$SCRIPT_DIR"/usr/local/bin
+installUserUtility reverse-dns
 
 # Install rgbToHex user utility
-installUserUtility rgbToHex "$SCRIPT_DIR"/usr/local/bin
+installUserUtility rgbToHex
 
 # Install scriptinfo user utility
-installUserUtility scriptinfo "$SCRIPT_DIR"/C
+installUserUtility scriptinfo
 
 # Install showFileFormat user utility
-installUserUtility showFileFormat "$SCRIPT_DIR"/usr/local/bin
+installUserUtility showFileFormat
 
 # Install ssh-key user utility
-installUserUtility ssh-key "$SCRIPT_DIR"/usr/local/bin
+installUserUtility ssh-key
 
 # Install symlink user utility
-installUserUtility symlink "$SCRIPT_DIR"/usr/local/bin
+installUserUtility symlink
 
 # Install udev user utility
-installUserUtility udev "$SCRIPT_DIR"/usr/local/bin
+installUserUtility udev
 
 # Install uuid user utility
-installUserUtility uuid "$SCRIPT_DIR"/usr/local/bin
+installUserUtility uuid
 
 # Install venture user utility
-installUserUtility venture "$SCRIPT_DIR"/usr/local/bin
+installUserUtility venture
 
 # Install verify user utility
-installUserUtility verify "$SCRIPT_DIR"/usr/local/bin
+installUserUtility verify
 
 # Install verifyip user utility
-installUserUtility verifyip "$SCRIPT_DIR"/C
+installUserUtility verifyip
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Venture Templates ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

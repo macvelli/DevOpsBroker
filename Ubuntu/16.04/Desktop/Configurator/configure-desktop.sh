@@ -197,13 +197,7 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Configurator'
-
-echo ${bold} ${wisteria}
-echo '╔════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                '║'
-echo '╚════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE Configurator" 'true'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

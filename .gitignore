@@ -32,10 +32,10 @@
 *.i*86
 *.x86_64
 *.hex
-Ubuntu/16.04/Desktop/Configurator/C/between
-Ubuntu/16.04/Desktop/Configurator/C/firelog
-Ubuntu/16.04/Desktop/Configurator/C/scriptinfo
-Ubuntu/16.04/Desktop/Configurator/C/verifyip
+Ubuntu/16.04/Utilities/C/between
+Ubuntu/16.04/Utilities/C/firelog
+Ubuntu/16.04/Utilities/C/scriptinfo
+Ubuntu/16.04/Utilities/C/verifyip
 
 # Debug files
 *.dSYM/
@@ -51,6 +51,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Build release folders
+release/
 
 # Do not ignore keep files
 !.keep
