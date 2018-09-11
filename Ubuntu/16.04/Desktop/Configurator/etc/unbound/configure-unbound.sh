@@ -120,17 +120,6 @@ elif [ "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf -nt /etc/unbound/unbou
 	echoOnExit=true
 fi
 
-#
-# Reconfigure Network Manager to use unbound
-#
-
-if $EXEC_GREP -Fq 'dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf; then
-	printInfo 'Configuring Network Manager to use unbound'
-	$EXEC_SED -i 's/dns=dnsmasq/dns=unbound/' /etc/NetworkManager/NetworkManager.conf
-
-	echoOnExit=true
-fi
-
 if [ "$echoOnExit" == 'true' ]; then
 	echo
 fi

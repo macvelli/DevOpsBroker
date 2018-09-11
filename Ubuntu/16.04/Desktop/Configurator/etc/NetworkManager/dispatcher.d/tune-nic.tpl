@@ -126,18 +126,19 @@ TX_QUEUE_LENGTH=$[ $NIC_SPEED * 10 ]
 ################################## Variables ##################################
 
 ## Options
+IFACE="\$1"
+ACTION="\$2"
 
-if [ -z "$IFACE" ] && [ -z "$MODE" ] && [ -z "$PHASE" ]; then
+if [ -z "$IFACE" ] && [ -z "$ACTION" ]; then
 	IFACE='$NIC'
-	MODE='start'
-	PHASE='post-up'
+	ACTION='up'
 fi
 
 ################################### Actions ###################################
 
-/usr/bin/logger -p syslog.notice -i Called tune-$NIC with interface "\$IFACE" mode "\$MODE" and phase "\$PHASE";
+/usr/bin/logger -p syslog.notice -i Called /etc/NetworkManager/dispatcher.d/tune-$NIC with interface "\$IFACE" and action "\$ACTION";
 
-if [ "\$IFACE" == '$NIC' ] && [ "\$MODE" == 'start' ] && [ "\$PHASE" == 'post-up' ]; then
+if [ "\$IFACE" == '$NIC' ] && [ "\$ACTION" == 'up' ]; then
 	# Optimize TX Queue Length
 	/sbin/ip link set $NIC txqueuelen $TX_QUEUE_LENGTH
 
@@ -145,7 +146,7 @@ if [ "\$IFACE" == '$NIC' ] && [ "\$MODE" == 'start' ] && [ "\$PHASE" == 'post-up
 	/sbin/ethtool --offload $NIC rx on tx on tso on ufo on sg on gso on
 
 	# Optimize IPv4/IPv6 initcwnd and initrwnd values
-	/usr/bin/sudo /usr/local/sbin/initcrwnd $NIC &
+	/usr/bin/sudo /usr/local/sbin/initcrwnd $NIC 'true' &
 fi
 
 exit 0

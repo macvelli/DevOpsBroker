@@ -29,10 +29,15 @@
 # o /etc/ntp.conf
 # o /etc/profile
 # o /etc/apparmor.d/local/usr.bin.evince
+# o /etc/default/resolvconf
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
 # o /etc/devops/functions.conf
 # o /etc/modprobe.d/kvm-amd.conf
+# o /etc/modprobe.d/nf_conntrack.conf
+# o /etc/network/interfaces
+# o /etc/ssl/ca.conf
+# o /etc/ssl/req.conf
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
 #
@@ -88,10 +93,12 @@ fi
 EXEC_LSCPU=/usr/bin/lscpu
 EXEC_LSPCI=/usr/bin/lspci
 EXEC_PASSWD=/usr/bin/passwd
+EXEC_UPDATE_INITRAMFS=/usr/sbin/update-initramfs
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
 echoOnExit=false
+updateInitramfs=false
 
 ################################### Actions ###################################
 
@@ -120,6 +127,9 @@ installConfig 'profile' "$SCRIPT_DIR" /etc
 # Install /etc/apparmor.d/local/usr.bin.evince
 installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/local
 
+# Install /etc/default/resolvconf
+installConfig 'resolvconf' "$SCRIPT_DIR"/default /etc/default
+
 # Install /etc/devops/ansi.conf
 installConfig 'ansi.conf' "$SCRIPT_DIR"/devops /etc/devops
 
@@ -132,7 +142,33 @@ installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
 # Install /etc/modprobe.d/kvm-amd.conf
 if $EXEC_LSMOD | $EXEC_GREP -Eq '^kvm\b' && $EXEC_LSCPU | $EXEC_GREP -q 'AMD'; then
 	installConfig 'kvm-amd.conf' "$SCRIPT_DIR"/modprobe.d /etc/modprobe.d
+
+	if [ "$INSTALL_CONFIG" == 'true' ]; then
+		updateInitramfs=true
+	fi
 fi
+
+# Install /etc/modprobe.d/nf_conntrack.conf
+installConfig 'nf_conntrack.conf' "$SCRIPT_DIR"/modprobe.d /etc/modprobe.d
+
+if [ "$INSTALL_CONFIG" == 'true' ]; then
+	updateInitramfs=true
+fi
+
+# Configure /etc/network/interfaces
+if ! $EXEC_GREP -Fq 'iface lo inet6 loopback' /etc/network/interfaces; then
+	printInfo 'Configuring /etc/network/interfaces'
+
+	echo 'iface lo inet6 loopback' >> /etc/network/interfaces
+
+	echoOnExit=true
+fi
+
+# Install /etc/ssl/ca.conf
+installConfig 'ca.conf' "$SCRIPT_DIR"/ssl /etc/ssl
+
+# Install /etc/ssl/req.conf
+installConfig 'req.conf' "$SCRIPT_DIR"/ssl /etc/ssl
 
 # Install /etc/sudoers.d/10-umask
 if [ ! -f /etc/sudoers.d/10-umask ]; then
@@ -224,7 +260,7 @@ if (( $($EXEC_GREP -F 'audio/mp4=rhythmbox.desktop' /usr/share/applications/defa
 
 	# Fix /etc/gnome/defaults.list video defaults
 	$EXEC_SED -i 's/^(.*video.*=).+/\1vlc_vlc.desktop/' /etc/gnome/defaults.list
-
+	echoOnExit=true
 	echoOnExit=true
 fi
 
@@ -239,6 +275,11 @@ if $EXEC_GREP -Fq 'NoDisplay=true' /etc/xdg/autostart/*.desktop; then
 	$EXEC_SED -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
 
 	echoOnExit=true
+fi
+
+if [ "$updateInitramfs" == 'true' ]; then
+	printInfo 'Updating initramfs'
+	$EXEC_UPDATE_INITRAMFS -u
 fi
 
 if [ "$echoOnExit" == 'true' ]; then
