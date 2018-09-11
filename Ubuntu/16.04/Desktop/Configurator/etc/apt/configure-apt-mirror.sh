@@ -81,7 +81,21 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE APT Mirror Configurator" 'true'
 
-if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
+# Exit if APT Mirror already configured
+if [ -f /etc/apt/sources.list.orig ] && [ "$1" != '-f' ]; then
+	printInfo 'APT Mirror already configured'
+	echo
+	printUsage "$SCRIPT_EXEC ${gold}[-f]"
+
+	echo ${bold}
+	echo "Valid Options:${romantic}"
+	echo -e ${gold}'  -f\t'  ${romantic}'Force /etc/apt/sources.list reconfiguration'
+	echo ${reset}
+
+	exit 0
+fi
+
+if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list || [ "$1" == '-f' ]; then
 	# BEGIN Configure apt mirror site
 
 	printBanner 'Configuring /etc/apt/sources.list mirror'
@@ -90,6 +104,12 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
 	if [ ! -f /tmp/ubuntu-mirrors.txt ]; then
 		printInfo 'Pull the list of mirror sites from http://mirrors.ubuntu.com/mirrors.txt'
 		$EXEC_CURL -s http://mirrors.ubuntu.com/mirrors.txt -o /tmp/ubuntu-mirrors.txt
+	fi
+
+	# Exit if /tmp/ubuntu-mirrors.txt does not exist
+	if [ ! -f /tmp/ubuntu-mirrors.txt ]; then
+		printError "$SCRIPT_EXEC" "Cannot access '/tmp/ubuntu-mirrors.txt': Attempt to retrieve list of Ubuntu mirrors failed"
+		exit 1
 	fi
 
 	declare -a mirrorArray
@@ -113,9 +133,21 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
 		fi
 	done
 
+	# Exit if /tmp/ping.job does not exist
+	if [ ! -f /tmp/ping.job ]; then
+		printError "$SCRIPT_EXEC" "Cannot access '/tmp/ping.job': Failed to create parallel job file"
+		exit 1
+	fi
+
 	# Execute the /tmp/ping.job in parallel
 	printInfo 'Execute ping test to find the five fastest sites by latency'
 	$EXEC_PARALLEL -j0 --no-notice :::: /tmp/ping.job | $EXEC_AWK '/^[0-9]*\.[0-9]*/{ print $0 }' | $EXEC_SORT -nk1 | $EXEC_HEAD -5 | $EXEC_AWK '{ print $2 }' > /tmp/ping.results
+
+	# Exit if /tmp/ping.results does not exist
+	if [ ! -f /tmp/ping.results ]; then
+		printError "$SCRIPT_EXEC" "Cannot access '/tmp/ping.results': Failed to generate results from ping job file"
+		exit 1
+	fi
 
 	declare -a pingResultsArray
 
@@ -140,6 +172,12 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list; then
 			fi
 		done
 	done
+
+	# Exit if $fastestMirror is unset
+	if [ -z "$fastestMirror" ]; then
+		printError "$SCRIPT_EXEC" "Fastest mirror site could not be determined"
+		exit 1
+	fi
 
 	printInfo "Configuring /etc/apt/sources.list to use the fastest mirror --> $fastestMirror"
 

@@ -145,9 +145,12 @@ fi
 # Parameter $2: The name of the package to install
 # -----------------------------------------------------------------------------
 function installPackage() {
+	PKG_INSTALLED=false
+
 	if [ ! -f "$1" ]; then
 		printBanner "Installing $2"
 		$EXEC_APT -y install $2
+		PKG_INSTALLED=true
 		echo
 	fi
 }
@@ -187,8 +190,9 @@ function uninstallPackage() {
 ## Bash exec variables
 EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 
-# Default network interface
+## Variables
 DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
+PKG_INSTALLED=false
 
 ################################### Actions ###################################
 
@@ -227,6 +231,22 @@ fi
 
 #~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
 
+#
+# APT Sources Mirror Configuration
+#
+
+# Install curl
+installPackage '/usr/bin/curl' 'curl'
+
+# Install gawk
+installPackage '/usr/bin/gawk' 'gawk'
+
+# Install parallel
+installPackage '/usr/bin/parallel' 'parallel'
+
+# Configure /etc/apt/sources.list with configure-apt-mirror.sh script
+"$SCRIPT_DIR"/etc/apt/configure-apt-mirror.sh
+
 # Install apparmor-utils
 installPackage '/usr/sbin/aa-genprof' 'apparmor-utils'
 
@@ -250,17 +270,11 @@ fi
 # Install compizconfig-settings-manager
 installPackage '/usr/bin/ccsm' 'compizconfig-settings-manager'
 
-# Install curl
-installPackage '/usr/bin/curl' 'curl'
-
 # Install dconf-editor
 installPackage '/usr/bin/dconf-editor' 'dconf-editor'
 
 # Install dkms
 installPackage '/usr/sbin/dkms' 'dkms'
-
-# Uninstall dnsmasq
-uninstallPackage '/etc/dnsmasq.conf' 'dnsmasq'
 
 # Install dnsutils
 installPackage '/usr/bin/dig' 'dnsutils'
@@ -276,9 +290,6 @@ installPackage '/usr/bin/fio' 'fio'
 
 # Install flashplugin-installer
 installPackage '/usr/lib/flashplugin-installer/install_plugin' 'flashplugin-installer'
-
-# Install gawk
-installPackage '/usr/bin/gawk' 'gawk'
 
 # Install gcc
 installPackage '/usr/bin/gcc' 'gcc'
@@ -418,9 +429,6 @@ installPackage '/usr/bin/ssh-keygen' 'openssh-client'
 # Install ovmf
 installPackage '/usr/share/ovmf/OVMF.fd' 'ovmf'
 
-# Install parallel
-installPackage '/usr/bin/parallel' 'parallel'
-
 # Install pulseaudio-equalizer
 if [ ! -f /usr/bin/pulseaudio-equalizer-gtk ]; then
   # BEGIN Install pulseaudio-equalizer
@@ -461,6 +469,13 @@ fi
 # Install qemu-kvm
 installPackage '/usr/share/doc/qemu-kvm/copyright' 'qemu-kvm'
 
+# Install rng-tools
+installPackage '/usr/sbin/rngd' 'rng-tools'
+
+if [ "$PKG_INSTALLED" == 'true' ]; then
+	/usr/sbin/rngd -r /dev/urandom
+fi
+
 # Install samba
 installPackage '/usr/sbin/smbd' 'samba'
 
@@ -490,8 +505,15 @@ installPackage '/usr/bin/systool' 'sysfsutils'
 # Install sysstat
 installPackage '/usr/bin/iostat' 'sysstat'
 
-# Install tidy
-installPackage '/usr/bin/tidy' 'tidy'
+# Install latest version of tidy from .deb file
+if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then
+	# Uninstall tidy and libtidy-0.99-0
+	uninstallPackage '/usr/bin/tidy' 'tidy libtidy-0.99-0'
+
+	# Install new tidy
+	/usr/bin/dpkg -i "$SCRIPT_DIR"/archives/tidy-5.6.0-64bit.deb
+	/usr/bin/apt-get -f install
+fi
 
 # Install ttf-mscorefonts-installer
 if [ ! -d /usr/share/fonts/truetype/msttcorefonts ]; then
@@ -514,6 +536,9 @@ installSnap '/snap/vlc' 'vlc'
 
 # Install whois
 installPackage '/usr/bin/whois' 'whois'
+
+# Install whoopsie
+installPackage '/usr/bin/whoopsie' 'whoopsie'
 
 # Install xclip
 installPackage '/usr/bin/xclip' 'xclip'
@@ -554,13 +579,6 @@ installPackage '/usr/bin/yad' 'yad'
 "$SCRIPT_DIR"/etc/configure-system.sh
 
 #
-# APT Sources Mirror Configuration
-#
-
-# Configure /etc/apt/sources.list with configure-apt-mirror.sh script
-"$SCRIPT_DIR"/etc/apt/configure-apt-mirror.sh
-
-#
 # GRUB Configuration
 #
 
@@ -568,35 +586,18 @@ installPackage '/usr/bin/yad' 'yad'
 "$SCRIPT_DIR"/etc/default/configure-grub.sh
 
 #
-# Network Interface Card Configuration
+# Unbound DNS Cache Server Configuration
 #
 
-# TODO: Move this to configure-nic.sh
+# Configure /etc/unbound/unbound.conf.d/ with configure-unbound.sh script
+"$SCRIPT_DIR"/etc/unbound/configure-unbound.sh
 
-# Install /etc/network/if-pre-up.d/iface-preup-config.sh
-installConfig 'iface-preup-config.sh' "$SCRIPT_DIR"/etc/network/if-pre-up.d /etc/network/if-pre-up.d
-$EXEC_CHMOD 755 /etc/network/if-pre-up.d/iface-preup-config.sh
+#
+# NetworkManager Configuration
+#
 
-if [ ! -z "$DEFAULT_NIC" ]; then
-  # Configure /etc/network/if-up.d/ with configure-nic.sh script
-  "$SCRIPT_DIR"/etc/network/configure-nic.sh $DEFAULT_NIC
-
-  # Configure /etc/network/interfaces
-  if ! $EXEC_GREP -Fq $DEFAULT_NIC /etc/network/interfaces; then
-
-    printInfo 'Configuring /etc/network/interfaces'
-
-## Template
-/bin/cat << EOF >> /etc/network/interfaces
-
-# $DEFAULT_NIC
-auto $DEFAULT_NIC
-iface $DEFAULT_NIC inet dhcp
-  pre-up /etc/network/if-pre-up.d/iface-preup-config.sh
-EOF
-    echo
-  fi
-fi
+# Configure /etc/NetworkManager with configure-nm.sh script
+"$SCRIPT_DIR"/etc/NetworkManager/configure-nm.sh $DEFAULT_NIC
 
 #
 # Samba Configuration
@@ -620,18 +621,14 @@ fi
 "$SCRIPT_DIR"/etc/udev/configure-udev.sh
 
 #
-# Unbound DNS Cache Server Configuration
-#
-
-# Configure /etc/unbound/unbound.conf.d/ with configure-unbound.sh script
-"$SCRIPT_DIR"/etc/unbound/configure-unbound.sh
-
-#
 # User Configuration
 #
 
 # Configure the user with configure-user.sh script
 "$SCRIPT_DIR"/home/configure-user.sh $SUDO_USER
+
+# Uninstall dnsmasq
+uninstallPackage '/etc/dnsmasq.conf' 'dnsmasq'
 
 #
 # Upgrade Ubuntu

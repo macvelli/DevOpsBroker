@@ -88,13 +88,13 @@ if [ ! -f /etc/security/limits.d/60-user-limits.conf ]; then
 	printInfo 'Installing /etc/security/limits.d/60-user-limits.conf'
 
 	# Execute template script
-	"$userLimitsConf" > "$TMPDIR"/limits.d/60-user-limits.conf
+	"$userLimitsConf" > "$TMPDIR"/60-user-limits.conf
 
 	# Install as root:root with rw-r--r-- privileges
-	$EXEC_INSTALL -o root -g root -m 644 "$TMPDIR"/limits.d/60-user-limits.conf /etc/security/limits.d
+	$EXEC_INSTALL -o root -g root -m 644 "$TMPDIR"/60-user-limits.conf /etc/security/limits.d
 
 	# Clean up
-	$EXEC_RM "$TMPDIR"/limits.d/60-user-limits.conf
+	$EXEC_RM "$TMPDIR"/60-user-limits.conf
 
 	echo
 
@@ -102,13 +102,13 @@ elif [ "$userLimitsConf" -nt /etc/security/limits.d/60-user-limits.conf ]; then
 	printInfo 'Updating /etc/security/limits.d/60-user-limits.conf'
 
 	# Execute template script
-	"$userLimitsConf" > "$TMPDIR"/limits.d/60-user-limits.conf
+	"$userLimitsConf" > "$TMPDIR"/60-user-limits.conf
 
 	# Install as root:root with rw-r--r-- privileges
-	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/limits.d/60-user-limits.conf /etc/security/limits.d
+	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/60-user-limits.conf /etc/security/limits.d
 
 	# Clean up
-	$EXEC_RM "$TMPDIR"/limits.d/60-user-limits.conf
+	$EXEC_RM "$TMPDIR"/60-user-limits.conf
 
 	echo
 fi

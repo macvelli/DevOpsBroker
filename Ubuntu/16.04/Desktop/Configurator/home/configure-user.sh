@@ -110,37 +110,6 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
-################################## Variables ##################################
-
-## Bash exec variables
-EXEC_SSH_KEY=/usr/local/bin/ssh-key
-
-## Options
-username=${1:-$SUDO_USER}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-userRecord="$($EXEC_GETENT passwd $username)"
-
-# Ensure the argument is a valid username
-if [ ${#userRecord} -eq 0 ]; then
-	printError "$SCRIPT_EXEC" "Cannot find '$username': No such user"
-	echo
-	printUsage "$SCRIPT_EXEC USER"
-
-	exit 1
-fi
-
-IFS=':'; userInfo=($userRecord); unset IFS;
-
-# Ensure the user is using bash for the shell
-if [ "${userInfo[6]}" != '/bin/bash' ]; then
-	echo "${bold}$SCRIPT_EXEC: ${yellow}User shell not bash ${white}(${bittersweet}${userInfo[6]}${white})${reset}"
-	exit 1
-fi
-
-userhome="${userInfo[5]}"
-
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -166,13 +135,13 @@ function installSkeleton() {
 # Parameter $1: Name of the template file to install
 # -----------------------------------------------------------------------------
 function installTemplate() {
-	local templateFile="$1"
+	local templateFile="$@"
 
 	if [ ! -f "$userhome/Templates/$templateFile" ]; then
 		printInfo "Installing $userhome/Templates/$templateFile"
 
 		# Install as $username:$username with rw-r----- privileges
-		$EXEC_INSTALL -o $username -g $username -m 640 "$SCRIPT_DIR"/Templates/$templateFile "$userhome"/Templates
+		$EXEC_INSTALL -o $username -g $username -m 640 "$SCRIPT_DIR/Templates/$templateFile" "$userhome"/Templates
 	fi
 }
 
@@ -200,6 +169,42 @@ function installUserConfig() {
 		$EXEC_INSTALL -b --suffix .bak -o $username -g $username -m 640 "$SCRIPT_DIR/$sourceFile" "$userhome/$configFile"
 	fi
 }
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_BASH_REBOOT=/usr/local/bin/bash_reboot
+EXEC_SSH_KEY=/usr/local/bin/ssh-key
+EXEC_SYMLINK=/usr/local/bin/symlink
+
+## Options
+username=${1:-$SUDO_USER}
+
+## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+userRecord="$($EXEC_GETENT passwd $username)"
+
+# Ensure the argument is a valid username
+if [ ${#userRecord} -eq 0 ]; then
+	printError "$SCRIPT_EXEC" "Cannot find '$username': No such user"
+	echo
+	printUsage "$SCRIPT_EXEC USER"
+
+	exit 1
+fi
+
+IFS=':'; userInfo=($userRecord); unset IFS;
+
+# Ensure the user is using bash for the shell
+if [ "${userInfo[6]}" != '/bin/bash' ]; then
+	echo "${bold}$SCRIPT_EXEC: ${yellow}User shell not bash ${white}(${bittersweet}${userInfo[6]}${white})${reset}"
+	exit 1
+fi
+
+userhome="${userInfo[5]}"
 
 ################################### Actions ###################################
 
@@ -256,7 +261,7 @@ if [ -d /cache/$username ] && [ ! -L "$userhome"/.cache ]; then
 
 	$EXEC_MV "$userhome"/.cache/* /cache/$username/
 	$EXEC_RM -rf "$userhome"/.cache
-	$EXEC_LN -s /cache/$username "$userhome"/.cache
+	$EXEC_SYMLINK -o $username:$username "$userhome"/.cache /cache/$username
 fi
 
 # Install $userhome/.bash_aliases
@@ -381,7 +386,7 @@ if [ ! -z "$($EXEC_GETENT group 'kvm')" ] && [[ ! "$userGroups" =~ $regExpr ]]; 
 fi
 
 # Move Firefox cache to /mnt/ramdisk
-if [ ! -d "/mnt/ramdisk/$username/mozilla/firefox" ]; then
+if [ ! -d "/mnt/ramdisk/$username/mozilla/firefox" ] && [ -d "$userhome"/.cache/mozilla/firefox ] ; then
 	printInfo 'Moving Firefox cache to /mnt/ramdisk'
 
 	# Create Firefox cache directory for the user in /mnt/ramdisk
@@ -391,15 +396,20 @@ if [ ! -d "/mnt/ramdisk/$username/mozilla/firefox" ]; then
 	# Create symlink to Firefox cache in /mnt/ramdisk
 	$EXEC_CP -a "$userhome"/.cache/mozilla/firefox/* "/mnt/ramdisk/$username/mozilla/firefox"
 	$EXEC_RM -rf "$userhome"/.cache/mozilla/firefox
-	$EXEC_LN -s "/mnt/ramdisk/$username/mozilla/firefox" "$userhome"/.cache/mozilla/firefox
+	$EXEC_SYMLINK -o $username:$username "$userhome"/.cache/mozilla/firefox "/mnt/ramdisk/$username/mozilla/firefox"
 fi
 
 #
 # Generate SSH Keys
 #
 
+# Clean out any errors that might have been made on install
+if [ -f "$userhome"/.ssh ]; then
+	$EXEC_RM "$userhome"/.ssh
+fi
+
 if [ ! -d "$userhome"/.ssh ] || [ $($EXEC_FIND "$userhome"/.ssh -type f | $EXEC_WC -l) -eq 0 ]; then
-	$EXEC_SSH_KEY gen -d "$userhome" -u $username
+	/usr/bin/sudo -u $username $EXEC_SSH_KEY gen -d "$userhome" -u $username
 fi
 
 if [ ! -f "$userhome"/.ssh/config ]; then
@@ -410,20 +420,6 @@ if [ ! -f "$userhome"/.ssh/config ]; then
 fi
 
 #
-# Configure GPG
-#
-
-if [ ! -d "$userhome"/.gnupg ]; then
-	# Generate GPG key
-	$EXEC_GPG --gen-key
-fi
-
-if [ $($EXEC_STAT -c '%U:%G' "$userhome"/.gnupg) != "$username:$username" ]; then
-	# Change directory and file ownership to $username
-	$EXEC_CHOWN -R $username:$username "$userhome"/.gnupg
-fi
-
-#
 # Install ssh-agent.service
 #
 
@@ -431,33 +427,52 @@ if [ ! -f "$userhome"/.config/systemd/user/ssh-agent.service ]; then
 	printInfo 'Installing systemd user service ssh-agent.service'
 
 	# Install as $username:$username with rw-r--r-- privileges
-	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/home/systemd/ssh-agent.service "$userhome"/.config/systemd/user
+	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/systemd/ssh-agent.service "$userhome"/.config/systemd/user
 
-	printInfo 'Enable systemd user service ssh-agent.service'
-	$EXEC_SYSTEMCTL --user enable ssh-agent.service
+	printInfo 'Enable systemd user service ssh-agent.service on reboot'
+	commandList="$EXEC_SYSTEMCTL --user enable ssh-agent.service${newline}"
 
-	printInfo 'Start systemd user service ssh-agent.service'
-	$EXEC_SYSTEMCTL --user start ssh-agent.service
+	printInfo 'Start systemd user service ssh-agent.service on reboot'
+	commandList="${commandList}$EXEC_SYSTEMCTL --user start ssh-agent.service"
+
+	$EXEC_BASH_REBOOT "$commandList" > "$TMPDIR"/.bash_reboot
+
+	# Install as $username:$username with rwxr-x--- privileges
+	$EXEC_INSTALL -o $username -g $username -m 750 "$TMPDIR"/.bash_reboot "$userhome"/.bash_reboot
+	$EXEC_RM "$TMPDIR"/.bash_reboot
+fi
+
+#
+# Configure GPG
+#
+
+if [ ! -d "$userhome"/.gnupg ] || [ ! -f "$userhome"/.gnupg/pubring.gpg ]; then
+	# Generate GPG key
+	$EXEC_GPG --gen-key
 fi
 
 #
 # Apply stricter file and directory settings
 #
 
+printInfo "Changing any root:root files and directories to '$username:$username'"
+
+$EXEC_FIND "$userhome" -xdev -user root -group root -execdir $EXEC_CHOWN $username:$username {} +
+
 printInfo "Applying stricter directory security settings to $userhome"
 
 # Configure all hidden directories with drwx------ privileges
-$EXEC_FIND "$userhome" -xdev -maxdepth 1 -type d -path "$userhome/.*" -perm /077 -execdir $EXEC_CHMOD 700 {} +
+$EXEC_FIND "$userhome" -xdev -maxdepth 1 -type d -path "$userhome/.*" -perm /077 -exec $EXEC_CHMOD 700 {} +
 
 # Configure all normal directories with drwxr-x--- privileges
-$EXEC_FIND "$userhome" -xdev -type d -perm /027 -execdir $EXEC_CHMOD 750 {} + 2>/dev/null
+$EXEC_FIND "$userhome" -xdev -type d -perm /027 -exec $EXEC_CHMOD 750 {} + 2>/dev/null
 
 printInfo "Applying stricter file security settings to $userhome"
 
 excludeDirs="-type d ( -name '.git' -o -name '.svn' ) -prune"
 
-# Remove file ----wxrwx privileges
-$EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /037 -execdir $EXEC_CHMOD g-wx,o-rwx {} +
+# Remove ----w-rwx file privileges
+$EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /027 -exec $EXEC_CHMOD g-w,o-rwx {} +
 
 echo
 

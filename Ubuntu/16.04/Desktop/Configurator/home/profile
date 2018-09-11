@@ -41,8 +41,10 @@ if [ -d /mnt/ramdisk ]; then
 
 		# Recreate Firefox cache directory in /mnt/ramdisk
 		if [ -d /cache/$USER ] && [ -f /cache/$USER/*.default.tar.gz ]; then
+
 			/bin/tar xzvf /cache/$USER/*.default.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox
-		else
+
+		elif [ -d $HOME/.mozilla/firefox ]; then
 			profileDir=$( /usr/bin/basename $( /bin/ls -d $HOME/.mozilla/firefox/*.default ) )
 
 			if [ ! -z "$profileDir" ]; then
@@ -57,7 +59,7 @@ if [ -d /mnt/ramdisk ]; then
 		/bin/mkdir -p --mode=1777 /mnt/ramdisk/tmp
 	fi
 
-	# Set TMPDIR to /mnt/ramdisk/tmp for gcc (used by other programs also)
+	# Set TMPDIR to /mnt/ramdisk/tmp for gcc and other programs
 	export TMPDIR=/mnt/ramdisk/tmp
 
 	# Delete all compiz session files older than a day

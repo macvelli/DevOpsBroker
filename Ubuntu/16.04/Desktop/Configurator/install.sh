@@ -111,7 +111,7 @@ userGroups=$($EXEC_GROUPS $SUDO_USER)
 regExpr="\\bdevops\\b"
 if [[ ! "$userGroups" =~ $regExpr ]]; then
 	printInfo "Adding $SUDO_USER to the 'devops' group"
-	$EXEC_ADDUSER $username 'devops'
+	$EXEC_ADDUSER $SUDO_USER 'devops'
 fi
 
 # Create /cache directory for user cache
@@ -135,29 +135,24 @@ if [ -d /mnt/ssd ]; then
 
 		$EXEC_MKDIR --mode=0755 /mnt/ssd/cache
 		$EXEC_CHOWN root:users /mnt/ssd/cache
-		$EXEC_MOUNT --bind /mnt/ssd/cache /cache
 
 		addCacheEntry=true
 	fi
 
 	# Move /opt directory to /mnt/ssd/opt
 	if [ ! -d /mnt/ssd/opt ]; then
-		printInfo 'Copying /opt directory to /mnt/ssd'
+		printInfo 'Creating /mnt/ssd/opt directory'
 
-		$EXEC_CP -a /opt /mnt/ssd
-		$EXEC_RM -rf /opt/{*,.*}
-		$EXEC_MOUNT --bind /mnt/ssd/opt /opt
+		$EXEC_MKDIR --mode=0755 /mnt/ssd/opt
 
 		addOptEntry=true
 	fi
 
 	# Move /snap directory to /mnt/ssd/snap
 	if [ ! -d /mnt/ssd/snap ]; then
-		printInfo 'Copying /snap directory to /mnt/ssd'
+		printInfo 'Creating /mnt/ssd/snap directory'
 
-		$EXEC_CP -a /snap /mnt/ssd
-		$EXEC_RM -rf /snap/{*,.*}
-		$EXEC_MOUNT --bind /mnt/ssd/snap /snap
+		$EXEC_MKDIR --mode=0755 /mnt/ssd/snap
 
 		addSnapEntry=true
 	fi
@@ -173,20 +168,43 @@ if [ -d /mnt/ssd ]; then
 
 	regExpr='/mnt/ssd/cache'
 	if [ "$addCacheEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		printInfo "Adding /mnt/ssd/cache bind mount"
+		printInfo "Adding /mnt/ssd/cache bind mount to /etc/fstab"
 		echo '/mnt/ssd/cache	/cache	none	bind	0	0' >> /etc/fstab
+
+		printInfo 'Bind mounting /mnt/ssd/cache directory to /cache'
+		$EXEC_MOUNT --bind /mnt/ssd/cache /cache
 	fi
 
 	regExpr='/mnt/ssd/opt'
 	if [ "$addOptEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		printInfo "Adding /mnt/ssd/opt bind mount"
+		printInfo "Adding /mnt/ssd/opt bind mount to /etc/fstab"
 		echo '/mnt/ssd/opt	/opt	none	bind	0	0' >> /etc/fstab
+
+		if [ -z "$($EXEC_LS -A /mnt/ssd/opt)" ]; then
+			printInfo 'Copying /opt directory to /mnt/ssd'
+			$EXEC_CP -a /opt /mnt/ssd
+		fi
+
+		$EXEC_RM -rf /opt/*
+
+		printInfo 'Bind mounting /mnt/ssd/opt directory to /opt'
+		$EXEC_MOUNT --bind /mnt/ssd/opt /opt
 	fi
 
 	regExpr='/mnt/ssd/snap'
 	if [ "$addSnapEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		printInfo "Adding /mnt/ssd/snap bind mount"
+		printInfo "Adding /mnt/ssd/snap bind mount to /etc/fstab"
 		echo '/mnt/ssd/snap	/snap	none	bind	0	0' >> /etc/fstab
+
+		if [ -z "$($EXEC_LS -A /mnt/ssd/snap)" ]; then
+			printInfo 'Copying /snap directory to /mnt/ssd'
+			$EXEC_CP -a /snap /mnt/ssd
+		fi
+
+		$EXEC_RM -rf /snap/*
+
+		printInfo 'Bind mounting /mnt/ssd/snap directory to /snap'
+		$EXEC_MOUNT --bind /mnt/ssd/snap /snap
 	fi
 fi
 
@@ -196,10 +214,8 @@ fi
 if [ ! -d $INSTALL_DIR ]; then
 	printInfo "Creating $INSTALL_DIR directory"
 
-	echo -n ${perano}
 	$EXEC_MKDIR --mode=2755 $INSTALL_DIR
 	$EXEC_CHOWN -R root:devops /opt/devopsbroker
-	echo ${reset}
 fi
 
 # Copy files into the /opt/devopsbroker/xenial/desktop/configurator directory
@@ -210,6 +226,7 @@ printBanner "Copying files to $INSTALL_DIR/"
 /bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/ttf-msclearfonts.sh "$INSTALL_DIR"
 /bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/update-utils.sh "$INSTALL_DIR"
 
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/archives "$INSTALL_DIR"
 /bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/doc "$INSTALL_DIR"
 /bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/etc "$INSTALL_DIR"
 /bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/home "$INSTALL_DIR"
@@ -223,6 +240,13 @@ $EXEC_FIND "$INSTALL_DIR"/ -type f \( -name "*.sh" -o -name "*.tpl" \) -exec $EX
 echo
 $EXEC_CHOWN -R root:devops "$INSTALL_DIR"/
 echo
+
+# Copy scriptinfo to /usr/local/bin
+CP_OUTPUT="$(/bin/cp -uv --preserve=timestamps "$INSTALL_DIR"/usr/local/bin/scriptinfo /usr/local/bin)"
+if [ ! -z "$CP_OUTPUT" ]  ; then
+	/bin/chmod -c 755 /usr/local/bin/scriptinfo
+	/bin/chown -c root:users /usr/local/bin/scriptinfo
+fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Shell Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -253,14 +277,14 @@ createSymlink /usr/local/sbin/configure-apt-mirror "$INSTALL_DIR"/etc/apt/config
 # Make symlink to etc/default/configure-grub.sh
 createSymlink /usr/local/sbin/configure-grub "$INSTALL_DIR"/etc/default/configure-grub.sh
 
-# Make symlink to etc/network/configure-nic.sh
-createSymlink /usr/local/sbin/configure-nic "$INSTALL_DIR"/etc/network/configure-nic.sh
-
 # Make symlink to etc/network/ip6tables-desktop.sh
 createSymlink /usr/local/sbin/ip6tables-desktop "$INSTALL_DIR"/etc/network/ip6tables-desktop.sh
 
 # Make symlink to etc/network/iptables-desktop.sh
 createSymlink /usr/local/sbin/iptables-desktop "$INSTALL_DIR"/etc/network/iptables-desktop.sh
+
+# Make symlink to etc/NetworkManager/configure-nm.sh
+createSymlink /usr/local/sbin/configure-nm "$INSTALL_DIR"/etc/NetworkManager/configure-nm.sh
 
 # Make symlink to etc/samba/configure-samba.sh
 createSymlink /usr/local/sbin/configure-samba "$INSTALL_DIR"/etc/samba/configure-samba.sh

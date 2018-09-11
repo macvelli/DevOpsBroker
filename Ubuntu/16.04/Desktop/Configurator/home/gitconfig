@@ -23,6 +23,7 @@
 #
 
 [alias]
+	amend = commit --amend --no-edit
 	st = status
 	br = branch
 	cm = commit
@@ -67,4 +68,3 @@
 
 [credential]
 	helper = cache --timeout=7200
-

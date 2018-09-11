@@ -139,7 +139,7 @@ for capturedEntry in "${captureEntryList[@]}"; do
 
 		if [ "${entryList[3]}" == 'defaults' ]; then
 			if [ "${entryList[1]}" == '/tmp' ]; then
-				entry="${entry}nosuid,nodev,noatime,noblock_validity,delalloc,nobarrier"
+				entry="${entry}nosuid,nodev,noatime"
 				entryLength=$(( entryLength + 56 ))
 			else
 				entry="${entry}defaults,noatime"
