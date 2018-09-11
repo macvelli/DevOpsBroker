@@ -33,21 +33,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
@@ -56,32 +56,30 @@ SCRIPT_DIR="${SCRIPT_INFO[0]}"
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	createDirectory
-# Description:	Creates a directory
+# Function:     createDirectory
+# Description:  Creates a directory
 #
 # Parameter $1: The name of the directory to create within the base directory
 # -----------------------------------------------------------------------------
 function createDirectory() {
 	if [ ! -d "$baseDir/$1" ]; then
 		printInfo "Creating $baseDir/$1 directory"
-
 		$EXEC_MKDIR "$baseDir/$1"
 	fi
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	showHelp
-# Description:	Displays help message to the user
+# Function:     showHelp
+# Description:  Displays help message to the user
 # -----------------------------------------------------------------------------
 function showHelp() {
-	# BEGIN showHelp function
-
 	printUsage "venture create ${gold}[-d directory] ${yellow}PROJECT_NAME"
 	printUsage 'false' "venture new ${gold}[-d directory] ${yellow}FILE"
 
 	echo ${bold}
 	echo "Valid Commands:${romantic}"
 	echo -e ${yellow}'  create\t'        ${romantic}'Create a brand new C project'
+	echo -e ${yellow}'  fileinfo\t'      ${romantic}'Generate size and sha256 hash for a file'
 	echo -e ${yellow}'  new\t\t'         ${romantic}'Create a new file'
 	echo ${reset}
 
@@ -89,23 +87,25 @@ function showHelp() {
 	echo "Valid Options:${romantic}"
 	echo -e ${gold}'  -d directory\t'  ${romantic}'The target directory'
 	echo ${reset}
-
-	# END showHelp function
 }
 
 ################################## Variables ##################################
+
+## Bash exec variables
+EXEC_SHA256SUM=/usr/bin/sha256sum
 
 ## Options
 command="$1"
 baseDir='.'
 
 ## Variables
-validCommands=('create' 'new')
+validCommands=('create' 'fileinfo' 'new')
 echoOnExit=false
 
 declare -A paramNameMap
 
 paramNameMap['create']='PROJECT_NAME'
+paramNameMap['fileinfo']='FILE'
 paramNameMap['new']='FILE'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,40 +170,17 @@ if [ "$command" == 'create' ]; then
 	fi
 
 	baseDir="$baseDir/$projectName"
-elif [ "$command" == 'new' ]; then
+
+else
 	fileName="$2"
 
 	# Display error and usage if no file name parameter given
 	if [ -z "$fileName" ]; then
 		printError 'venture' 'Missing file name'
 		echo
-		printUsage "venture new ${paramNameMap['new']}"
+		printUsage "venture $command ${paramNameMap['$command']}"
 
 		exit 1
-	fi
-
-	# Display error and usage if unsupported file parameter given
-	if [[ ! "$fileName" =~ ^.+\.(c|h|conf|sh|tpl)$ ]]; then
-		printError 'venture' "Unsupported file name '$fileName'"
-		echo
-		printUsage "venture new ${paramNameMap['new']}"
-
-		echo ${bold}
-		echo 'Valid File Types:'
-		echo -e ${yellow}'  source.c\t'      ${romantic}'C language source file'
-		echo -e ${yellow}'  header.h\t'      ${romantic}'C language header file'
-		echo -e ${yellow}'  linux.conf\t'    ${romantic}'Linux configuration file'
-		echo -e ${yellow}'  script.sh\t'     ${romantic}'Bash shell script file'
-		echo -e ${yellow}'  template.tpl\t'  ${romantic}'Bash shell template file'
-		echo ${reset}
-
-		exit 1
-	fi
-
-	# Display file exists info message and exit
-	if [ -f "$baseDir/$fileName" ]; then
-		printInfo "$baseDir/$fileName already exists; exiting"
-		exit 0
 	fi
 
 	# Make baseDir if not already exists
@@ -211,12 +188,40 @@ elif [ "$command" == 'new' ]; then
 		$EXEC_MKDIR "$baseDir"
 	fi
 
-	if [[ "$fileName" == *.c ]] || [[ "$fileName" == *.h ]]; then
-		fileName="${fileName,,}"
+	if [ "$command" == 'new' ]; then
+		# Display error and usage if unsupported file parameter given
+		if [[ ! "$fileName" =~ ^.+\.(c|h|conf|html|sh|tpl)$ ]] && [ "$fileName" != 'makefile' ]; then
+			printError 'venture' "Unsupported file name '$fileName'"
+			echo
+			printUsage "venture new ${paramNameMap['new']}"
 
-		# Put the new source file in the "$baseDir/src" subdirectory, if present
-		if [ -d "$baseDir/src" ]; then
-			baseDir="$baseDir/src"
+			echo ${bold}
+			echo 'Valid File Types:'
+			echo -e ${yellow}'  source.c\t'      ${romantic}'C language source file'
+			echo -e ${yellow}'  header.h\t'      ${romantic}'C language header file'
+			echo -e ${yellow}'  linux.conf\t'    ${romantic}'Linux configuration file'
+			echo -e ${yellow}'  index.html\t'    ${romantic}'Blank HTML5 file'
+			echo -e ${yellow}'  makefile\t'      ${romantic}'Makefile build file'
+			echo -e ${yellow}'  script.sh\t'     ${romantic}'Bash shell script file'
+			echo -e ${yellow}'  template.tpl\t'  ${romantic}'Bash shell template file'
+			echo ${reset}
+
+			exit 1
+		fi
+
+		# Display file exists info message and exit
+		if [ -f "$baseDir/$fileName" ]; then
+			printInfo "$baseDir/$fileName already exists; exiting"
+			exit 0
+		fi
+
+		if [[ "$fileName" == *.c ]] || [[ "$fileName" == *.h ]]; then
+			fileName="${fileName,,}"
+
+			# Put the new source file in the "$baseDir/src" subdirectory, if present
+			if [ -d "$baseDir/src" ]; then
+				baseDir="$baseDir/src"
+			fi
 		fi
 	fi
 fi
@@ -266,6 +271,20 @@ if [ "$command" == 'create' ]; then
 	fi
 
 	# END Create new project
+elif [ "$command" == 'fileinfo' ]; then
+	# BEGIN Generate file information
+
+	fileSize=$($EXEC_STAT --format=%s "$fileName")
+	sha256sum=$($EXEC_SHA256SUM "$fileName")
+
+	# Set fileinfo.tpl location and make it executable
+	fileInfoTpl=$(isExecutable "$SCRIPT_DIR"/template/fileinfo.tpl)
+
+	"$fileInfoTpl" "$fileName" $fileSize $sha256sum  > "$baseDir/fileinfo.html"
+
+	echoOnExit=true
+
+	# END Generate file information
 elif [ "$command" == "new" ]; then
 	# BEGIN Create new file
 
@@ -302,6 +321,30 @@ elif [ "$command" == "new" ]; then
 
 		# Execute template script
 		"$linuxConfTpl" "$fileName" > "$baseDir/$fileName"
+
+		echoOnExit=true
+
+	# Create a new blank HTML5
+	elif [[ "$fileName" == *.html ]]; then
+		printInfo "Creating new blank HTML5 file $fileName"
+
+		# Set html.tpl location and make it executable
+		html5Tpl=$(isExecutable "$SCRIPT_DIR"/template/html5.tpl)
+
+		# Execute template script
+		"$html5Tpl" > "$baseDir/$fileName"
+
+		echoOnExit=true
+
+	# Create a new Makefile build file
+	elif [ "$fileName" == 'makefile' ]; then
+		printInfo "Creating new Makefile build file"
+
+		# Set makefile.tpl location and make it executable
+		makefileTpl=$(isExecutable "$SCRIPT_DIR"/template/makefile.tpl)
+
+		# Execute template script
+		"$makefileTpl" 'foo' > "$baseDir/makefile"
 
 		echoOnExit=true
 

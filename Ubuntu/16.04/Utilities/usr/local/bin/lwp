@@ -57,38 +57,6 @@ fi
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:     printBox
-# Description:  Displays a box containing the given message
-#
-# Parameter $1: The message to print within the box
-# -----------------------------------------------------------------------------
-function printBox() {
-	# BEGIN printBox function
-
-	local msgLength=${#1}
-
-	echo ${bold} ${wisteria}
-	echo -n '┌─'
-
-	for (( i=0; i < $msgLength; i++ )); do
-		echo -n '─'
-	done
-
-	echo '─┐'
-	echo "│ ${white}$1${wisteria} │"
-	echo -n '└─'
-
-	for (( i=0; i < $msgLength; i++ )); do
-		echo -n '─'
-	done
-
-	echo '─┘'
-	echo ${reset}
-
-	# END printBox function
-}
-
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     printColumn
 # Description:  Writes tabs to STDOUT to properly format a display column
 #

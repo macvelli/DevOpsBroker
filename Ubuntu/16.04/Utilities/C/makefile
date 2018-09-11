@@ -22,13 +22,16 @@
 # -----------------------------------------------------------------------------
 #
 
-CC=gcc
-CFLAGS=-Wall -g
-BASH=/bin/bash
+################################## Variables ##################################
 
-all: between firelog scriptinfo verifyip
+CC := /usr/bin/gcc
+CFLAGS := -Wall -g
 
-.PHONY: all clean-all clean-between clean-firelog clean-scriptinfo clean-verifyip
+################################### Targets ###################################
+
+.PHONY: clean clean-between clean-firelog clean-scriptinfo clean-verifyip install
+
+default: install
 
 bin/between.o: src/between.c
 	$(CC) $(CFLAGS) -c src/between.c -o bin/between.o
@@ -36,7 +39,7 @@ bin/between.o: src/between.c
 between: bin/between.o
 	$(CC) bin/between.o -o between
 	@echo
-	$(BASH) test/testBetween.sh
+	/bin/bash test/testBetween.sh
 
 bin/firelog.o: src/firelog.c
 	$(CC) $(CFLAGS) -c src/firelog.c -o bin/firelog.o
@@ -58,18 +61,24 @@ bin/verifyip.o: src/verifyip.c
 verifyip: bin/verifyip.o
 	$(CC) bin/verifyip.o -o verifyip
 	@echo
-	$(BASH) test/testVerifyIP.sh
+	/bin/bash test/testVerifyIP.sh
 
-clean-all: clean-between clean-firelog clean-scriptinfo clean-verifyip
+clean: clean-between clean-firelog clean-scriptinfo clean-verifyip
 
 clean-between:
-	rm -f between bin/between.o
+	/bin/rm -f between bin/between.o
 
 clean-firelog:
-	rm -f firelog bin/firelog.o
+	/bin/rm -f firelog bin/firelog.o
 
 clean-scriptinfo:
-	rm -f scriptinfo bin/scriptinfo.o
+	/bin/rm -f scriptinfo bin/scriptinfo.o
 
 clean-verifyip:
-	rm -f verifyip bin/verifyip.o
+	/bin/rm -f verifyip bin/verifyip.o
+
+install: between firelog scriptinfo verifyip
+	/bin/cp between ../usr/local/bin
+	/bin/cp firelog ../usr/local/bin
+	/bin/cp scriptinfo ../usr/local/bin
+	/bin/cp verifyip ../usr/local/bin

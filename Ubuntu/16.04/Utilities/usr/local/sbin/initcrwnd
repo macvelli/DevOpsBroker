@@ -58,10 +58,12 @@ fi
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_SLEEP=/bin/sleep
 EXEC_SYSCTL=/sbin/sysctl
 
 ## Options
 NIC="$1"
+NEED_SLEEP=${2:-'false'}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -82,9 +84,6 @@ fi
 
 ################################### Actions ###################################
 
-# Sleep for a while to ensure IPv6 is fully configured
-sleep 10
-
 # Optimize IPv4 initcwnd and initrwnd values
 mapfile -t ipRouteList < <($EXEC_IP -4 route show dev $NIC)
 
@@ -92,13 +91,18 @@ for ipv4Route in "${ipRouteList[@]}"; do
 	if [[ "$ipv4Route" =~ ^default ]]; then
 		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv4Route'" on dev "'$NIC'";
 		defaultRoute=( $ipv4Route )
-		$EXEC_IP -4 route change ${defaultRoute[@]::3} dev $NIC initcwnd 22 initrwnd 22
-	elif [[ ! "$ipv4Route" =~ ^169.254.0.0/16 ]]; then
+		$EXEC_IP -4 route change ${defaultRoute[@]::7} dev $NIC initcwnd 22 initrwnd 22
+	elif [[ "$ipv4Route" == *"proto kernel  scope link"* ]]; then
 		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv4Route'" on dev "'$NIC'";
 		subnetRoute=( $ipv4Route )
-		$EXEC_IP -4 route change ${subnetRoute[@]::7} dev $NIC initcwnd 44 initrwnd 44
+		$EXEC_IP -4 route change ${subnetRoute[@]::9} dev $NIC initcwnd 44 initrwnd 44
 	fi
 done
+
+# Sleep for a while to ensure IPv6 is fully configured
+if [ "$NEED_SLEEP" == 'true' ]; then
+	$EXEC_SLEEP 30
+fi
 
 # Optimize IPv6 initcwnd and initrwnd values
 mapfile -t ipRouteList < <($EXEC_IP -6 route show dev $NIC)
@@ -107,13 +111,16 @@ for ipv6Route in "${ipRouteList[@]}"; do
 	if [[ "$ipv6Route" =~ ^default ]]; then
 		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv6Route'" on dev "'$NIC'";
 		defaultRoute=( $ipv6Route )
-		$EXEC_IP -6 route change ${defaultRoute[@]::7} dev $NIC hoplimit 64 pref medium initcwnd 22 initrwnd 22
+		$EXEC_IP -6 route change ${defaultRoute[@]::9} dev $NIC initcwnd 22 initrwnd 22
 
-		$EXEC_SYSCTL -w --quiet net.ipv6.conf.$NIC.accept_ra_defrtr=0
 	elif [[ "$ipv6Route" == *"proto kernel"* ]]; then
 		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv6Route'" on dev "'$NIC'";
 		kernelRoute=( $ipv6Route )
-		$EXEC_IP -6 route change ${kernelRoute[@]::5} dev $NIC pref medium initcwnd 44 initrwnd 44
+		$EXEC_IP -6 route change ${kernelRoute[@]::7} dev $NIC initcwnd 44 initrwnd 44
+	elif [[ "$ipv6Route" == *"proto ra"* ]]; then
+		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv6Route'" on dev "'$NIC'";
+		raRoute=( $ipv6Route )
+		$EXEC_IP -6 route change ${raRoute[@]::9} dev $NIC initcwnd 44 initrwnd 44
 	fi
 done
 

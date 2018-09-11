@@ -65,102 +65,105 @@ char *scriptExec = NULL;
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
-    if (argc == 1) {
-	printUsage("scriptinfo SCRIPT_NAME");
-	exit(EXIT_FAILURE);
-    }
-
-    if (argv[1][0] == '\0') {
-	printError("scriptinfo", "SCRIPT_NAME parameter is missing\n\n");
-	printUsage("scriptinfo SCRIPT_NAME");
-	exit(EXIT_FAILURE);
-    }
-
-    char *pathName = argv[1];
-
-    // Stat the script
-    Stat fileStat;
-    if (lstat(pathName, &fileStat) == SYS_ERROR) {
-	char messageLabel[PATH_MAX];
-
-	snprintf(messageLabel, PATH_MAX, "Cannot stat '%s'", pathName);
-	printSystemError("scriptinfo", messageLabel, errno);
-	exit(EXIT_FAILURE);
-    }
-
-    // Handle symbolic links
-    if (S_ISLNK(fileStat.st_mode)) {
-	ssize_t bufSize;
-
-	if (fileStat.st_size == 0) {
-	    bufSize = PATH_MAX;
-	} else {
-	    bufSize = fileStat.st_size + 1;
+	if (argc == 1) {
+		printUsage("scriptinfo SCRIPT_NAME");
+		exit(EXIT_FAILURE);
 	}
 
-	realPathName = malloc(bufSize);
-	if (realPathName == NULL) {
-	    char messageLabel[64];
-
-	    snprintf(messageLabel, 64, "Cannot allocate buffer of size '%ld'", bufSize);
-	    printSystemError("scriptinfo", messageLabel, errno);
-	    exit(EXIT_FAILURE);
+	if (argv[1][0] == '\0') {
+		printError("scriptinfo", "SCRIPT_NAME parameter is missing\n\n");
+		printUsage("scriptinfo SCRIPT_NAME");
+		exit(EXIT_FAILURE);
 	}
 
-	if (readlink(pathName, realPathName, bufSize) == SYS_ERROR) {
-	    char messageLabel[PATH_MAX];
+	char *pathName = argv[1];
 
-    	    snprintf(messageLabel, PATH_MAX, "Cannot read link '%s'", pathName);
-    	    printSystemError("scriptinfo", messageLabel, errno);
-    	    exit(EXIT_FAILURE);
+	// Stat the script
+	Stat fileStat;
+	if (lstat(pathName, &fileStat) == SYS_ERROR) {
+		char messageLabel[PATH_MAX];
+
+		snprintf(messageLabel, PATH_MAX, "Cannot stat '%s'", pathName);
+		printSystemError("scriptinfo", messageLabel, errno);
+		exit(EXIT_FAILURE);
 	}
 
-	setEnvironmentVar(SCRIPT_DIR, realPathName);
-	setEnvironmentVar(SCRIPT_EXEC, pathName);
+	ssize_t bufSize = PATH_MAX + 1;
 
-    // Handle regular files
-    } else if (S_ISREG(fileStat.st_mode)) {
+	// Handle symbolic links
+	if (S_ISLNK(fileStat.st_mode)) {
+		if (fileStat.st_size > 0) {
+			bufSize = fileStat.st_size + 1;
+		}
 
-	setEnvironmentVar(ALL_VARS, pathName);
+		realPathName = malloc(bufSize);
+		if (realPathName == NULL) {
+			char messageLabel[64];
 
+			snprintf(messageLabel, 64, "Cannot allocate buffer of size '%ld'", bufSize);
+			printSystemError("scriptinfo", messageLabel, errno);
+			exit(EXIT_FAILURE);
+		}
+
+		if (readlink(pathName, realPathName, bufSize) == SYS_ERROR) {
+			char messageLabel[PATH_MAX];
+
+			snprintf(messageLabel, PATH_MAX, "Cannot read link '%s'", pathName);
+			printSystemError("scriptinfo", messageLabel, errno);
+			exit(EXIT_FAILURE);
+		}
+
+		setEnvironmentVar(SCRIPT_DIR, realPathName);
+		setEnvironmentVar(SCRIPT_EXEC, pathName);
+
+	// Handle regular files
+	} else if (S_ISREG(fileStat.st_mode)) {
+		realPathName = malloc(bufSize);
+
+		if (realpath(pathName, realPathName) == NULL) {
+			printSystemError("scriptinfo", "Call to realpath failed", errno);
+			exit(EXIT_FAILURE);
+		}
+
+		setEnvironmentVar(ALL_VARS, realPathName);
     }
 
-    // Cannot set environment variables in parent shell from binary executable
-    printf("%s %s\n", scriptDir, scriptExec);
+	// Cannot set environment variables in parent shell from binary executable
+	printf("%s %s\n", scriptDir, scriptExec);
 
-    if (realPathName != NULL) {
-	free(realPathName);
-    }
+	if (realPathName != NULL) {
+		free(realPathName);
+	}
 
-    // Exit with success
-    exit(EXIT_SUCCESS);
+	// Exit with success
+	exit(EXIT_SUCCESS);
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
 void setEnvironmentVar(int envVarTypeCode, char *pathName) {
-    char *scriptName = pathName;
+	char *scriptName = pathName;
 
-    for (char *ptr = pathName; (*ptr) != '\0'; ptr++) {
-	if ((*ptr) == '/') {
-	    scriptName = ptr;
+	for (char *ptr = pathName; (*ptr) != '\0'; ptr++) {
+		if ((*ptr) == '/') {
+			scriptName = ptr;
+		}
 	}
-    }
 
-    if ((*scriptName) == '/') {
-	(*scriptName) = '\0';
-	scriptName++;
-    } else {
-	pathName = ".";
-    }
+	if ((*scriptName) == '/') {
+		(*scriptName) = '\0';
+		scriptName++;
+	} else {
+		pathName = ".";
+	}
 
-    if (envVarTypeCode == ALL_VARS || envVarTypeCode == SCRIPT_DIR) {
-	scriptDir = pathName;
-    }
+	if (envVarTypeCode == ALL_VARS || envVarTypeCode == SCRIPT_DIR) {
+		scriptDir = pathName;
+	}
 
-    if (envVarTypeCode == ALL_VARS || envVarTypeCode == SCRIPT_EXEC) {
-	scriptExec = scriptName;
-    }
+	if (envVarTypeCode == ALL_VARS || envVarTypeCode == SCRIPT_EXEC) {
+		scriptExec = scriptName;
+	}
 
 /*
     if ((envVarTypeCode == ALL_VARS || envVarTypeCode == SCRIPT_DIR) && setenv("SCRIPT_DIR", pathName, 1) == SYS_ERROR) {

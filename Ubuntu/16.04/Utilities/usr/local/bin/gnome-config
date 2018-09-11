@@ -33,21 +33,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # Display error if running as root
 if [ "$USER" == 'root' ]; then
@@ -81,19 +81,12 @@ fi
 
 ################################### Actions ###################################
 
-# Clear screen and print banner only if called from command line
+# Clear screen only if called from command line
 if [ $SHLVL -eq 2 ]; then
 	clear
-
-	bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop GSettings Configurator'
-
-	echo ${bold} ${wisteria}
-	echo '╔══════════════════════════════════════════════════════════╗'
-	echo "║ ${white}$bannerMsg${wisteria}"                          '║'
-	echo '╚══════════════════════════════════════════════════════════╝'
-	echo ${reset}
 fi
 
+printBox "DevOpsBroker $UBUNTU_RELEASE GSettings Configurator" 'true'
 
 if [ "$command" == 'compiz' ]; then
 
@@ -103,6 +96,7 @@ if [ "$command" == 'compiz' ]; then
 	#
 	echo 'Want to enable workspaces?'
 	select workspaces in 'Yes' 'No'; do
+		echo
 		if [ "$workspaces" == 'Yes' ]; then
 			printInfo 'Enabling workspaces'
 
@@ -116,64 +110,73 @@ if [ "$command" == 'compiz' ]; then
 			$EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/hsize 1
 			$EXEC_DCONF write /org/compiz/profiles/unity/plugins/core/vsize 1
 		fi
+
+		echoOnExit=true
+		break;
 	done
 
-	echo
-
 	# Set 'Detect Refresh Rate' to 'false'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/composite/detect-refresh-rate) != 'false' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/composite/detect-refresh-rate)" != 'false' ]; then
 		printInfo "Setting 'Detect Refresh Rate' to 'false'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/composite/detect-refresh-rate false
+		echoOnExit=true
 	fi
 
 	# Set 'Default Moving Window Mode' to 'Rectangle'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/mode) != '2' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/mode)" != '2' ]; then
 		printInfo "Setting 'Default Moving Window Mode' to 'Rectangle'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/move/mode 2
+		echoOnExit=true
 	fi
 
 	# Set 'Use a double-border when moving window' to 'false'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/increase-border-contrast) != 'false' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/increase-border-contrast)" != 'false' ]; then
 		printInfo "Setting 'Use a double-border when moving window' to 'false'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/move/increase-border-contrast false
+		echoOnExit=true
 	fi
 
 	# Set 'Use desktop average colors when moving window' to 'true'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/use-desktop-average-color) != 'true' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/move/use-desktop-average-color)" != 'true' ]; then
 		printInfo "Setting 'Use desktop average colors when moving window' to 'true'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/move/use-desktop-average-color true
+		echoOnExit=true
 	fi
 
 	# Set 'Sync to VBlank' to 'false'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/opengl/sync-to-vblank) != 'false' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/opengl/sync-to-vblank)" != 'false' ]; then
 		printInfo "Setting 'Sync to VBlank' to 'false'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/opengl/sync-to-vblank false
+		echoOnExit=true
 	fi
 
 	# Set 'Default Resize Window Mode' to 'Rectangle'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/mode) != '2' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/mode)" != '2' ]; then
 		printInfo "Setting 'Default Resize Window Mode' to 'Rectangle'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/resize/mode 2
+		echoOnExit=true
 	fi
 
 	# Set 'Use a double-border when resizing window' to 'false'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/increase-border-contrast) != 'false' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/increase-border-contrast)" != 'false' ]; then
 		printInfo "Setting 'Use a double-border when resizing window' to 'false'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/resize/increase-border-contrast false
+		echoOnExit=true
 	fi
 
 	# Set 'Use desktop average colors when resizing window' to 'true'
-	if [ $($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/use-desktop-average-color) != 'true' ]; then
+	if [ "$($EXEC_DCONF read /org/compiz/profiles/unity/plugins/resize/use-desktop-average-color)" != 'true' ]; then
 		printInfo "Setting 'Use desktop average colors when resizing window' to 'true'"
 
 		$EXEC_DCONF write /org/compiz/profiles/unity/plugins/resize/use-desktop-average-color true
+		echoOnExit=true
 	fi
 
 elif [ "$command" == 'gnome' ]; then
@@ -184,7 +187,7 @@ elif [ "$command" == 'gnome' ]; then
 	profilePath="${profilePath}$($EXEC_DCONF list $profilePath)"
 
 	# Set 'Default Columns Size' to '160'
-	if [ $($EXEC_DCONF read "${profilePath}default-size-columns") != '160' ]; then
+	if [ "$($EXEC_DCONF read ${profilePath}default-size-columns)" != '160' ]; then
 		printInfo "Setting 'Default Columns Size' to '160'"
 
 		$EXEC_DCONF write "${profilePath}default-size-columns" 160
@@ -192,7 +195,7 @@ elif [ "$command" == 'gnome' ]; then
 	fi
 
 	# Set 'Default Rows Size' to '40'
-	if [ $($EXEC_DCONF read "${profilePath}default-size-rows") != '40' ]; then
+	if [ "$($EXEC_DCONF read ${profilePath}default-size-rows)" != '40' ]; then
 		printInfo "Setting 'Default Rows Size' to '40'"
 
 		$EXEC_DCONF write "${profilePath}default-size-rows" 40
@@ -200,7 +203,7 @@ elif [ "$command" == 'gnome' ]; then
 	fi
 
 	# Set 'Scrollback Lines' to '16384'
-	if [ $($EXEC_DCONF read "${profilePath}scrollback-lines") != '16384' ]; then
+	if [ "$($EXEC_DCONF read ${profilePath}scrollback-lines)" != '16384' ]; then
 		printInfo "Setting 'Scrollback Lines' to '16384'"
 
 		$EXEC_DCONF write "${profilePath}scrollback-lines" 16384
@@ -208,7 +211,7 @@ elif [ "$command" == 'gnome' ]; then
 	fi
 
 	# Set 'Use Theme Colors' to 'true'
-	if [ $($EXEC_DCONF read "${profilePath}use-theme-colors") != 'true' ]; then
+	if [ "$($EXEC_DCONF read ${profilePath}use-theme-colors)" != 'true' ]; then
 		printInfo "Setting 'Use Theme Colors' to 'true'"
 
 		$EXEC_DCONF write "${profilePath}use-theme-colors" true
@@ -216,7 +219,7 @@ elif [ "$command" == 'gnome' ]; then
 	fi
 
 	# Set 'Use Theme Transparency' to 'true'
-	if [ $($EXEC_DCONF read "${profilePath}use-theme-transparency") != 'true' ]; then
+	if [ "$($EXEC_DCONF read ${profilePath}use-theme-transparency)" != 'true' ]; then
 		printInfo "Setting 'Use Theme Transparency' to 'true'"
 
 		$EXEC_DCONF write "${profilePath}use-theme-transparency" true
@@ -224,7 +227,7 @@ elif [ "$command" == 'gnome' ]; then
 	fi
 
 	# Set 'Profile Name' to 'Default'
-	if [ $($EXEC_DCONF read "${profilePath}visible-name") != 'Default' ]; then
+	if [ "$($EXEC_DCONF read ${profilePath}visible-name)" != 'Default' ]; then
 		printInfo "Setting 'Profile Name' to 'Default'"
 
 		$EXEC_DCONF write "${profilePath}visible-name" \"Default\"
@@ -234,12 +237,11 @@ elif [ "$command" == 'gnome' ]; then
 elif [ "$command" == 'nautilus' ]; then
 
 	# Set 'Show Hidden Files' to 'false' in Nautilus
-	if [ $($EXEC_DCONF read /org/gtk/settings/file-chooser/show-hidden) == 'true' ]; then
+	if [ "$($EXEC_DCONF read /org/gtk/settings/file-chooser/show-hidden)" == 'true' ]; then
 		printInfo "Setting 'Show Hidden Files' Nautilus default to 'false'"
 
 		$EXEC_GSETTINGS set org.gtk.Settings.FileChooser show-hidden false
-
-		echo
+		echoOnExit=true
 	fi
 
 elif [ "$command" == 'unity' ]; then
@@ -250,23 +252,21 @@ elif [ "$command" == 'unity' ]; then
 	#
 	echo 'Want the menus in the title bar for a window?'
 	select titleBarMenus in 'Yes' 'No'; do
-		if [ ! -z "$titleBarMenus" ]; then
-			echo
-			if [ "$titleBarMenus" == 'Yes' ]; then
-				printInfo 'Enabling title bar menus'
+		echo
+		if [ "$titleBarMenus" == 'Yes' ]; then
+			printInfo 'Enabling title bar menus'
 
-				# Enable integrated menus
-				$EXEC_GSETTINGS set com.canonical.Unity integrated-menus true
-			else
-				printInfo 'Disabling title bar menus'
+			# Enable integrated menus
+			$EXEC_GSETTINGS set com.canonical.Unity integrated-menus true
+		else
+			printInfo 'Disabling title bar menus'
 
-				# Disable integrated menus
-				$EXEC_GSETTINGS set com.canonical.Unity integrated-menus false
-			fi
-
-			echo
-			break;
+			# Disable integrated menus
+			$EXEC_GSETTINGS set com.canonical.Unity integrated-menus false
 		fi
+
+		echo
+		break;
 	done
 
 	#
@@ -275,44 +275,40 @@ elif [ "$command" == 'unity' ]; then
 	#
 	echo 'How many minutes of inactivity before turning screen off?'
 	select inactivePeriod in '1' '3' '5' '10' '15' '20' '30' '45' '60' 'Never'; do
-		if [ ! -z "$inactivePeriod" ]; then
+		echo
+		if [ "$inactivePeriod" == 'Never' ]; then
+			printInfo "Setting 'Screen Inactive Period' to 'Never'"
+
+			$EXEC_GSETTINGS set org.gnome.desktop.session idle-delay 0
+		else
+			printInfo "Setting 'Screen Inactive Period' to '$inactivePeriod minutes'"
+
+			$EXEC_GSETTINGS set org.gnome.desktop.session idle-delay $[ 60 * $inactivePeriod ]
+
 			echo
-			if [ "$inactivePeriod" == 'Never' ]; then
-				printInfo "Setting 'Screen Inactive Period' to 'Never'"
-
-				$EXEC_GSETTINGS set org.gnome.desktop.session idle-delay 0
-			else
-				printInfo "Setting 'Screen Inactive Period' to '$inactivePeriod minutes'"
-
-				$EXEC_GSETTINGS set org.gnome.desktop.session idle-delay $[ 60 * $inactivePeriod ]
-
+			echo 'Want to enable locking the screen when it turns off?'
+			select lockScreen in 'Yes' 'No'; do
 				echo
-				echo 'Want to enable locking the screen when it turns off?'
-				select lockScreen in 'Yes' 'No'; do
-					if [ ! -z "$lockScreen" ]; then
-						echo
-						if [ "$lockScreen" == 'Yes' ]; then
-							printInfo 'Enabling screen locking'
+				if [ "$lockScreen" == 'Yes' ]; then
+					printInfo 'Enabling screen locking'
 
-							$EXEC_GSETTINGS set org.gnome.desktop.screensaver lock-enabled true
-						elif [ "$lockScreen" == 'No' ]; then
-							printInfo 'Disabling screen locking'
+					$EXEC_GSETTINGS set org.gnome.desktop.screensaver lock-enabled true
+				elif [ "$lockScreen" == 'No' ]; then
+					printInfo 'Disabling screen locking'
 
-							$EXEC_GSETTINGS set org.gnome.desktop.screensaver lock-enabled false
-						fi
+					$EXEC_GSETTINGS set org.gnome.desktop.screensaver lock-enabled false
+				fi
 
-						break;
-					fi
-				done
-			fi
-
-			echo
-			break;
+				break;
+			done
 		fi
+
+		echo
+		break;
 	done
 
 	# Set Xft-dpi for unity-greeter
-	if [ $($EXEC_GSETTINGS get com.canonical.unity-greeter xft-dpi) == '96.0' ]; then
+	if [ "$($EXEC_GSETTINGS get com.canonical.unity-greeter xft-dpi)" == '96.0' ]; then
 		# Question
 		echo -n "What DPI do you want to use for the Unity greeter (96.0)? "
 		read dpi
@@ -324,7 +320,7 @@ elif [ "$command" == 'unity' ]; then
 	fi
 
 	# Turn off Remote Content Search
-	if [ $($EXEC_GSETTINGS get com.canonical.Unity.Lenses remote-content-search) != "'none'" ]; then
+	if [ "$($EXEC_GSETTINGS get com.canonical.Unity.Lenses remote-content-search)" != "'none'" ]; then
 		printInfo 'Turning off Remote Content Search'
 
 		$EXEC_GSETTINGS set com.canonical.Unity.Lenses remote-content-search 'none'

@@ -28,24 +28,24 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ################################## Variables ##################################
 
@@ -56,9 +56,8 @@ projectName="$1"
 
 # Display usage if no project name parameter specified
 if [ -z "$projectName" ]; then
-  printUsage "makefile.tpl PROJ_NAME ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
-
-  exit 1
+	printUsage "makefile.tpl PROJ_NAME ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,12 +92,19 @@ kernelVersion=${3:-"$(getKernelVersion)"}
 # -----------------------------------------------------------------------------
 #
 
-CC=/usr/bin/gcc
-CFLAGS=-Wall -g
+################################## Variables ##################################
 
-all: $projectName
+TMPDIR ?= /tmp
+SHELL := /bin/bash
 
-.PHONY: all clean
+CC := /usr/bin/gcc
+CFLAGS := -Wall -g
+
+################################### Targets ###################################
+
+.PHONY: default clean printenv
+
+default: $projectName
 
 bin/$projectName.o: src/$projectName.c
 	\$(CC) \$(CFLAGS) -c src/$projectName.c -o bin/$projectName.o
@@ -107,6 +113,11 @@ $projectName: bin/$projectName.o
 	\$(CC) bin/$projectName.o -o $projectName
 
 clean:
-	rm -f $projectName bin/$projectName.o
+	/bin/rm -f $projectName bin/$projectName.o
+
+printenv:
+	@echo "MAKEFILE_LIST: $(MAKEFILE_LIST)"
+	@echo "       TMPDIR: $(TMPDIR)"
+	@echo "       CURDIR: $(CURDIR)"
 
 EOF

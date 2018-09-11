@@ -26,6 +26,8 @@
 #
 # This script is meant to change that.
 #
+# dpkg --ignore-depends=libtidy-0.99-0 -i tidy
+#
 # TODO: Need to implement find/search functionality https://packages.ubuntu.com/
 # -----------------------------------------------------------------------------
 #
@@ -37,21 +39,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ################################## Functions ##################################
 
@@ -69,7 +71,6 @@ function showHelp() {
 	echo '  dist-upgrade			Performs an update and may remove some packages in the process'
 	echo '  full-upgrade			Same as dist-upgrade; just different command'
 	echo '  install PACKAGE_NAME...	Install one or more packages for installation or upgrading'
-	echo '  pin PACKAGE_NAME		Prevent the package from being automatically removed if no other packages depend on it'
 	echo '  reconfigure PACKAGE_NAME	Reconfigure a package that is already installed'
 	echo '  reinstall PACKAGE_NAME	Reinstall a package that is already installed'
 	echo '  remove PACKAGE_NAME		Remove a package from the system'
@@ -99,7 +100,7 @@ EXEC_DPKG_RECONFIG=/usr/sbin/dpkg-reconfigure
 EXEC_LSB_RELEASE=/usr/bin/lsb_release
 EXEC_WHICH=/usr/bin/which
 
-sudoCommands=('autoremove' 'dist-upgrade' 'full-upgrade' 'install' 'pin' 'reconfigure' 'reinstall' 'remove' 'uninstall' 'update' 'upgrade')
+sudoCommands=('autoremove' 'dist-upgrade' 'full-upgrade' 'install' 'reconfigure' 'reinstall' 'remove' 'uninstall' 'update' 'upgrade')
 validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
 
 ## Options
@@ -181,6 +182,9 @@ elif [ $command == 'info' ]; then
 	echo "${pastelGreen}$pkgInfo"
 
 	if [[ $pkgInfo == dpkg-query* ]]; then
+		# Show package information from APT
+		echo ${perano}
+		$EXEC_APT show "$2"
 		echo
 	else
 		# Show package information from the APT cache
@@ -291,15 +295,6 @@ elif [ $command == 'list' ]; then
 			$EXEC_CURL -s --no-buffer https://packages.ubuntu.com/$($EXEC_LSB_RELEASE -sc)/amd64/$2/filelist | $EXEC_BETWEEN "<pre>" "</pre>"
 		fi
 	fi
-
-elif [ $command == 'pin' ]; then
-
-	if [ -z "$2" ]; then
-		printUsage 'pms pin package-name'
-		exit 1
-	fi
-
-	$EXEC_APT_MARK manual "$2"
 
 elif [ $command == 'reconfigure' ]; then
 

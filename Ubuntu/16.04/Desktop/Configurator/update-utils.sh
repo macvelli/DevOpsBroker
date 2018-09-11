@@ -197,11 +197,17 @@ installSystemUtility pms
 # Install archive user utility
 installUserUtility archive
 
+# Install bash_reboot user utility
+installUserUtility bash_reboot
+
 # Install between user utility
 installUserUtility between
 
 # Install bgedit user utility
 installUserUtility bgedit
+
+# Install certauth user utility
+installUserUtility certauth
 
 # Install convert-number user utility
 installUserUtility convert-number
@@ -309,7 +315,9 @@ fi
 
 installTemplate 'bash-script.tpl'
 installTemplate 'bash-template.tpl'
+installTemplate 'fileinfo.tpl'
 installTemplate 'header-file-c.tpl'
+installTemplate 'html5.tpl'
 installTemplate 'linux-conf.tpl'
 installTemplate 'makefile.tpl'
 installTemplate 'source-file-c.tpl'
