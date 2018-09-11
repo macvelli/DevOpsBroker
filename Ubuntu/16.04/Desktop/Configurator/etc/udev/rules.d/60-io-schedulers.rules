@@ -22,11 +22,26 @@
 # In order to set the default queue scheduler to kyber:
 #   o scsi_mod.use_blk_mq=1 is set on the GRUB_CMDLINE_LINUX_DEFAULT setting
 #     in /etc/default/grub
-#   o The kyber-iosched module is loaded in /etc/modules
+#   o The kyber-iosched and bfq modules are loaded in /etc/modules
 # -----------------------------------------------------------------------------
 #
 
-# Use kyber I/O scheduler and set default read/write nanosecond latency values
-ACTION=="add", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", KERNEL=="sd[a-z]|mmcblk[0-9]|nvme[0-9]", ATTR{queue/scheduler}="kyber"
-ACTION=="add", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", KERNEL=="sd[a-z]|mmcblk[0-9]|nvme[0-9]", ATTR{queue/iosched/read_lat_nsec}="24576"
-ACTION=="add", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", KERNEL=="sd[a-z]|mmcblk[0-9]|nvme[0-9]", ATTR{queue/iosched/write_lat_nsec}="24576"
+# Default Disk I/O settings
+ACTION!="add", GOTO="io-schedulers-end"
+SUBSYSTEM!="block", GOTO="io-schedulers-end"
+
+# Disable kernel events polling by default
+KERNEL=="sd[a-z]|sr[0-9]", SUBSYSTEM=="block", ATTR{events_poll_msecs}="-1"
+
+# Use kyber I/O scheduler for SATA SSD drives and set default read/write nanosecond latency values
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/rotational}=="0", ATTR{queue/iosched/read_lat_nsec}="6357"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/rotational}=="0", ATTR{queue/iosched/write_lat_nsec}="6357"
+
+# Use BFQ I/O scheduler for SATA HDD drives
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+
+# Use no scheduler for SATA CD-ROM/DVD-ROM drives and NVMe PCIe drives
+KERNEL=="sr[0-9]|nvme[0-9]n[0-9]", SUBSYSTEM=="block", ATTR{queue/scheduler}="none"
+
+LABEL="io-schedulers-end"

@@ -99,19 +99,26 @@ fi
 printBox "DevOpsBroker $UBUNTU_RELEASE Udev Configurator" 'true'
 
 #
+# udev Configuration
+#   o /etc/udev/udev.conf
+#
+
+installConfig 'udev.conf' "$SCRIPT_DIR" /etc/udev
+
+#
+# SSHD Configuration
+#   o /etc/udev/rules.d/50-sshd.rules
+#
+
+installConfig '50-sshd.rules' "$SCRIPT_DIR"/rules.d /etc/udev/rules.d
+
+#
 # Disk I/O Schedulers Configuration
 #   o /etc/udev/rules.d/60-io-schedulers.rules
 #   o Queue scheduler: kyber
 #
 
 installConfig '60-io-schedulers.rules' "$SCRIPT_DIR"/rules.d /etc/udev/rules.d
-
-#
-# SSHD Configuration
-#   o /etc/udev/rules.d/60-sshd.rules
-#
-
-installConfig '60-sshd.rules' "$SCRIPT_DIR"/rules.d /etc/udev/rules.d
 
 #
 # Disk I/O Tuning Configuration

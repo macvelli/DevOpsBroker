@@ -61,21 +61,17 @@ fi
 ################################## Variables ##################################
 
 ## Bash exec variables
-EXEC_BLOCKDEV=/sbin/blockdev
 EXEC_HDPARM=/sbin/hdparm
 EXEC_LSBLK=/bin/lsblk
+EXEC_UDEVADM=/sbin/udevadm
 
 ## Options
 deviceNode="$1"
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
-blockDevice="${deviceNode/"/dev"/"/sys/block"}/device"
-blockSize=512
 ioPoll=1
-ioPollDelay=2
 ncqPrioEnable=0
-queueDepth=1
 rqAffinity=2
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,9 +85,11 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Gather Serial Number, Device Transport Type, and Device Type
-attributeList=($($EXEC_LSBLK -dnp --exclude 7 --output SERIAL,TRAN,TYPE $deviceNode 2>/dev/null))
+attributeList=($($EXEC_LSBLK -dn --exclude 7 --output KNAME,SERIAL,TYPE $deviceNode 2>/dev/null))
 
-if [ "${attributeList[2]}" != 'disk' ]; then
+deviceName=${attributeList[0]}
+
+if [ ! -L "/sys/block/$deviceName" ]; then
 	printError "$SCRIPT_EXEC" "Cannot tune '$deviceNode': Not a block device"
 	echo
 	printUsage "$SCRIPT_EXEC DEVICE_NODE"
@@ -99,10 +97,21 @@ if [ "${attributeList[2]}" != 'disk' ]; then
 	exit 1
 fi
 
+if [[ "$deviceName" == nvme* ]]; then
+	printInfo 'No configuration necessary for an NVMe device'
+	exit 0
+fi
+
+if [[ "$deviceName" == sr* ]]; then
+	printInfo 'No configuration necessary for a CD/DVD/BD-ROM device'
+	exit 0
+fi
+
 # Initialize variables
-serialNumber=${attributeList[0]}
-transportType=${attributeList[1]}
-deviceType=${attributeList[2]}
+isRemovable=$($EXEC_CAT "/sys/block/$deviceName/removable")
+isRotational=$($EXEC_CAT "/sys/block/$deviceName/queue/rotational")
+modelName=$($EXEC_CAT "/sys/block/$deviceName/device/model")
+serialNumber=${attributeList[1]}
 udevRuleFile="65-diskio-${serialNumber}.rules"
 
 # Execute sequential read benchmark
@@ -111,19 +120,6 @@ if [ ! -f /etc/devops/diskio-${serialNumber}.info ]; then
 	$EXEC_HDPARM -t $deviceNode | tee /etc/devops/diskio-${serialNumber}.info
 	echo
 fi
-
-if [ "$transportType" == 'sata' ] && [ -f "$blockDevice/queue_depth" ]; then
-	queueDepth=$($EXEC_CAT "$blockDevice/queue_depth")
-
-	if [ -f "$blockDevice/ncq_prio_enable" ]; then
-		ncqPrioEnable=1
-	fi
-fi
-
-# Calculate nrRequests value
-blockDeviceInfo=($($EXEC_BLOCKDEV --getss --getmaxsect $deviceNode))
-nrRequests=$( min $[ (${blockDeviceInfo[0]} * ${blockDeviceInfo[1]}) / $blockSize ] 2048 )
-nrRequests=$[ ($nrRequests / $queueDepth) * $queueDepth ]
 
 # Load disk I/O benchmark data
 diskIOBench=($($EXEC_CAT /etc/devops/diskio-${serialNumber}.info))
@@ -137,12 +133,52 @@ if [ "$diskMetric" == 'MB/sec' ]; then
 	readAheadKB=$( max $readAheadKB 64 )
 fi
 
-# Calculate read_lat_nsec/write_lat_nsec values
-nanoSecLat=$[ $diskSpeed / $blockSize ]
-nanoSecLat=$[ 1000000000 / $nanoSecLat ]
+# Calculate nrRequests value
+nrRequests=$( min $[ $diskSpeed / 512000 ] 2048 )
 
-# Calculate Event Poll Milliseconds for Kernel polling
-eventPollMs=$( max $[ ($nanoSecLat + 500) / 1000 ] 1 )
+# Set the max_sectors_kb equal to the max_hw_sectors_kb value
+maxSectorsKB=$($EXEC_CAT /sys/block/$deviceName/queue/max_hw_sectors_kb)
+
+# Calculate read_lat_nsec/write_lat_nsec values for kyber
+if [ "$isRotational" == '1' ] && [[ "$modelName" =~ Flash.?Drive ]]; then
+	isRotational=0
+fi
+
+if [ "$isRotational" == '0' ]; then
+	nanoSecLat=$[ 1000000000 / ($diskSpeed / 1000) ]
+else
+	# Calculate the disk size
+	diskSize=$($EXEC_CAT /sys/block/$deviceName/size)
+	hwSectorSize=$($EXEC_CAT /sys/block/$deviceName/queue/hw_sector_size)
+	diskSize=$[ $diskSize * $hwSectorSize ]
+
+	# Calculate back_seek_max and set back_seek_penalty
+	backSeekMax=$[ $diskSize / 5120000 ]
+	backSeekPenalty=2
+
+	# Calculate fifo_expire_async, fifo_expire_sync, and timeout_sync
+	fifoExpireAsync=$[ ($maxSectorsKB * 1024000) / $diskSpeed ]
+	fifoExpireAsync=$[ $fifoExpireAsync * 3 / 2 ]
+	fifoExpireSync=$[ $fifoExpireAsync / 2 ]
+	timeoutSync=$[ $fifoExpireSync - 1 ]
+
+	# Set low_latency and max_budget
+	lowLatency=1
+	maxBudget=$[ ($maxSectorsKB * 1024) / $hwSectorSize ]
+
+	# Calculate slice_idle and slice_idle_us
+	sliceIdle=0
+	sliceIdleUS=$[ 240000000000 / $diskSpeed ]
+fi
+
+# Enable NCQ prioritization
+if [ -f "/sys/block/$deviceName/device/ncq_prio_enable" ]; then
+	ncqPrioEnable=1
+fi
+
+# Retrieve the device path
+devPath=$($EXEC_UDEVADM info -q path -n $deviceNode)
+scsiDriverKernel=$($EXEC_BASENAME $($EXEC_DIRNAME $($EXEC_DIRNAME $devPath)))
 
 
 ## Template
@@ -172,19 +208,45 @@ eventPollMs=$( max $[ ($nanoSecLat + 500) / 1000 ] 1 )
 #
 
 # Disk I/O settings for $serialNumber
-ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_SERIAL_SHORT}!="$serialNumber", GOTO="disk-io-settings-end"
+ENV{ID_SERIAL_SHORT}!="$serialNumber", GOTO="disk-io-settings-end"
+ACTION!="add", GOTO="disk-io-settings-end"
+ENV{DEVTYPE}!="disk", GOTO="disk-io-settings-end"
 
-ATTR{events_poll_msecs}="$eventPollMs"
-ATTR{queue/iosched/read_lat_nsec}="$nanoSecLat"
-ATTR{queue/iosched/write_lat_nsec}="$nanoSecLat"
-ATTR{queue/io_poll}="$ioPoll"
-ATTR{queue/nr_requests}="$nrRequests"
-ATTR{queue/read_ahead_kb}="$readAheadKB"
-ATTR{queue/rq_affinity}="$rqAffinity"
+EOF
+
+if [ "$isRotational" == '0' ]; then
+/bin/cat << EOF >> "$TMPDIR"/$udevRuleFile
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/read_lat_nsec}="$nanoSecLat"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/write_lat_nsec}="$nanoSecLat"
+
+EOF
+
+else
+/bin/cat << EOF >> "$TMPDIR"/$udevRuleFile
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/back_seek_max}="$backSeekMax"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/back_seek_penalty}="$backSeekPenalty"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/fifo_expire_async}="$fifoExpireAsync"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/fifo_expire_sync}="$fifoExpireSync"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/low_latency}="$lowLatency"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/max_budget}="$maxBudget"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/slice_idle}="$sliceIdle"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/slice_idle_us}="$sliceIdleUS"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/iosched/timeout_sync}="$timeoutSync"
+
+EOF
+
+fi
+
+/bin/cat << EOF >> "$TMPDIR"/$udevRuleFile
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/io_poll}="$ioPoll"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/max_sectors_kb}="$maxSectorsKB"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/nr_requests}="$nrRequests"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/read_ahead_kb}="$readAheadKB"
+KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{queue/rq_affinity}="$rqAffinity"
+
+KERNELS=="$scsiDriverKernel", SUBSYSTEMS=="scsi", DRIVERS=="sd", ATTR{ncq_prio_enable}="$ncqPrioEnable"
 
 LABEL="disk-io-settings-end"
-
-ACTION=="add|change", SUBSYSTEMS=="scsi", DRIVERS=="sd", ATTR{ncq_prio_enable}="$ncqPrioEnable"
 
 EOF
 
