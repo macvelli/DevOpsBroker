@@ -1,0 +1,532 @@
+#!/bin/bash
+
+#
+# git-repo - DevOpsBroker utility for managing Git repositories
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-45
+#
+# General purpose Git repository management utility.
+#
+# Name feature branches by convention:
+#   o Use a consistent naming convention for feature branches to identify the
+#     work done in the branch. You can also include other information in the
+#     branch name, such as who created the branch.
+#
+#   o Some suggestions for naming feature branches:
+#     users/username/description
+#     users/username/workitem
+#     bugfix/description
+#     features/feature-name
+#     features/feature-area/feature-name
+#     hotfix/description
+#
+# Use release branches:
+#   o Create a release branch from the master branch as you get close to your
+#     release or other milestone, such as the end of a sprint. Give this branch
+#     a clear name associating it with the release, for example:
+#
+#     release/1.0.0
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+	source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+	source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+	source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     showHelp
+# Description:  Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+	# BEGIN showHelp function
+
+	if [ "$command" == 'amend' ]; then
+		printUsage "git-repo amend ${gold}[FILE]"
+		echo ${romantic}
+		echo 'Adds more changes to the very last commit'${reset}
+	elif [ "$command" == 'config' ]; then
+		printUsage "git-repo config ${gold}[OPTION]..."
+		echo ${romantic}
+		echo 'Configure the name and email address for the local Git repository'
+		echo
+		echo ${bold}${white}'Valid Options:'${reset}
+		echo -e ${bold}${gold}'  -e EMAIL_ADDR\t' ${reset}${romantic}'The email address to use'
+		echo -e ${bold}${gold}'  -n FULL_NAME\t'  ${reset}${romantic}'The name to use'
+		echo ${reset}
+	elif [ "$command" == 'create-branch' ]; then
+		printUsage 'git-repo create-branch BRANCH_NAME'
+		echo ${romantic}
+		echo 'Creates a new Git branch from the current branch'${reset}
+	elif [ "$command" == 'delete-branch' ]; then
+		printUsage 'git-repo delete-branch BRANCH_NAME'
+		echo ${romantic}
+		echo 'Delete existing branch from the current Git repository'${reset}
+	elif [ "$command" == 'discard-changes' ]; then
+		printUsage 'git-repo discard-changes FILE'
+		echo ${romantic}
+		echo "Discards any uncommitted changes for a given file in the Git repository ${bold}${white}(${red}cannot be undone${white})"${reset}
+	elif [ "$command" == 'list-branches' ]; then
+		printUsage 'git-repo list-branches'
+		echo ${romantic}
+		echo 'List existing branches in the current Git repository'${reset}
+	elif [ "$command" == 'list-config' ]; then
+		printUsage 'git-repo list-config'
+		echo ${romantic}
+		echo 'List all configuration variables and their values for the current Git repository'${reset}
+	elif [ "$command" == 'list-tags' ]; then
+		printUsage "git-repo list-tags ${gold}[PATTERN]"
+		echo ${romantic}
+		echo 'List all tags for the current branch'${reset}
+	elif [ "$command" == 'release' ]; then
+		printUsage "git-repo release BRANCH_NAME"
+		echo ${romantic}
+		echo 'Merges release branch into master and tags the release point'${reset}
+	elif [ "$command" == 'test-ssh' ]; then
+		printUsage 'git-repo test-ssh'
+		echo ${romantic}
+		echo 'Tests GitHub SSH connection once SSH key is created and added to GitHub'${reset}
+	elif [ "$command" == 'update' ]; then
+		printUsage "git-repo update ${gold}[BRANCH_NAME]"
+		echo ${romantic}
+		echo 'Incorporates changes from the remote repository into the current branch'${reset}
+	fi
+
+	# END showHelp function
+}
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_GIT=/usr/bin/git
+EXEC_SSH=/usr/bin/ssh
+
+repoCommands=('amend' 'config' 'create-branch' 'delete-branch' 'discard-changes' 'list-branches' 'list-config' 'list-tags' 'release' 'update')
+validCommands=(${repoCommands[@]} 'test-ssh')
+
+## Options
+command="$1"
+fullname=''
+useremail=''
+branchName=''
+
+## Variables
+isValidBranch=''
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Do some "parameter mangling"
+if [ "$command" == 'list' ] && [ ! -z "$2" ]; then
+	command="${command}-${2}"
+	shift
+elif [ "$command" == 'create' ] && [ "$2" == 'branch' ]; then
+	command='create-branch'
+	shift
+elif [ "$command" == 'delete' ] && [ "$2" == 'branch' ]; then
+	command='delete-branch'
+	shift
+elif [ "$command" == 'discard' ] && [ "$2" == 'changes' ]; then
+	command='discard-changes'
+	shift
+fi
+
+# Display usage if no parameters given
+if [ -z "$command" ]; then
+	printUsage 'git-repo { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }'
+	exit 1
+fi
+
+# Display error if invalid command
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+	printError 'git-repo' "Invalid command: '$command'"
+	echo
+	printUsage 'git-repo { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }'
+
+	exit 1
+fi
+
+# Display error if not within a Git repository
+if [ $(containsElement "$command" "${repoCommands[@]}") == '0' ] && \
+	[ "$($EXEC_GIT rev-parse --is-inside-work-tree 2>/dev/null)" != 'true' ]; then
+		printError 'git-repo' "$PWD is not within a Git repository"
+		echo
+		printUsage "git-repo $command"
+
+		exit 1
+fi
+
+if [ "$2" == 'help' ]; then
+	showHelp
+	exit 0
+fi
+
+if [ $command == 'config' ]; then
+
+	# Process command-line options, if present
+	while [[ "$2" =~ ^- ]]; do
+
+		if [ "$2" == '-e' ]; then
+
+			# Display error and usage if incorrect parameters given
+			if [ -z "$3" ]; then
+				printError 'git-repo' 'Missing user email parameter'
+				echo
+				printUsage "git-repo $command ${gold}-e EMAIL_ADDR"
+
+				exit 1
+			fi
+
+			useremail="$3"
+			shift 2
+
+		elif [ "$2" == '-n' ]; then
+
+			# Display error and usage if incorrect parameters given
+			if [ -z "$3" ]; then
+				printError 'git-repo' 'Missing name parameter'
+				echo
+				printUsage "git-repo $command ${gold}-n FULL_NAME"
+
+				exit 1
+			fi
+
+			fullname="$3"
+			shift 2
+
+		else
+			# Display usage and error if option parameter is not valid
+			printError 'git-repo' "Invalid option: $2"
+			echo
+			showHelp
+
+			exit 1
+		fi
+	done
+
+elif [ $command == 'update' ]; then
+
+	branchName="$2"
+
+	if [ -z "$branchName" ]; then
+
+		branchName='master'
+		isValidBranch=$($EXEC_GIT branch --no-color --list master)
+
+	else
+		isValidBranch=$($EXEC_GIT branch --no-color --list $branchName)
+
+		if [ -z "$isValidBranch" ]; then
+			printError 'git-repo' "Cannot access '$branchName': No such Git branch"
+			echo
+			printUsage 'git-repo update BRANCH_NAME'
+
+			exit 1
+		fi
+	fi
+
+elif [ $command == 'create-branch' ]; then
+
+	branchName="$2"
+
+	if [ -z "$branchName" ]; then
+		printError 'git-repo' "Missing BRANCH_NAME parameter"
+		echo
+		printUsage 'git-repo create-branch BRANCH_NAME'
+
+		exit 1
+	else
+		doesBranchExist=$($EXEC_GIT branch --no-color --list $branchName)
+
+		if [ ! -z "$doesBranchExist" ]; then
+			printError 'git-repo' "Cannot create branch '$branchName': Git branch already exists"
+			echo
+			printUsage 'git-repo create-branch BRANCH_NAME'
+
+			exit 1
+		fi
+	fi
+
+elif [ $command == 'delete-branch' ]; then
+
+	branchName="$2"
+
+	if [ -z "$branchName" ]; then
+		printError 'git-repo' "Missing BRANCH_NAME parameter"
+		echo
+		printUsage 'git-repo delete-branch BRANCH_NAME'
+
+		exit 1
+	else
+		doesBranchExist=$($EXEC_GIT branch --no-color --list $branchName)
+
+		if [ -z "$doesBranchExist" ]; then
+			printError 'git-repo' "Cannot delete branch '$branchName': No such Git branch"
+			echo
+			printUsage 'git-repo delete-branch BRANCH_NAME'
+
+			exit 1
+		elif [ "$branchName" == 'master' ]; then
+			printError 'git-repo' "Cannot delete 'master' branch"
+			echo
+			printUsage 'git-repo delete-branch BRANCH_NAME'
+
+			exit 1
+		fi
+	fi
+
+elif [ $command == 'release' ]; then
+
+	branchName="$2"
+
+	if [ -z "$branchName" ]; then
+		printError 'git-repo' "Missing BRANCH_NAME parameter"
+		echo
+		printUsage 'git-repo release BRANCH_NAME'
+
+		exit 1
+	else
+		doesBranchExist=$($EXEC_GIT branch --no-color --list $branchName)
+
+		if [ -z "$doesBranchExist" ]; then
+			printError 'git-repo' "Cannot release branch '$branchName': No such Git branch"
+			echo
+			printUsage 'git-repo release BRANCH_NAME'
+
+			exit 1
+		elif [[ "$branchName" != release/* ]]; then
+			printError 'git-repo' "Invalid release branch '$branchName': Must begin with 'release/'"
+			echo
+			printUsage 'git-repo release BRANCH_NAME'
+
+			exit 1
+		fi
+	fi
+
+elif [ $command == 'amend' ]; then
+
+	fileName="$2"
+
+	if [ ! -z "$fileName" ]; then
+		errorMessage=$(isValidFile 'git-repo' "$fileName")
+
+		# Display error if file parameter is missing or invalid
+		if [ "$errorMessage" != '0' ]; then
+			echo "$errorMessage"
+			echo
+			printUsage 'git-repo amend FILE'
+
+			exit 1
+		fi
+	fi
+
+elif [ $command == 'discard-changes' ]; then
+
+	fileName="$2"
+
+	errorMessage=$(isValidFile 'git-repo' "$fileName")
+
+	# Display error if file parameter is missing or invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage 'git-repo discard-changes FILE'
+
+		exit 1
+	fi
+
+fi
+
+################################### Actions ###################################
+
+if [ $command == 'amend' ]; then
+
+	printBanner 'Amending additional changes to the very last commit'
+
+	if [ -z "$fileName" ]; then
+		$EXEC_GIT commit --amend --no-edit
+	else
+		$EXEC_GIT commit --amend --no-edit "$fileName"
+	fi
+
+elif [ $command == 'config' ]; then
+	# BEGIN config command
+
+	printBanner 'Configuring Git Repository'
+
+	# Set fullname, if missing
+	if [ -z "$fullname" ]; then
+		fullname=$($EXEC_AWK -F ':' '/^'$USER'/{print $5}' /etc/passwd | $EXEC_SED 's/,//g')
+
+		# Question 1
+		echo -n "What name do you want to use for this Git repository ($fullname)? "
+		read name
+		echo
+
+		if [ ! -z "$name" ]; then
+			fullname="$name"
+		fi
+	fi
+
+	# Question 2 --> Set useremail, if missing
+	while [ -z "$useremail" ]; do
+		echo -n 'What email address do you want to use for this Git repository? '
+		read useremail
+		echo
+	done
+
+	printInfo "Configuring Git repository user.name to $fullname"
+	$EXEC_GIT config user.name "$fullname"
+
+	printInfo "Configuring Git repository user.email to $useremail"
+	$EXEC_GIT config user.email "$useremail"
+
+	# END config command
+elif [ $command == 'create-branch' ]; then
+
+	printInfo "Creating branch '$branchName'"
+
+	$EXEC_GIT branch $branchName
+
+	printInfo 'Pushing new branch to origin'
+	echo
+	$EXEC_GIT push origin $branchName
+
+elif [ $command == 'delete-branch' ]; then
+
+	printBanner "Delete branch '$branchName'"
+
+	echo "${bold}${yellow}Are you sure you want to delete branch '$branchName'?${white}"
+	select confirmDelete in 'Yes' 'No'; do
+		if [ "$confirmDelete" == 'Yes' ]; then
+			echo
+			printInfo 'Deleting branch'
+			$EXEC_GIT branch -d $branchName
+		fi
+		break;
+	done
+
+elif [ $command == 'discard-changes' ]; then
+
+	printBanner "Discard changes for file '$fileName'"
+
+	echo "${bold}${yellow}Are you sure you want to discard changes for '$fileName'?${white}"
+	select confirmDiscard in 'Yes' 'No'; do
+		if [ "$confirmDiscard" == 'Yes' ]; then
+			echo
+			printInfo 'Discarding changes'
+			$EXEC_GIT checkout HEAD "$fileName"
+		fi
+		break;
+	done
+
+elif [ $command == 'list-branches' ]; then
+
+	$EXEC_GIT branch --list
+
+elif [ $command == 'list-config' ]; then
+
+	$EXEC_GIT config --list
+
+elif [ $command == 'list-tags' ]; then
+
+	pattern="$2"
+
+	if [ -z "$pattern" ]; then
+		$EXEC_GIT tag --list
+	else
+		$EXEC_GIT tag --list "$pattern"
+	fi
+
+elif [ $command == 'release' ]; then
+
+	printBanner "Release branch '$branchName'"
+
+	echo "${bold}${yellow}Are you sure you want to release branch '$branchName'?${white}"
+	select confirmRelease in 'Yes' 'No'; do
+		if [ "$confirmRelease" == 'Yes' ]; then
+			echo
+			printInfo 'Checking out master branch'
+			$EXEC_GIT checkout master
+
+			printInfo 'Updating local master branch'
+			$EXEC_GIT pull origin master
+
+			printInfo "Merging release branch '$branchName' into master"
+			$EXEC_GIT merge $branchName
+
+			printInfo 'Creating new tag for the release point'
+			tagName=${branchName:8}
+			$EXEC_GIT tag -a $tagName -m "Create release tag $tagName"
+
+			printInfo 'Verifying tag was created'
+			$EXEC_GIT tag
+
+			printInfo 'Pushing master branch to remote repository'
+			$EXEC_GIT push origin master
+
+			printInfo 'Pushing release point tag to remote repository'
+			$EXEC_GIT push origin --tags
+		fi
+		break;
+	done
+
+elif [ $command == 'test-ssh' ]; then
+
+	$EXEC_SSH -T github.com
+
+elif [ $command == 'update' ]; then
+
+	printBanner "Update branch '$branchName'"
+
+	if [[ ! "$isValidBranch" =~ ^\* ]]; then
+		printInfo "Switching to '$branchName' branch"
+
+		$EXEC_GIT checkout $branchName
+	fi
+
+	printInfo 'Fetching remote updates'
+	$EXEC_GIT remote update
+	echo
+
+	printInfo 'Pull changes from remote into local'
+	git pull origin $branchName
+
+fi
+
+exit 0

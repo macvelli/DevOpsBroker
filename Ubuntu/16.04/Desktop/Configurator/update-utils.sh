@@ -236,8 +236,8 @@ installUserUtility firelog
 # Install geoip user utility
 installUserUtility geoip
 
-# Install git-config user utility
-installUserUtility git-config
+# Install git-repo user utility
+installUserUtility git-repo
 
 # Install gnome-config user utility
 installUserUtility gnome-config
