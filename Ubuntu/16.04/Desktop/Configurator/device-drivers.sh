@@ -35,21 +35,21 @@ if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
 	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ## Script information
 SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
@@ -72,13 +72,7 @@ if [ $SHLVL -eq 1 ]; then
 	clear
 fi
 
-bannerMsg='DevOpsBroker Ubuntu 16.04 Desktop Proprietary Drivers Installer'
-
-echo ${bold} ${wisteria}
-echo '╔═════════════════════════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"                                 '║'
-echo '╚═════════════════════════════════════════════════════════════════╝'
-echo ${reset}
+printBox "DevOpsBroker $UBUNTU_RELEASE Proprietary Drivers Installer" 'true'
 
 # Exit if proprietary drivers already installed
 if [ -f /etc/devops/device-drivers.info ] && [ "$1" != '-f' ]; then
@@ -134,7 +128,7 @@ for key in "${!vendorDriverMap[@]}"; do
 	vendorDriverList+=( "Skip" )
 	COLUMNS=${#vendorDriverList[@]}
 
-	echo "${bold}Which driver do you want to install for the device from '${pastelGreen}$key${white}'?${reset}"
+	echo "${bold}Which driver do you want to install for the device from '${green}$key${white}'?${reset}"
 	select selectedDriver in "${vendorDriverList[@]}"; do
 		if [ "$selectedDriver" != 'Skip' ]; then
 			installList+=( "$selectedDriver" )

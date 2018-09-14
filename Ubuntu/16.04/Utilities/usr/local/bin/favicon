@@ -39,24 +39,24 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ################################## Functions ##################################
 
@@ -162,25 +162,19 @@ if [ $pngWidth -ge 192 ]; then
 
 fi
 
-bannerMsg='DevOpsBroker Favicon Generator Instructions'
-
-echo ${bold} ${wisteria}
-echo '╔═════════════════════════════════════════════╗'
-echo "║ ${white}$bannerMsg${wisteria}"		   '║'
-echo '╚═════════════════════════════════════════════╝'
-echo ${white}
+printBox "DevOpsBroker $UBUNTU_RELEASE Favicon Generator Instructions" 'true'
 
 echo '1. Place favicon.ico in the root directory of your website'
 echo '2. Configure your web server (apache/nginx) to compress favicon.ico'
 echo '3. Add the following <link> tag to the <head> section of your HTML files'
-echo ${pastelGreen}
+echo ${green}
 echo '<link rel="icon" sizes="'$icoSizeList'" href="/favicon.ico" type="image/x-icon">'
 
 if [ ! -z $hiResIcon ]; then
   echo ${white}
   echo '4. Use favicon-192.png on your website in order to support Android/iOS application icons'
   echo '5. Add the following <link> tags to the <head> section of your HTML files'
-  echo ${pastelGreen}
+  echo ${green}
   echo '<link rel="apple-touch-icon" sizes="192x192" href="favicon-192.png" type="image/png">'
   echo '<link rel="icon" sizes="192x192" href="favicon-192.png" type="image/png">'
 fi

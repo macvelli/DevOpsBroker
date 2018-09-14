@@ -200,7 +200,7 @@ IFS=':'; userInfo=($userRecord); unset IFS;
 
 # Ensure the user is using bash for the shell
 if [ "${userInfo[6]}" != '/bin/bash' ]; then
-	echo "${bold}$SCRIPT_EXEC: ${yellow}User shell not bash ${white}(${bittersweet}${userInfo[6]}${white})${reset}"
+	printError "$SCRIPT_EXEC" "User shell not bash: ${userInfo[6]}"
 	exit 1
 fi
 

@@ -33,59 +33,54 @@
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-  source /etc/devops/ansi.conf
+	source /etc/devops/ansi.conf
 fi
 
-${ANSI_CONFIG?"[1;38;2;255;100;100mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
 
 # Load /etc/devops/exec.conf if EXEC_CONFIG is unset
 if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-  source /etc/devops/functions.conf
+	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${bittersweet}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:	showHelp
-# Description:	Displays help message to the user
+# Function:     showHelp
+# Description:  Displays help message to the user
 # -----------------------------------------------------------------------------
 function showHelp() {
-  # BEGIN showHelp function
+	# BEGIN showHelp function
 
-  if [ -z "$command" ]; then
-    printUsage "firewall list ${gold}[-4|-6] [raw|mangle|nat|filter] [CHAIN_NAME]"
-    printUsage 'false' 'firewall log'
+	if [ "$command" == 'list' ]; then
+		printUsage "firewall list ${gold}[-4|-6] [raw|mangle|nat|filter] [CHAIN_NAME]"
+		echo ${romantic}
+		echo 'List active iptables/ip6tables firewall rules'${reset}
+		echo
+		echo ${bold}${white}'Valid Options:'${reset}
+		echo -e ${bold}${gold}'  -4\t' ${reset}${romantic}'View IPv4 Firewall configuration'
+		echo -e ${bold}${gold}'  -6\t'  ${reset}${romantic}'View IPv6 Firewall configuration'
+		echo -e ${bold}${gold}'  raw\t'  ${reset}${romantic}'Limit output to the RAW table'
+		echo -e ${bold}${gold}'  mangle\t'  ${reset}${romantic}'Limit output to the MANGLE table'
+		echo -e ${bold}${gold}'  nat\t'  ${reset}${romantic}'Limit output to the NAT table'
+		echo -e ${bold}${gold}'  filter\t'  ${reset}${romantic}'Limit output to the FILTER table'
+		echo ${reset}
+	elif [ "$command" == 'log' ]; then
+		printUsage 'firewall log'
+		echo ${romantic}
+		echo 'Display summary of packets blocked by the firewall'${reset}
+	fi
 
-    echo ${bold}
-    echo "Valid Commands:${romantic}"
-    echo '  list	List iptables/ip6tables firewall rules'
-    echo '  log 	Display summary of packets blocked by the firewall'
-    echo ${reset}
-
-  elif [ $command == 'list' ]; then
-    printUsage "firewall list ${gold}[-4|-6] [raw|mangle|nat|filter] [CHAIN_NAME]"
-
-    echo ${bold}
-    echo "Valid Options:${romantic}"
-    echo '  -4		View IPv4 Firewall configuration'
-    echo '  -6		View IPv6 Firewall configuration'
-    echo '  raw		Limit output to the RAW table'
-    echo '  mangle	Limit output to the MANGLE table'
-    echo '  nat		Limit output to the NAT table'
-    echo '  filter	Limit output to the FILTER table'
-    echo ${reset}
-  fi
-
-  # END showHelp function
+	# END showHelp function
 }
 
 ################################## Variables ##################################
@@ -109,193 +104,145 @@ chain=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display help if no parameters given
+# Display usage if no parameters given
 if [ -z "$command" ]; then
-  showHelp
-
-  exit 1
+	printUsage 'firewall { list | log }'
+	exit 1
 fi
 
-# Ensure the first parameter is a valid command
+# Display error if invalid command
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-  printError 'firewall' "Invalid command: '$command'"
-  command=''
-  echo
+	printError 'firewall' "Invalid command: '$command'"
+	echo
+	printUsage 'firewall { list | log }'
 
-  showHelp
-
-  exit 1
+	exit 1
 fi
 
 # Display error if not running as root
-if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$EUID" -ne 0 ]; then
-  echo "${bold}firewall: ${bittersweet}Permission denied (you must be root)${reset}"
+if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$USER" != 'root' ]; then
+	printError 'firewall' 'Permission denied (you must be root)'
+	exit 1
+fi
 
-  exit 1
+if [ "$2" == 'help' ]; then
+	showHelp
+	exit 0
 fi
 
 # Process command-line options
 while [[ "$2" == -* ]]; do
 
-  if [ "$2" == '-4' ]; then
-    ipv4=true
-    ipv6=false
-  elif [ "$2" == '-6' ]; then
-    ipv4=false
-    ipv6=true
-  else
-    # Display error and help if option parameter is not valid
-    printError 'firewall' "Invalid option: '$2'"
-    echo
-    showHelp
+	if [ "$2" == '-4' ]; then
+		ipv4=true
+		ipv6=false
+	elif [ "$2" == '-6' ]; then
+		ipv4=false
+		ipv6=true
+	else
+		# Display error and help if option parameter is not valid
+		printError 'firewall' "Invalid option: '$2'"
+		echo
+		showHelp
 
-    exit 1
-  fi
+		exit 1
+	fi
 
-  shift
+	shift
 
 done
 
 ################################### Actions ###################################
 
-if [ $command = 'list' ]; then
-  # BEGIN list Command
+if [ $command == 'list' ]; then
+	# BEGIN list Command
 
-  # Process table/chain parameters
-  if [ ! -z "$2" ]; then
-    table="${2,,}"	# Convert input to lower case
+	# Process table/chain parameters
+	if [ ! -z "$2" ]; then
+		table="${2,,}"
 
-    # Display usage and error if table parameter is not valid
-    if [[ ! "$table" =~ ^raw|mangle|nat|filter$ ]]; then
-      printError 'firewall' "Cannot access '$table': No such iptables table"
-      echo
-      showHelp
+		# Display usage and error if table parameter is not valid
+		if [[ ! "$table" =~ ^raw|mangle|nat|filter$ ]]; then
+			printError 'firewall' "Cannot access '$table': No such iptables table"
+			echo
+			showHelp
 
-      exit 1
-    fi
+			exit 1
+		fi
 
-    if [ ! -z "$3" ]; then
-      chain="$3"
-    fi
-  fi
+		if [ ! -z "$3" ]; then
+			chain="$3"
+		fi
+	fi
 
-  if [ "$ipv4" == 'true' ]; then
-    # BEGIN iptables list
+	if [ "$ipv4" == 'true' ]; then
+		# BEGIN iptables list
 
-    banner=${white}'iptables firewall rules'${wisteria}
+		printBox 'iptables firewall rules'
 
-    echo ${bold} ${wisteria}
-    echo '┌─────────────────────────┐'
-    echo "│ $banner"		   '│'
-    echo '└─────────────────────────┘'
-    echo
+		if [ -z $table ] || [ $table == 'raw' ]; then
+			printBanner 'iptables RAW table'
+			$IPTABLES -t raw --line-numbers -n -v -L $chain
+			echo
+		fi
 
-    if [ -z $table ] || [ $table == 'raw' ]; then
-      echo -n ${pumpkin}
-      echo 'iptables RAW table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
+		if [ -z $table ] || [ $table == 'mangle' ]; then
+			printBanner 'iptables MANGLE table'
+			$IPTABLES -t mangle --line-numbers -n -v -L $chain
+			echo
+		fi
 
-      $IPTABLES -t raw --line-numbers -n -v -L $chain
-      echo
-    fi
+		if [ -z $table ] || [ $table == 'nat' ]; then
+			printBanner 'iptables NAT table'
+			$IPTABLES -t nat --line-numbers -n -v -L $chain
+			echo
+		fi
 
-    if [ -z $table ] || [ $table == 'mangle' ]; then
-      echo -n ${pumpkin}
-      echo 'iptables MANGLE table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
+		if [ -z $table ] || [ $table == 'filter' ]; then
+			printBanner 'iptables FILTER table'
+			$IPTABLES -t filter --line-numbers -n -v -L $chain
+			echo
+		fi
 
-      $IPTABLES -t mangle --line-numbers -n -v -L $chain
-      echo
-    fi
+		# END iptables list
+	fi
 
-    if [ -z $table ] || [ $table == 'nat' ]; then
-      echo -n ${pumpkin}
-      echo 'iptables NAT table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
+	if [ "$ipv6" == 'true' ]; then
+		# BEGIN ip6tables list
 
-      $IPTABLES -t nat --line-numbers -n -v -L $chain
-      echo
-    fi
+		printBox 'ip6tables firewall rules'
 
-    if [ -z $table ] || [ $table == 'filter' ]; then
-      echo -n ${pumpkin}
-      echo 'iptables FILTER table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
+		if [ -z $table ] || [ $table == 'raw' ]; then
+			printBanner 'ip6tables RAW table'
+			$IP6TABLES -t raw --line-numbers -n -v -L $chain
+			echo
+		fi
 
-      $IPTABLES -t filter --line-numbers -n -v -L $chain
-      echo
-    fi
+		if [ -z $table ] || [ $table == 'mangle' ]; then
+			printBanner 'ip6tables MANGLE table'
+			$IP6TABLES -t mangle --line-numbers -n -v -L $chain
+			echo
+		fi
 
-    # END iptables list
-  fi
+		if [ -z $table ] || [ $table == 'nat' ]; then
+			printBanner 'ip6tables NAT table'
+			$IP6TABLES -t nat --line-numbers -n -v -L $chain
+			echo
+		fi
 
-  if [ "$ipv6" = 'true' ]; then
-    # BEGIN ip6tables list
+		if [ -z $table ] || [ $table == 'filter' ]; then
+			printBanner 'ip6tables FILTER table'
+			$IP6TABLES -t filter --line-numbers -n -v -L $chain
+			echo
+		fi
 
-    if [ "$ipv4" = 'true' ]; then
-      echo -n ${bold}${wisteria}
-    else
-      echo ${bold} ${wisteria}
-    fi
+		# END ip6tables list
+	fi
 
-    banner=${white}'ip6tables firewall rules'${wisteria}
+	# END list Command
+elif [ $command == 'log' ]; then
 
-    echo '┌──────────────────────────┐'
-    echo "│ $banner"		    '│'
-    echo '└──────────────────────────┘'
-    echo
-
-    if [ -z $table ] || [ $table = 'raw' ]; then
-      echo -n ${pumpkin}
-      echo 'ip6tables RAW table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
-
-      $IP6TABLES -t raw --line-numbers -n -v -L $chain
-      echo
-    fi
-
-    if [ -z $table ] || [ $table = 'mangle' ]; then
-      echo -n ${pumpkin}
-      echo 'ip6tables MANGLE table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
-
-      $IP6TABLES -t mangle --line-numbers -n -v -L $chain
-      echo
-    fi
-
-    if [ -z $table ] || [ $table = 'nat' ]; then
-      echo -n ${pumpkin}
-      echo 'ip6tables NAT table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
-
-      $IP6TABLES -t nat --line-numbers -n -v -L $chain
-      echo
-    fi
-
-    if [ -z $table ] || [ $table = 'filter' ]; then
-      echo -n ${pumpkin}
-      echo 'ip6tables FILTER table'
-      echo '¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯'
-      echo -n ${white}
-
-      $IP6TABLES -t filter --line-numbers -n -v -L $chain
-      echo
-    fi
-
-    # END ip6tables list
-  fi
-
-  # END list Command
-elif [ $command = 'log' ]; then
-
-  $EXEC_DMESG -t | $EXEC_FIRELOG
+	$EXEC_DMESG -t | $EXEC_FIRELOG
 
 fi
 

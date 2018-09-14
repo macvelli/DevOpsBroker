@@ -179,16 +179,16 @@ elif [ $command == 'info' ]; then
 	# List files installed from package-name
 	pkgInfo=$($EXEC_DPKG_QUERY -l $2 2>&1)
 
-	echo "${pastelGreen}$pkgInfo"
+	echo "${green}$pkgInfo"
 
 	if [[ $pkgInfo == dpkg-query* ]]; then
 		# Show package information from APT
-		echo ${perano}
+		echo ${blue}
 		$EXEC_APT show "$2"
 		echo
 	else
 		# Show package information from the APT cache
-		echo ${perano}
+		echo ${blue}
 		$EXEC_APT_CACHE show --no-all-versions "$2"
 		echo
 	fi
