@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# hexToRgb - DevOpsBroker utility for converting a Hex color code to an RGB color code
+# variations - DevOpsBroker utility for generating variations of an RGB color
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -19,7 +19,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
 #
 # Note: The # symbol needs to be escaped on the command line, if present, as
 #	Bash interprets it as the beginning of a comment otherwise.
@@ -29,7 +29,7 @@
 # -----------------------------------------------------------------------------
 #
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
@@ -52,6 +52,34 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     addVariation
+# Description:  Adds an RGB variation to the variation list
+#
+# Parameter $1: The red color value
+# Parameter $2: The green color value
+# Parameter $3: The blue color value
+# -----------------------------------------------------------------------------
+function addVariation() {
+	# BEGIN addVariation function
+
+	local red="$1"
+	local green="$2"
+	local blue="$3"
+
+	# Calculate shade Hex color code
+	hexCode=$( printf "%02x" $red )
+	hexCode=$hexCode$( printf "%02x" $green )
+	hexCode=$hexCode$( printf "%02x" $blue )
+
+	variationList+=("#${hexCode^^}")
+	rgbList+=("[48;2;$red;$green;${blue}m")
+
+	# END addVariation function
+}
+
 ################################## Variables ##################################
 
 ## Options
@@ -61,15 +89,15 @@ hexCode="$1"
 
 # Display usage if no parameters given
 if [ -z "$hexCode" ]; then
-	printUsage 'hexToRgb HEX_CODE'
+	printUsage 'variations HEX_CODE'
 	exit 1
 fi
 
 # Display error if parameter is not a valid hex color code
 if [[ ! "$hexCode" =~ ^\#?[a-fA-F0-9]{6}$ ]]; then
-	printError 'hexToRgb' "Invalid hex color code: $hexCode"
+	printError 'variations' "Invalid hex color code: $hexCode"
 	echo
-	printUsage 'hexToRgb HEX_CODE'
+	printUsage 'variations HEX_CODE'
 
 	exit 1
 fi
@@ -81,10 +109,38 @@ fi
 
 ################################### Actions ###################################
 
+# Create the variation list
+variationList=()
+
+# Calcualte the RGB color code from the Hex color code
 red=$((16#${hexCode:0:2}))
 green=$((16#${hexCode:2:2}))
 blue=$((16#${hexCode:4:2}))
 
-echo "${bold}#$hexCode -> $(rgb $red $green $blue)rgb($red, $green, $blue)${reset}"
+addVariation $red $green $blue
+addVariation $red $blue $green
+addVariation $green $red $blue
+addVariation $green $blue $red
+addVariation $blue $red $green
+addVariation $blue $green $red
+
+echo
+echo "   RGB       RBG       GRB       GBR       BRG       BGR"
+
+echo -n ${black}
+for x in 0 1 2 3 4 5; do
+	if [ $x -gt 0 ]; then
+		echo -n ${reset}' '${black}
+	fi
+
+	echo -n ${rgbList[$x]}" ${variationList[$x]} "
+done
+
+echo ${reset}
+echo
+
+
+
+
 
 exit 0

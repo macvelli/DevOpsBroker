@@ -257,6 +257,9 @@ installUserUtility lwp
 # Install macaddr user utility
 installUserUtility macaddr
 
+# Install printAnsi16 user utility
+installUserUtility printAnsi16
+
 # Install printAnsi256 user utility
 installUserUtility printAnsi256
 
@@ -278,6 +281,9 @@ installUserUtility rgbToHex
 # Install scriptinfo user utility
 installUserUtility scriptinfo
 
+# Install shades user utility
+installUserUtility shades
+
 # Install showFileFormat user utility
 installUserUtility showFileFormat
 
@@ -287,11 +293,17 @@ installUserUtility ssh-key
 # Install symlink user utility
 installUserUtility symlink
 
+# Install tints user utility
+installUserUtility tints
+
 # Install udev user utility
 installUserUtility udev
 
 # Install uuid user utility
 installUserUtility uuid
+
+# Install variations user utility
+installUserUtility variations
 
 # Install venture user utility
 installUserUtility venture

@@ -1,8 +1,7 @@
 #!/bin/bash
 
 #
-# rgbToHex - DevOpsBroker utility for converting an RGB color code to a Hex
-#	     color code
+# rgbToHex - DevOpsBroker utility for converting an RGB color code to a Hex color code
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -58,23 +57,20 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 
 # Display usage if no parameters given
 if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
-  printUsage 'rgbToHex RED GREEN BLUE'
-  echo
-
-  exit 1
+	printUsage 'rgbToHex RED GREEN BLUE'
+	exit 1
 fi
 
 # Display error if parameter is not a valid RGB color
 if [[ ! "$1" =~ ^[0-9]{1,3}$ ]] || [ $1 -gt 255 ] || \
-     [[ ! "$2" =~ ^[0-9]{1,3}$ ]] || [ $2 -gt 255 ] || \
-     [[ ! "$3" =~ ^[0-9]{1,3}$ ]] || [ $3 -gt 255 ]; then
-  printError 'rgbToHex' "Invalid RGB color: $1 $2 $3"
-  echo
-  printUsage 'rgbToHex RED GREEN BLUE'
+	[[ ! "$2" =~ ^[0-9]{1,3}$ ]] || [ $2 -gt 255 ] || \
+	[[ ! "$3" =~ ^[0-9]{1,3}$ ]] || [ $3 -gt 255 ]; then
+		printError 'rgbToHex' "Invalid RGB color: $1 $2 $3"
+		echo
+		printUsage 'rgbToHex RED GREEN BLUE'
 
-  exit 1
+		exit 1
 fi
-
 
 ################################### Actions ###################################
 

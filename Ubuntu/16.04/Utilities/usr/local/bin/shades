@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# hexToRgb - DevOpsBroker utility for converting a Hex color code to an RGB color code
+# shades - DevOpsBroker utility for generating shaded RGB colors
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -19,17 +19,18 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
 #
 # Note: The # symbol needs to be escaped on the command line, if present, as
 #	Bash interprets it as the beginning of a comment otherwise.
 #
 # Parameters:
 #   $1: Hex color code
+#   $2: Shade factor (optional)
 # -----------------------------------------------------------------------------
 #
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
@@ -52,26 +53,55 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     showHelp
+# Description:  Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+	# BEGIN showHelp function
+
+	printUsage 'shades HEX_CODE'
+	printUsage 'false' "shades HEX_CODE ${gold}[SHADE_FACTOR]"
+
+	# END showHelp function
+}
+
 ################################## Variables ##################################
 
 ## Options
 hexCode="$1"
 
+## Variables
+shadeFactor=0.20
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$hexCode" ]; then
-	printUsage 'hexToRgb HEX_CODE'
+	showHelp
 	exit 1
 fi
 
 # Display error if parameter is not a valid hex color code
 if [[ ! "$hexCode" =~ ^\#?[a-fA-F0-9]{6}$ ]]; then
-	printError 'hexToRgb' "Invalid hex color code: $hexCode"
+	printError 'shades' "Invalid hex color code: $hexCode"
 	echo
-	printUsage 'hexToRgb HEX_CODE'
+	showHelp
 
 	exit 1
+fi
+
+if [ ! -z "$2" ]; then
+
+	optionValue="$2"
+	if [[ "$optionValue" =~ ^0\.[0-9]{1,2}$ ]]; then
+		shadeFactor=$optionValue
+	elif [[ "$optionValue" =~ ^[0-9]{1,2}%$ ]]; then
+		shadeFactor=$(printf %.2f $(echo "scale=2; ${optionValue::-1} / 100" | bc))
+	fi
+
 fi
 
 # Remove hash character, if present
@@ -81,10 +111,46 @@ fi
 
 ################################### Actions ###################################
 
+# Create the shade list
+shadeList=("#${hexCode}")
+
+# Calcualte the RGB color code from the Hex color code
 red=$((16#${hexCode:0:2}))
 green=$((16#${hexCode:2:2}))
 blue=$((16#${hexCode:4:2}))
 
-echo "${bold}#$hexCode -> $(rgb $red $green $blue)rgb($red, $green, $blue)${reset}"
+# Create RGB color code list
+rgbList=("[48;2;$red;$green;${blue}m")
+
+for x in 1 2 3 4 5 6 7 8 9 10; do
+
+	# Calculate shade RGB color code
+	red=$(printf %.0f $(echo "$red * (1 - $shadeFactor)" | $EXEC_BC))
+	green=$(printf %.0f $(echo "$green * (1 - $shadeFactor)" | $EXEC_BC))
+	blue=$(printf %.0f $(echo "$blue * (1 - $shadeFactor)" | $EXEC_BC))
+
+	# Calculate shade Hex color code
+	hexCode=$( printf "%02x" $red )
+	hexCode=$hexCode$( printf "%02x" $green )
+	hexCode=$hexCode$( printf "%02x" $blue )
+
+	shadeList+=("#${hexCode^^}")
+	rgbList+=("[48;2;$red;$green;${blue}m")
+done
+
+shadeList+=("#000000")
+rgbList+=("[48;2;0;0;0m")
+
+echo ${white}
+for x in 0 1 2 3 4 5 6 7 8 9 10 11; do
+	if [ $x -gt 0 ]; then
+		echo -n ${reset}' '${white}
+	fi
+
+	echo -n ${rgbList[$x]}" ${shadeList[$x]} "
+done
+
+echo ${reset}
+echo
 
 exit 0
