@@ -62,10 +62,19 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Display error if not running as root
+if [ "$USER" != 'root' ]; then
+	printError 'tune-nic.tpl' 'Permission denied (you must be root)'
+	exit 1
+fi
+
 ################################## Variables ##################################
 
 ## Options
 NIC="$1"
+
+## Variables
+isWireless=false
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -84,10 +93,24 @@ if [ ! -L /sys/class/net/$NIC ]; then
 	exit 1
 fi
 
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_IWCONFIG=/sbin/iwconfig
+
 ################################### Actions ###################################
 
+# Set isWireless to 'true' if $NIC is a wireless interface device
+if [ -d /sys/class/net/$NIC/wireless ]; then
+	isWireless=true
+fi
+
 # Actual Mbit/s speed of the network interface
-NIC_SPEED=$($EXEC_CAT /sys/class/net/$NIC/speed)
+if [ "$isWireless" == 'true' ]; then
+	NIC_SPEED=$($EXEC_IWCONFIG $NIC | $EXEC_AWK '/Bit Rate=[0-9]/{ split($2, a, "="); printf("%.0f\n", a[2]); }')
+else
+	NIC_SPEED=$($EXEC_CAT /sys/class/net/$NIC/speed)
+fi
 
 # Calculate the TX Queue Length
 TX_QUEUE_LENGTH=$[ $NIC_SPEED * 10 ]
@@ -142,9 +165,17 @@ if [ "\$IFACE" == '$NIC' ] && [ "\$ACTION" == 'up' ]; then
 	# Optimize TX Queue Length
 	/sbin/ip link set $NIC txqueuelen $TX_QUEUE_LENGTH
 
+EOF
+
+if [ "$isWireless" == 'false' ]; then
+/bin/cat << EOF
 	# Offload RX/TX/TSO/UFO/SG/GSO Processing
 	/sbin/ethtool --offload $NIC rx on tx on tso on ufo on sg on gso on
 
+EOF
+fi
+
+/bin/cat << EOF
 	# Optimize IPv4/IPv6 initcwnd and initrwnd values
 	/usr/bin/sudo /usr/local/sbin/initcrwnd $NIC 'true' &
 fi

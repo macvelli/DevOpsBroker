@@ -127,6 +127,7 @@ NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
+isWireless=false
 restartNetworkManager=false
 restartNIC=false
 echoOnExit=false
@@ -159,6 +160,11 @@ if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
 	exit 0
 fi
 
+# Set isWireless to 'true' if $NIC is a wireless interface device
+if [ -d /sys/class/net/$NIC/wireless ]; then
+	isWireless=true
+fi
+
 # Install /etc/NetworkManager/NetworkManager.conf
 installConfig 'NetworkManager.conf' "$SCRIPT_DIR" /etc/NetworkManager
 
@@ -174,7 +180,7 @@ installNMScript 'dispatcher.d/pre-up.d/10-firewall'
 installNMScript 'dispatcher.d/pre-up.d/20-nf_conntrack'
 
 # Modify NetworkManager connection for default network interface
-if [ ! -f /etc/NetworkManager/system-connections/$NIC ]; then
+if [ "$isWireless" == 'false' ] && [ ! -f /etc/NetworkManager/system-connections/$NIC ]; then
 	printInfo "Modifying NetworkManager connection profile for '$NIC'"
 
 	# Load existing NetworkManager connection profile
@@ -227,10 +233,6 @@ if [ ! -f /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 	# Clean up
 	$EXEC_RM "$TMPDIR"/tune-$NIC
 
-	printInfo "Restart $NIC interface"
-	echo
-	$EXEC_NMCLI device disconnect $NIC && $EXEC_NMCLI device connect $NIC
-
 	restartNIC=true
 	echoOnExit=true
 
@@ -245,10 +247,6 @@ elif [ "$tuneNic" -nt /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 
 	# Clean up
 	$EXEC_RM "$TMPDIR"/tune-$NIC
-
-	printInfo "Restart $NIC interface"
-	echo
-	$EXEC_NMCLI device disconnect $NIC && $EXEC_NMCLI device connect $NIC
 
 	restartNIC=true
 	echoOnExit=true
