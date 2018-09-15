@@ -23,23 +23,23 @@
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Measure read speed of any drive (Hard Drive/SSD/USB):
-# hdparm -t /dev/sd(a|b|c|d...)
+# Measure read speed of any drive (Hard Drive/SSD/USB):
+#   o hdparm -t /dev/sd(a|b|c|d...)
 #
-# o Call block device ioctls
-# sudo blockdev --report /dev/sda
+# Call block device ioctls:
+#   o sudo blockdev --report /dev/sda
 #
-# o View all attached storage devices and their partitions
-# sudo fdisk -l
+# View all attached storage devices and their partitions:
+#   o sudo fdisk -l
 #
-# o View block device attributes
-# sudo blkid -o udev -p /dev/sdc1
+# View block device attributes:
+#   o sudo blkid -o udev -p /dev/sdc1
 #
-# o Probe USB hardward information
-# hwinfo --usb
+# Probe USB hardward information:
+#   o hwinfo --usb
 #
-# o View verbose USB device information
-# sudo lsusb -v -d 0x090c:0x1000
+# View verbose USB device information:
+#   o sudo lsusb -v -d 0x090c:0x1000
 # -----------------------------------------------------------------------------
 #
 

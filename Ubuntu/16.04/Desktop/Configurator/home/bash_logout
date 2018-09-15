@@ -28,9 +28,13 @@
 #
 
 # Gzip and copy Firefox cache from /mnt/ramdisk
-cd /mnt/ramdisk/$USER/mozilla/firefox
-/bin/tar czvf $($EXEC_BASENAME *.default).tar.gz *.default/
-/bin/cp /mnt/ramdisk/$USER/mozilla/firefox/*.default.tar.gz /cache/$USER/
+if [ -d /cache/$USER ] && [ -L $HOME/.cache/mozilla/firefox ]; then
+
+	profileDir=$(/bin/ls -A /mnt/ramdisk/$USER/mozilla/firefox/)
+	/bin/tar czvf /tmp/$profileDir.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox/ $profileDir/
+	/bin/mv /tmp/$profileDir.tar.gz /cache/$USER/
+
+fi
 
 #
 # When leaving the console clear the screen to increase privacy
@@ -38,3 +42,4 @@ cd /mnt/ramdisk/$USER/mozilla/firefox
 if [ $SHLVL -eq 1 ]; then
 	[ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q
 fi
+

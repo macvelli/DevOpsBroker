@@ -384,6 +384,8 @@ if [ $command == 'amend' ]; then
 		$EXEC_GIT commit --amend --no-edit "$fileName"
 	fi
 
+	echo
+
 elif [ $command == 'config' ]; then
 	# BEGIN config command
 

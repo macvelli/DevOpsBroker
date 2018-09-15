@@ -28,6 +28,7 @@
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
+# o /etc/tidy.conf
 # o /etc/apparmor.d/local/usr.bin.evince
 # o /etc/default/resolvconf
 # o /etc/devops/ansi.conf
@@ -91,6 +92,7 @@ fi
 
 ## Bash exec variables
 EXEC_LSCPU=/usr/bin/lscpu
+EXEC_LSMOD=/sbin/lsmod
 EXEC_LSPCI=/usr/bin/lspci
 EXEC_PASSWD=/usr/bin/passwd
 EXEC_UPDATE_INITRAMFS=/usr/sbin/update-initramfs
@@ -123,6 +125,9 @@ installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
 installConfig 'profile' "$SCRIPT_DIR" /etc
+
+# Install /etc/tidy.conf
+installConfig 'tidy.conf' "$SCRIPT_DIR" /etc
 
 # Install /etc/apparmor.d/local/usr.bin.evince
 installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/local

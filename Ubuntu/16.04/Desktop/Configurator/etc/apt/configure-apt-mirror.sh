@@ -87,10 +87,10 @@ if [ -f /etc/apt/sources.list.orig ] && [ "$1" != '-f' ]; then
 	echo
 	printUsage "$SCRIPT_EXEC ${gold}[-f]"
 
-	echo ${bold}
-	echo "Valid Options:${romantic}"
-	echo -e ${gold}'  -f\t'  ${romantic}'Force /etc/apt/sources.list reconfiguration'
-	echo ${reset}
+	echo
+	echo ${bold}${white}'Valid Options:'${reset}
+	echo -e ${bold}${gold}'  -f\t' ${reset}${romantic}'Force /etc/apt/sources.list reconfiguration'${reset}
+	echo
 
 	exit 0
 fi

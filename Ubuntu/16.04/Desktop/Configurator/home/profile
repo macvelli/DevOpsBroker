@@ -44,6 +44,13 @@ if [ -d /mnt/ramdisk ]; then
 
 			/bin/tar xzvf /cache/$USER/*.default.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox
 
+		elif [ -d $HOME/.cache/mozilla ] && [ ! -L $HOME/.cache/mozilla/firefox ]; then
+
+			# Move Firefox cache to /mnt/ramdisk
+			/bin/cp -a $HOME/.cache/mozilla/firefox/* /mnt/ramdisk/$USER/mozilla/firefox
+			/bin/rm -rf $HOME/.cache/mozilla/firefox
+			/usr/local/bin/symlink -o $USER:$USER $HOME/.cache/mozilla/firefox /mnt/ramdisk/$USER/mozilla/firefox
+
 		elif [ -d $HOME/.mozilla/firefox ]; then
 			profileDir=$( /usr/bin/basename $( /bin/ls -d $HOME/.mozilla/firefox/*.default ) )
 
