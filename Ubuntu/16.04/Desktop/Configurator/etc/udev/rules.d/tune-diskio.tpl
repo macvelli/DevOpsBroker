@@ -85,7 +85,7 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Gather Serial Number, Device Transport Type, and Device Type
-attributeList=($($EXEC_LSBLK -dn --exclude 7 --output KNAME,SERIAL,TYPE $deviceNode 2>/dev/null))
+attributeList=($($EXEC_LSBLK -dn --output KNAME,SERIAL,TYPE $deviceNode 2>/dev/null))
 
 deviceName=${attributeList[0]}
 

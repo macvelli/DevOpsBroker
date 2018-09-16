@@ -466,6 +466,9 @@ if [ ! -f /usr/bin/pulseaudio-equalizer-gtk ]; then
   # END Install pulseaudio-equalizer
 fi
 
+# Install pv
+installPackage '/usr/bin/pv' 'pv'
+
 # Install qemu-kvm
 installPackage '/usr/share/doc/qemu-kvm/copyright' 'qemu-kvm'
 

@@ -192,6 +192,9 @@ installSystemUtility initcrwnd
 # Install pms system administration utility
 installSystemUtility pms
 
+# Install wipedisk system administration utility
+installSystemUtility wipedisk
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ User Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install archive user utility
