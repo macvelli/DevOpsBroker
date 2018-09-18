@@ -69,6 +69,9 @@ sourcesListTpl=$(isExecutable "$SCRIPT_DIR"/sources-list.tpl)
 ## Bash exec variables
 EXEC_TRUNCATE=/usr/bin/truncate
 
+## Options
+updateAptSources=${1:-'true'}
+
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
 
@@ -189,7 +192,7 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list || [ "$1" == '-f' ]; th
 		"$sourcesListTpl" $fastestMirror > "$TMPDIR"/sources.list
 
 		# Install as root:root with rw-r--r-- privileges
-		$EXEC_INSTALL -o root -g root -m 644 "$TMPDIR"/sources.list /etc/apt
+		$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/sources.list /etc/apt
 	else
 		printInfo 'Updating /etc/apt/sources.list'
 
@@ -203,8 +206,10 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list || [ "$1" == '-f' ]; th
 	# Clean up
 	$EXEC_RM "$TMPDIR"/sources.list
 
-	printInfo 'Download package information from new apt mirror site'
-	$EXEC_APT update
+	if [ "$updateAptSources" == 'true' ]; then
+		printInfo 'Download package information from new apt mirror site'
+		$EXEC_APT update
+	fi
 
 	echo
 

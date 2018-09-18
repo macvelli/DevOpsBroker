@@ -43,47 +43,49 @@
 #   o dnsmasq
 #   o geoip-bin
 #   o geoip-database
+#   o irqbalance
+#   o libc6-dbg
 #
 # Useful Linux Command-Line Utilities
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# o Dynamic real-time view of running processes:
-# htop
+# Dynamic real-time view of running processes:
+#   o htop
 #
-# o Snapshot view of active processes:
-# ps
+# Snapshot view of active processes:
+#   o ps
 #
-# o Check Available RAM:
-# free -h
+# Check Available RAM:
+#   o free -h
 #
-# o Report virtual memory statistics (PGPGIN/PGPGOUT):
-# vmstat -s
+# Report virtual memory statistics (PGPGIN/PGPGOUT):
+#   o vmstat -s
 #
-# o View USB Device Tree:
-# lsusb -tv
+# View USB Device Tree:
+#   o lsusb -tv
 #
-# o View PCI Device Tree:
-# lspci -tv
+# View PCI Device Tree:
+#   o lspci -tv
 #
-# o View Filesystem Types and Mountpoints:
-# lsblk -o NAME,FSTYPE,LABEL,SIZE,UUID,MOUNTPOINT
+# View Filesystem Types and Mountpoints:
+#   o lsblk -o NAME,FSTYPE,LABEL,SIZE,UUID,MOUNTPOINT
 #
-# o View status of Linux Kernel modules:
-# lsmod
+# View status of Linux Kernel modules:
+#   o lsmod
 #
-# o View all available connection profiles for all network interfaces
-# nmcli device show
+# View all available connection profiles for all network interfaces
+#   o nmcli device show
 #
-# o View which devices and handlers are currently active:
-# cat /proc/bus/input/devices
+# View which devices and handlers are currently active:
+#   o cat /proc/bus/input/devices
 #
-# o View every program which is listening on sockets for TCP/UDP traffic:
-# sudo netstat -tulpn
+# View every program which is listening on sockets for TCP/UDP traffic:
+#   o sudo netstat -tulpn
 #
-# o Scan the 192.168.0.0/24 subnet for every device with an open port 631:
-# nmap -p T:631 192.168.0.0/24 | grep -B4 open
+# Scan the 192.168.0.0/24 subnet for every device with an open port 631:
+#   o nmap -p T:631 192.168.0.0/24 | grep -B4 open
 #
-# o View shared object dependencies
-# ldd /usr/bin/glxgears
+# View shared object dependencies
+#   o ldd /usr/bin/glxgears
 #
 # TODO: Test everything...again!!!
 # -----------------------------------------------------------------------------
@@ -193,6 +195,7 @@ EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 ## Variables
 DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
 PKG_INSTALLED=false
+updateAptSources=false
 
 ################################### Actions ###################################
 
@@ -212,28 +215,48 @@ installPackage '/sbin/iptables' 'iptables'
 if [ ! -f /etc/network/iptables.rules ] || \
 	[ "$SCRIPT_DIR"/etc/network/iptables-desktop.sh -nt /etc/network/iptables.rules ]; then
 
-	"$SCRIPT_DIR"/etc/network/iptables-desktop.sh
-	echo
+		"$SCRIPT_DIR"/etc/network/iptables-desktop.sh
+		echo
 fi
 
 # Configure IPv6 firewall with ip6tables-desktop.sh script
 if [ ! -f /etc/network/ip6tables.rules ] || \
 	[ "$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh -nt /etc/network/ip6tables.rules ]; then
 
-	"$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh
-	echo
+		"$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh
+		echo
 fi
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~ DevOpsBroker Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~ DevOpsBroker Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install and/or update DevOpsBroker system administration and user utilities
 "$SCRIPT_DIR"/update-utils.sh
 
-#~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~ APT Sources Configuration ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#
-# APT Sources Mirror Configuration
-#
+if [ ! -f /etc/apt/sources.list.d/git-core-ubuntu-ppa-xenial.list ]; then
+	printInfo 'Adding Git stable release PPA'
+	$EXEC_ADD_APT_REPO -y ppa:git-core/ppa
+	updateAptSources=true
+fi
+
+if [ ! -f /etc/apt/sources.list.d/inkscape_dev-ubuntu-stable-xenial.list ]; then
+	printInfo 'Adding Inkscape stable release PPA'
+	$EXEC_ADD_APT_REPO -y ppa:inkscape.dev/stable
+	updateAptSources=true
+fi
+
+if [ ! -f /etc/apt/sources.list.d/maxmind-ubuntu-ppa-xenial.list ]; then
+	printInfo 'Add MaxMind PPA for GeoLite2 Support'
+	$EXEC_ADD_APT_REPO -y ppa:maxmind/ppa
+	updateAptSources=true
+fi
+
+if [ ! -f /etc/apt/sources.list.d/nilarimogard-ubuntu-webupd8-xenial.list ]; then
+	printInfo 'Adding webupd8.org PPA'
+	$EXEC_ADD_APT_REPO -y ppa:nilarimogard/webupd8
+	updateAptSources=true
+fi
 
 # Install curl
 installPackage '/usr/bin/curl' 'curl'
@@ -245,7 +268,16 @@ installPackage '/usr/bin/gawk' 'gawk'
 installPackage '/usr/bin/parallel' 'parallel'
 
 # Configure /etc/apt/sources.list with configure-apt-mirror.sh script
-"$SCRIPT_DIR"/etc/apt/configure-apt-mirror.sh
+if [ "$updateAptSources" == 'true' ]; then
+	"$SCRIPT_DIR"/etc/apt/configure-apt-mirror.sh 'false'
+
+	printInfo 'Updating APT package information from all configured sources'
+	$EXEC_APT update
+else
+	"$SCRIPT_DIR"/etc/apt/configure-apt-mirror.sh
+fi
+
+#~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
 
 # Install apparmor-utils
 installPackage '/usr/sbin/aa-genprof' 'apparmor-utils'
@@ -263,8 +295,8 @@ installPackage '/usr/sbin/avahi-daemon' 'avahi-daemon'
 installPackage '/usr/bin/clang-5.0' 'clang-5.0 clang-5.0-doc'
 
 if [ ! -L /usr/bin/clang ]; then
-  printInfo "Creating symbolic link /usr/lib/llvm-5.0/bin/clang"
-  $EXEC_LN -s /usr/lib/llvm-5.0/bin/clang /usr/bin/clang
+	printInfo "Creating symbolic link /usr/lib/llvm-5.0/bin/clang"
+	$EXEC_LN -s /usr/lib/llvm-5.0/bin/clang /usr/bin/clang
 fi
 
 # Install compizconfig-settings-manager
@@ -305,11 +337,9 @@ uninstallPackage '/usr/share/GeoIP/GeoIP.dat' 'geoip-database'
 
 # Delete /usr/share/GeoIP directory
 if [ -d /usr/share/GeoIP ]; then
-  printInfo 'Deleting /usr/share/GeoIP directory'
-
-  $EXEC_RM -rf /usr/share/GeoIP
-
-  echo
+	printInfo 'Deleting /usr/share/GeoIP directory'
+	$EXEC_RM -rf /usr/share/GeoIP
+	echo
 fi
 
 # Install ioping
@@ -319,44 +349,19 @@ installPackage '/usr/bin/ioping' 'ioping'
 installPackage '/usr/bin/getent' 'libc-bin'
 
 # Install mmdblookup
-if [ ! -f /usr/bin/mmdblookup ]; then
-  # BEGIN GeoLite2 City Lookup
+installPackage '/usr/bin/mmdblookup' 'libmaxminddb0 libmaxminddb-dev mmdb-bin'
 
-  printBanner 'Installing MaxMind GeoLite2 Geolocation'
-
-  printInfo 'Add MaxMind PPA for GeoLite2 Support'
-  $EXEC_ADD_APT_REPO -y ppa:maxmind/ppa
-  $EXEC_APT update
-  echo
-
-  printInfo 'Install mmdblookup'
-  $EXEC_APT -y install libmaxminddb0 libmaxminddb-dev mmdb-bin
-  echo
-
-  # Install GeoLite2 City geolocation database
-  /usr/local/bin/geoip update
-
-  echo
-
-  # END GeoLite2 City Lookup
+if [ "$PKG_INSTALLED" == 'true' ]; then
+	# Install GeoLite2 City geolocation database
+	/usr/local/bin/geoip update
+	echo
 fi
 
 # Install gimp
 installPackage '/usr/bin/gimp' 'gimp'
 
 # Install git
-if [ ! -f /usr/bin/git ]; then
-  printBanner 'Installing git'
-
-  printInfo 'Adding Git stable release PPA'
-  $EXEC_ADD_APT_REPO ppa:git-core/ppa
-  $EXEC_APT update
-  echo
-
-  $EXEC_APT -y install git
-
-  echo
-fi
+installPackage '/usr/bin/git' 'git'
 
 # Install gksu
 installPackage '/usr/bin/gksu' 'gksu'
@@ -377,18 +382,7 @@ installPackage '/usr/bin/htop' 'htop'
 installPackage '/usr/sbin/hwinfo' 'hwinfo'
 
 # Install inkscape
-if [ ! -f /usr/bin/inkscape ]; then
-  printBanner 'Installing inkscape'
-
-  printInfo 'Adding Inkscape stable release PPA'
-  $EXEC_ADD_APT_REPO ppa:inkscape.dev/stable
-  $EXEC_APT update
-  echo
-
-  $EXEC_APT -y install inkscape
-
-  echo
-fi
+installPackage '/usr/bin/inkscape' 'inkscape'
 
 # Uninstall irqbalance
 uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
@@ -431,39 +425,28 @@ installPackage '/usr/share/ovmf/OVMF.fd' 'ovmf'
 
 # Install pulseaudio-equalizer
 if [ ! -f /usr/bin/pulseaudio-equalizer-gtk ]; then
-  # BEGIN Install pulseaudio-equalizer
+	# BEGIN Install pulseaudio-equalizer
 
-  printBanner 'Installing pulseaudio-equalizer'
+	installPackage '/usr/bin/pulseaudio-equalizer-gtk' 'pulseaudio-equalizer'
 
-  printInfo 'Adding webupd8.org PPA'
-  $EXEC_ADD_APT_REPO ppa:nilarimogard/webupd8
-  $EXEC_APT update
-  echo
+	# Install PulseAudio icon
+	printInfo 'Installing pulseaudio icon'
+	$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/usr/share/pixmaps/pulseaudio.png" /usr/share/pixmaps
 
-  # Install the equalizer
-  $EXEC_APT -y install pulseaudio-equalizer
-  echo
+	# .desktop directory
+	desktopDir='usr/share/applications'
+	# Fix icon in /usr/share/applications/pulseaudio-equalizer.desktop
+	$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$desktopDir/pulseaudio-equalizer.desktop" "/$desktopDir"
 
-  # Install PulseAudio icon
-  printInfo 'Installing pulseaudio icon'
-  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/usr/share/pixmaps/pulseaudio.png" /usr/share/pixmaps
+	# Presets directory
+	presetsDir='usr/share/pulseaudio-equalizer/presets'
 
-  # .desktop directory
-  desktopDir='usr/share/applications'
+	# Install Default preset
+	printInfo 'Installing Default equalizer preset'
+	$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$presetsDir/Default.preset" "/$presetsDir"
+	echo
 
-  # Fix icon in /usr/share/applications/pulseaudio-equalizer.desktop
-  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$desktopDir/pulseaudio-equalizer.desktop" "/$desktopDir"
-
-  # Presets directory
-  presetsDir='usr/share/pulseaudio-equalizer/presets'
-
-  # Install Default preset
-  printInfo 'Installing Default equalizer preset'
-  $EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR/$presetsDir/Default.preset" "/$presetsDir"
-
-  echo
-
-  # END Install pulseaudio-equalizer
+	# END Install pulseaudio-equalizer
 fi
 
 # Install pv
@@ -516,19 +499,16 @@ if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then
 	# Install new tidy
 	/usr/bin/dpkg -i "$SCRIPT_DIR"/archives/tidy-5.6.0-64bit.deb
 	/usr/bin/apt-get -f install
+	echo
 fi
 
 # Install ttf-mscorefonts-installer
-if [ ! -d /usr/share/fonts/truetype/msttcorefonts ]; then
-  printBanner 'Installing ttf-mscorefonts-installer'
+installPackage '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf' 'ttf-mscorefonts-installer'
 
-  $EXEC_APT -y install ttf-mscorefonts-installer
-  echo
-
-  printInfo 'Updating the font cache'
-  /usr/bin/fc-cache -f -v
-
-  echo
+if [ "$PKG_INSTALLED" == 'true' ]; then
+	printInfo 'Updating the font cache'
+	/usr/bin/fc-cache -f -v
+	echo
 fi
 
 # Install unbound
@@ -639,7 +619,7 @@ uninstallPackage '/etc/dnsmasq.conf' 'dnsmasq'
 
 today=$($EXEC_DATE -I)
 if [ ! -f /etc/devops/last-update ] || [ $($EXEC_CAT /etc/devops/last-update) != $today ]; then
-  /usr/local/sbin/pms upgrade
+	/usr/local/sbin/pms upgrade
 fi
 
 echo 'Done!'
