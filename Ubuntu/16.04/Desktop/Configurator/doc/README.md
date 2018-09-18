@@ -8,7 +8,7 @@ The following tasks are performed by the Configurator:
 - Installs all DevOpsBroker system administration and user utilities
 - Installs a number of useful applications, libraries and utilities
 - Installs any available proprietary drivers
-- Configures and optimizes the filesystem
+- Configures and optimizes the file system
 - Performs Linux kernel tuning optimizations
 - Performs general system configuration
 - Configures the fastest APT sources mirror
@@ -102,16 +102,22 @@ The EFI booting architecture requires a specialized partition configuration in o
 ![Image of Create EFI System Partition Table](create-efi-system-partition.png)
 
 5. Create a /boot partition
-   * Make 1000MB partition size with ext4 filesystem
+   * Make 1000MB partition size with ext4 file system
 
 ![Image of Create /boot Partition Table](create-boot-partition.png)
 
-6. Create the / partition
-   * Use the rest of the disk for the root partition size with XFS filesystem
+6. Create a /dropbox partition (**Optional**)
+   * If you are a Dropbox user, you will need to create a separate partition for your Dropbox folder
+   * From the infinite wisdom of Dropbox: "[**On Nov. 7, 2018, we’re ending support for Dropbox syncing to drives with certain uncommon file systems.** The supported file systems are NTFS for Windows, HFS+ or APFS for Mac, and **Ext4 for Linux**](https://www.dropboxforum.com/t5/Syncing-and-uploads/Dropbox-client-warns-me-that-it-ll-stop-syncing-in-Nov-why/m-p/290065/highlight/true#M42255)"
+   * Create an unencrypted Ext4 partition mounted to the /dropbox folder sized appropriately for your specific needs
+
+
+7. Create the / partition
+   * Use the rest of the disk for the root partition size with the XFS file system
 
 ![Image of Create Root Partition Table](create-root-partition.png)
 
-7. Write all changes to disk
+8. Write all changes to disk
    * Click on **Install Now** button and then select **Continue**
 
 ![Image of Write Changes to Disk](write-changes-to-disk.png)
