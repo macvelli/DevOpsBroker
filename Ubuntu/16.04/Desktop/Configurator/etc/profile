@@ -50,3 +50,7 @@ if [ -d /etc/profile.d ]; then
 	done
 	unset script
 fi
+
+############################ Environment Variables ############################
+
+export NUM_CPUS=$(/usr/bin/nproc)

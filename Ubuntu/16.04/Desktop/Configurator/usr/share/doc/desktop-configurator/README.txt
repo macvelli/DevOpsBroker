@@ -1,7 +1,6 @@
 
 desktop-configurator - A complete turn-key solution for configuring a fresh installation of Ubuntu 16.04 Desktop
 
-
 HISTORY
 
 	As a casual user of Ubuntu Desktop for many years, it has often been a
@@ -37,7 +36,6 @@ HISTORY
 	Ubuntu Desktop for (website design, software development, office apps, email,
 	calendar, music, photos, videos, etc).
 
-
 FEATURES
 
 	* Configures IPv4 firewall and IPv6 firewall using iptables and ip6tables
@@ -57,15 +55,30 @@ FEATURES
 	* Replaces dnsmasq with unbound for the local DNS cache server
 	* Performs user configuration
 
-
 AUTHORS
 
 	Edward Smith            version 1.0.0 2018-Present
 
+ACKNOWLEDGEMENTS
+
+	Arch Linux              https://wiki.archlinux.org/
+	Debian                  https://www.debian.org/
+	GitHub                  https://github.com/
+	GNOME                   https://www.gnome.org/
+	GNU                     https://www.gnu.org/
+	How-To Geek             https://www.howtogeek.com/
+	HTML CSS Color          https://www.htmlcsscolor.com/
+	IBM                     https://www.ibm.com/
+	LinuxQuestions.org      https://www.linuxquestions.org/
+	MaxMind                 https://dev.maxmind.com/geoip/geoip2/geolite2/
+	nixCraft                https://www.cyberciti.biz/faq/
+	Paletton                http://paletton.com/
+	Red Hat                 https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/
+	Ubuntu                  https://www.ubuntu.com/
 
 CONTACT INFORMATION
 
-	Project Page          : https://www.devopsbroker.org/ubuntu/desktop-configurator/
+	Project Page          : https://www.devopsbroker.org/ubuntu/xenial/desktop-configurator/
 	GitHub Project Page   : https://github.com/macvelli/DevOpsBroker
 
 	Edward Smith

@@ -53,10 +53,8 @@ Mkfile.old
 dkms.conf
 
 # Build artifacts
-**/build/*.deb
-**/build/*.tar.*
-**/build/fileinfo.html
-**/build/SHA256SUM
+**/build/pkg-debian/
+**/build/tar-test/
 
 # Whitelist files
 !.keep

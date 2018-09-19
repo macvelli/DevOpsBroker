@@ -221,6 +221,9 @@ createSymlink /usr/local/bin/decimal /usr/local/bin/convert-number
 createSymlink /usr/local/bin/hex /usr/local/bin/convert-number
 createSymlink /usr/local/bin/octal /usr/local/bin/convert-number
 
+# Install deb-control user utility
+installUserUtility deb-control
+
 # Install decrypt user utility
 installUserUtility decrypt
 
@@ -259,6 +262,9 @@ installUserUtility lwp
 
 # Install macaddr user utility
 installUserUtility macaddr
+
+# Install md5sums user utility
+installUserUtility md5sums
 
 # Install printAnsi16 user utility
 installUserUtility printAnsi16

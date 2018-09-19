@@ -1,5 +1,5 @@
 #
-# makefile - DevOpsBroker makefile for Ubuntu 16.04 Desktop Configurator
+# globals.mk - DevOpsBroker configuration for global makefile definitions
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -22,29 +22,14 @@
 # -----------------------------------------------------------------------------
 #
 
-################################### Includes ##################################
+################################## Functions ##################################
 
-include /etc/devops/globals.mk
+define printInfo
+	echo $${bold}$${aqua}o $(1)...$${reset}
+endef
 
-################################### Targets ###################################
+################################## Variables ##################################
 
-.ONESHELL:
-.PHONY: default test release printenv
-
-default: test
-
-test:
-	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
-	$(MAKE) -f test.mk $(filter-out test,$(MAKECMDGOALS))
-
-release:
-	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
-	$(MAKE) -f release.mk $(filter-out release,$(MAKECMDGOALS))
-
-printenv:
-	@echo "MAKEFILE_LIST: $(MAKEFILE_LIST)"
-	@echo "       TMPDIR: $(TMPDIR)"
-	@echo "       CURDIR: $(CURDIR)"
-	@echo
+TMPDIR ?= /tmp
+SHELL := /bin/bash
+UMASK=0027

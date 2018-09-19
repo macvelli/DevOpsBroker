@@ -34,6 +34,7 @@
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
 # o /etc/devops/functions.conf
+# o /etc/devops/globals.mk
 # o /etc/modprobe.d/kvm-amd.conf
 # o /etc/modprobe.d/nf_conntrack.conf
 # o /etc/network/interfaces
@@ -135,14 +136,19 @@ installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/lo
 # Install /etc/default/resolvconf
 installConfig 'resolvconf' "$SCRIPT_DIR"/default /etc/default
 
-# Install /etc/devops/ansi.conf
-installConfig 'ansi.conf' "$SCRIPT_DIR"/devops /etc/devops
+if [ -d "$SCRIPT_DIR"/devops ]; then
+	# Install /etc/devops/ansi.conf
+	installConfig 'ansi.conf' "$SCRIPT_DIR"/devops /etc/devops
 
-# Install /etc/devops/exec.conf
-installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
+	# Install /etc/devops/exec.conf
+	installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
 
-# Install /etc/devops/functions.conf
-installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
+	# Install /etc/devops/functions.conf
+	installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
+
+	# Install /etc/devops/globals.mk
+	installConfig 'globals.mk' "$SCRIPT_DIR"/devops /etc/devops
+fi
 
 # Install /etc/modprobe.d/kvm-amd.conf
 if $EXEC_LSMOD | $EXEC_GREP -Eq '^kvm\b' && $EXEC_LSCPU | $EXEC_GREP -q 'AMD'; then

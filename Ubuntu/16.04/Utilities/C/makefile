@@ -22,6 +22,10 @@
 # -----------------------------------------------------------------------------
 #
 
+################################### Includes ##################################
+
+include /etc/devops/globals.mk
+
 ################################## Variables ##################################
 
 CC := /usr/bin/gcc
@@ -29,11 +33,20 @@ CFLAGS := -Wall -g
 
 ################################### Targets ###################################
 
-.PHONY: clean clean-between clean-firelog clean-scriptinfo clean-verifyip install
+.ONESHELL:
+.PHONY: default all clean install
 
-default: install
+default: all
 
-bin/between.o: src/between.c
+all: between firelog scriptinfo verifyip
+
+clean:
+	/bin/rm -f between bin/between.o
+	/bin/rm -f firelog bin/firelog.o
+	/bin/rm -f scriptinfo bin/scriptinfo.o
+	/bin/rm -f verifyip bin/verifyip.o
+
+bin/between.o: src/between.c src/ansi.h
 	$(CC) $(CFLAGS) -c src/between.c -o bin/between.o
 
 between: bin/between.o
@@ -41,21 +54,21 @@ between: bin/between.o
 	@echo
 	/bin/bash test/testBetween.sh
 
-bin/firelog.o: src/firelog.c
+bin/firelog.o: src/firelog.c src/ansi.h
 	$(CC) $(CFLAGS) -c src/firelog.c -o bin/firelog.o
 
 firelog: bin/firelog.o
 	$(CC) bin/firelog.o -o firelog
 	@echo
 
-bin/scriptinfo.o: src/scriptinfo.c
+bin/scriptinfo.o: src/scriptinfo.c src/ansi.h
 	$(CC) $(CFLAGS) -c src/scriptinfo.c -o bin/scriptinfo.o
 
 scriptinfo: bin/scriptinfo.o
 	$(CC) bin/scriptinfo.o -o scriptinfo
 	@echo
 
-bin/verifyip.o: src/verifyip.c
+bin/verifyip.o: src/verifyip.c src/ansi.h
 	$(CC) $(CFLAGS) -c src/verifyip.c -o bin/verifyip.o
 
 verifyip: bin/verifyip.o
@@ -63,21 +76,7 @@ verifyip: bin/verifyip.o
 	@echo
 	/bin/bash test/testVerifyIP.sh
 
-clean: clean-between clean-firelog clean-scriptinfo clean-verifyip
-
-clean-between:
-	/bin/rm -f between bin/between.o
-
-clean-firelog:
-	/bin/rm -f firelog bin/firelog.o
-
-clean-scriptinfo:
-	/bin/rm -f scriptinfo bin/scriptinfo.o
-
-clean-verifyip:
-	/bin/rm -f verifyip bin/verifyip.o
-
-install: between firelog scriptinfo verifyip
+install: all
 	/bin/cp between ../usr/local/bin
 	/bin/cp firelog ../usr/local/bin
 	/bin/cp scriptinfo ../usr/local/bin

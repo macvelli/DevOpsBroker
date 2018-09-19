@@ -35,6 +35,20 @@
 # -----------------------------------------------------------------------------
 #
 
+############################ Environment Variables ############################
+
+# SSH Agent socket and PID
+export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
+
+# Ignore the .git directory
+export FIGNORE=".git"
+
+# Define colors for grep
+export GREP_COLORS="mt=1;38;2;255;215;181:fn=38;2;210;166;235:ln=38;2;255;255;100:se=38;2;165;232;232"
+
+# Define common flags for make
+export MAKEFLAGS="--jobs=$NUM_CPUS --no-print-directory --output-sync --silent"
+
 ################################### Aliases ###################################
 
 # Enable color support of ls and also add handy aliases
@@ -82,13 +96,14 @@ alias gpg='/usr/bin/gpg'
 alias ifconfig='/sbin/ifconfig'
 alias ip='/sbin/ip'
 alias ld='/usr/bin/ld'
+alias make="/usr/bin/make $MAKEFLAGS"
 alias mkdir='/bin/mkdir -p'
 alias mv='/bin/mv'
 alias numLines='/usr/bin/wc -l'
 alias openssl='/usr/bin/openssl'
 alias ping='/bin/ping'
 alias ps='/bin/ps auxf'
-alias remake='make -B'
+alias remake="/usr/bin/make $MAKEFLAGS -B"
 alias rm='/bin/rm -I'
 alias root='/usr/bin/sudo -i'
 alias sed='/bin/sed -r'
@@ -103,16 +118,5 @@ alias userctl='/bin/systemctl --user'
 alias vi='/usr/bin/vi'
 alias wget='/usr/bin/wget -c'
 alias which='/usr/bin/which'
-
-############################ Environment Variables ############################
-
-# SSH Agent socket and PID
-export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
-
-# Ignore the .git directory
-export FIGNORE=".git"
-
-# Define colors for grep
-export GREP_COLORS="mt=1;38;2;255;215;181:fn=38;2;210;166;235:ln=38;2;255;255;100:se=38;2;165;232;232"
 
 ################################## Functions ##################################

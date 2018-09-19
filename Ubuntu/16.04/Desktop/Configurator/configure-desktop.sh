@@ -230,7 +230,9 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~ DevOpsBroker Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install and/or update DevOpsBroker system administration and user utilities
-"$SCRIPT_DIR"/update-utils.sh
+if [ -f "$SCRIPT_DIR"/update-utils.sh ]; then
+	"$SCRIPT_DIR"/update-utils.sh
+fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~ APT Sources Configuration ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -304,6 +306,9 @@ installPackage '/usr/bin/ccsm' 'compizconfig-settings-manager'
 
 # Install dconf-editor
 installPackage '/usr/bin/dconf-editor' 'dconf-editor'
+
+# Install debhelper
+installPackage '/usr/bin/dh' 'debhelper'
 
 # Install dkms
 installPackage '/usr/sbin/dkms' 'dkms'

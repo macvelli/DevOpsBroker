@@ -116,8 +116,9 @@ clean:
 	/bin/rm -f $projectName bin/$projectName.o
 
 printenv:
-	@echo "MAKEFILE_LIST: $(MAKEFILE_LIST)"
-	@echo "       TMPDIR: $(TMPDIR)"
-	@echo "       CURDIR: $(CURDIR)"
+	@echo "MAKEFILE_LIST: \$(MAKEFILE_LIST)"
+	@echo "       TMPDIR: \$(TMPDIR)"
+	@echo "       CURDIR: \$(CURDIR)"
+	@echo
 
 EOF

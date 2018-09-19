@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# reverse-dns - DevOpsBroker utility for performing a reverse DNS lookup of an IP address
+# md5sums - DevOpsBroker utility for generating the DEBIAN/md5sums .deb package file
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -19,16 +19,12 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
 #
-# Perfoms a simple reverse DNS lookup of an IP address.
-#
-# Parameters:
-#   $1: The IP address
 # -----------------------------------------------------------------------------
 #
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
 if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
@@ -54,31 +50,44 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 ################################## Variables ##################################
 
 ## Bash exec variables
-EXEC_DIG=/usr/bin/dig
-EXEC_VERIFYIP=/usr/local/bin/verifyip
+EXEC_MD5SUM=/usr/bin/md5sum
 
 ## Options
-ipAddress="$1"
+debPkgDir="$1"
+
+## Variables
+originalDir="$PWD"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
-if [ -z "$ipAddress" ]; then
-	printUsage 'reverse-dns IP_ADDR'
+if [ -z "$debPkgDir" ]; then
+	printUsage 'md5sums DIR'
 	exit 1
 fi
 
-# Display error if IP address is invalid
-if ! $EXEC_VERIFYIP "$ipAddress"; then
-	printError 'reverse-dns' "Invalid IP address: $1"
+# Display error if directory parameter is invalid
+if [ ! -d "$debPkgDir" ]; then
+	printError 'md5sums' "Cannot access '$debPkgDir': No such directory"
 	echo
-	printUsage 'reverse-dns IP_ADDR'
+	printUsage 'md5sums DIR'
 
 	exit 1
 fi
 
 ################################### Actions ###################################
 
-$EXEC_DIG -x $ipAddress
+# Create $debPkgDir/DEBIAN subdirectory, if necessary
+if [ ! -d "$debPkgDir/DEBIAN" ]; then
+	printInfo "Creating $debPkgDir/DEBIAN directory"
+	$EXEC_MKDIR "$debPkgDir/DEBIAN"
+fi
+
+cd "$debPkgDir"
+
+$EXEC_FIND . -path ./DEBIAN -prune -o \( -type f -o -type l \) -exec $EXEC_MD5SUM {} + \
+	| $EXEC_CUT --characters=-34,37- | $EXEC_SORT -t' ' -k2 > "$debPkgDir/DEBIAN/md5sums"
+
+cd "$originalDir"
 
 exit 0
