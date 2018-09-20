@@ -83,10 +83,12 @@ if [ "$command" = 'install' ] || [ "$command" = 'upgrade' ]; then
 		pkgInstallUser="$SUDO_USER"
 	fi
 
-	if [ ! -z "$pkgInstallUser" ] && [ "$pkgInstallUser" != 'root' ]; then
-		checkForUserGroup=$(groups "$pkgInstallUser" | grep -Eo '\bdevops\b')
+	echo "Package Install User: $pkgInstallUser"
 
-		if [ -z "$checkForUserGroup" ]; then
+	if [ ! -z "$pkgInstallUser" ] && [ "$pkgInstallUser" != 'root' ]; then
+		userGroupList=$(groups "$pkgInstallUser")
+
+		if [ -z "$(echo $userGroupList | grep -Eo '\bdevops\b')" ]; then
 			adduser "$pkgInstallUser" 'devops'
 		fi
 	fi

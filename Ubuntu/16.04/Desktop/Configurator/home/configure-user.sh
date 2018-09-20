@@ -173,8 +173,8 @@ function installUserConfig() {
 ################################## Variables ##################################
 
 ## Bash exec variables
-EXEC_BASH_REBOOT=/usr/local/bin/bash_reboot
 EXEC_SSH_KEY=/usr/local/bin/ssh-key
+EXEC_SUDO=/usr/bin/sudo
 EXEC_SYMLINK=/usr/local/bin/symlink
 
 ## Options
@@ -429,17 +429,12 @@ if [ ! -f "$userhome"/.config/systemd/user/ssh-agent.service ]; then
 	# Install as $username:$username with rw-r--r-- privileges
 	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/systemd/ssh-agent.service "$userhome"/.config/systemd/user
 
-	printInfo 'Enable systemd user service ssh-agent.service on reboot'
-	commandList="$EXEC_SYSTEMCTL --user enable ssh-agent.service${newline}"
+	# Need XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS
+	printInfo 'Enable systemd user service ssh-agent.service'
+	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user enable ssh-agent.service
 
-	printInfo 'Start systemd user service ssh-agent.service on reboot'
-	commandList="${commandList}$EXEC_SYSTEMCTL --user start ssh-agent.service"
-
-	$EXEC_BASH_REBOOT "$commandList" > "$TMPDIR"/.bash_reboot
-
-	# Install as $username:$username with rwxr-x--- privileges
-	$EXEC_INSTALL -o $username -g $username -m 750 "$TMPDIR"/.bash_reboot "$userhome"/.bash_reboot
-	$EXEC_RM "$TMPDIR"/.bash_reboot
+	printInfo 'Start systemd user service ssh-agent.service'
+	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user start ssh-agent.service
 fi
 
 #

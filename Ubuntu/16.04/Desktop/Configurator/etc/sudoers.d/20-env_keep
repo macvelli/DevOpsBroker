@@ -20,10 +20,15 @@
 # Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-33
 #
 # Specify the user environment variables sudo needs to keep on invocation.
+#
+# WARNING: DO NOT MAKE CHANGES TO THIS FILE AS THEY MAY BE OVERWRITTEN DURING
+#          AN UPGRADE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # -----------------------------------------------------------------------------
 #
 
+Defaults  env_keep += "DBUS_SESSION_BUS_ADDRESS"
 Defaults  env_keep += "GCC_COLORS"
 Defaults  env_keep += "GREP_COLORS"
 Defaults  env_keep += "LS_COLORS"
 Defaults  env_keep += "TMPDIR"
+Defaults  env_keep += "XDG_RUNTIME_DIR"

@@ -182,7 +182,8 @@ installConfig 'ca.conf' "$SCRIPT_DIR"/ssl /etc/ssl
 installConfig 'req.conf' "$SCRIPT_DIR"/ssl /etc/ssl
 
 # Install /etc/sudoers.d/10-umask
-if [ ! -f /etc/sudoers.d/10-umask ]; then
+if [ ! -f /etc/sudoers.d/10-umask ] || \
+		[ "$SCRIPT_DIR"/sudoers.d/10-umask -nt /etc/sudoers.d/10-umask ]; then
 	printInfo 'Installing /etc/sudoers.d/10-umask'
 
 	# Install as root:root with r--r----- privileges
@@ -192,7 +193,8 @@ if [ ! -f /etc/sudoers.d/10-umask ]; then
 fi
 
 # Install /etc/sudoers.d/20-env_keep
-if [ ! -f /etc/sudoers.d/20-env_keep ]; then
+if [ ! -f /etc/sudoers.d/20-env_keep ] || \
+		[ "$SCRIPT_DIR"/sudoers.d/20-env_keep -nt /etc/sudoers.d/20-env_keep ]; then
 	printInfo 'Installing /etc/sudoers.d/20-env_keep'
 
 	# Install as root:root with r--r----- privileges

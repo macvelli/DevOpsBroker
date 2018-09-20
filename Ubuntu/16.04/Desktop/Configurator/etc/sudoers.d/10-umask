@@ -20,6 +20,9 @@
 # Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-33
 #
 # Specify a umask that is more permissive than the user's own umask
+#
+# WARNING: DO NOT MAKE CHANGES TO THIS FILE AS THEY MAY BE OVERWRITTEN DURING
+#          AN UPGRADE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # -----------------------------------------------------------------------------
 #
 

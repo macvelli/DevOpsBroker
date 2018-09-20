@@ -166,7 +166,7 @@ for partition in "${partitionList[@]}"; do
 done
 echo
 
-echo "${bold}${yellow}Are you sure you want to wipe disk '$deviceNode'?${white}"
+echo "${bold}${yellow}Are you sure you want to wipe disk '${green}$deviceNode${yellow}'?${white}"
 select confirmWipe in 'Yes' 'No'; do
 	if [ "$confirmWipe" == 'Yes' ]; then
 		numBytes=$[ $logicalBlockSize * $numSectors ]

@@ -433,7 +433,7 @@ elif [ $command == 'delete-branch' ]; then
 
 	printBanner "Delete branch '$branchName'"
 
-	echo "${bold}${yellow}Are you sure you want to delete branch '$branchName'?${white}"
+	echo "${bold}${yellow}Are you sure you want to delete branch '${green}$branchName${yellow}'?${white}"
 	select confirmDelete in 'Yes' 'No'; do
 		if [ "$confirmDelete" == 'Yes' ]; then
 			echo
@@ -447,7 +447,7 @@ elif [ $command == 'discard-changes' ]; then
 
 	printBanner "Discard changes for file '$fileName'"
 
-	echo "${bold}${yellow}Are you sure you want to discard changes for '$fileName'?${white}"
+	echo "${bold}${yellow}Are you sure you want to discard changes for '${green}$fileName${yellow}'?${white}"
 	select confirmDiscard in 'Yes' 'No'; do
 		if [ "$confirmDiscard" == 'Yes' ]; then
 			echo
@@ -479,7 +479,7 @@ elif [ $command == 'release' ]; then
 
 	printBanner "Release branch '$branchName'"
 
-	echo "${bold}${yellow}Are you sure you want to release branch '$branchName'?${white}"
+	echo "${bold}${yellow}Are you sure you want to release branch '${green}$branchName{yellow}'?${white}"
 	select confirmRelease in 'Yes' 'No'; do
 		if [ "$confirmRelease" == 'Yes' ]; then
 			echo

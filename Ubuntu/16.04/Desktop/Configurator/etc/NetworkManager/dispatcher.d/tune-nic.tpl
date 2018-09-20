@@ -152,7 +152,7 @@ TX_QUEUE_LENGTH=$[ $NIC_SPEED * 10 ]
 IFACE="\$1"
 ACTION="\$2"
 
-if [ -z "$IFACE" ] && [ -z "$ACTION" ]; then
+if [ -z "\$IFACE" ] && [ -z "\$ACTION" ]; then
 	IFACE='$NIC'
 	ACTION='up'
 fi
