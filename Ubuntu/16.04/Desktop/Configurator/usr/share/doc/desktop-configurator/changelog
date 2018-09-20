@@ -20,4 +20,4 @@ desktop-configurator (1.0.0) xenial; urgency=low
   * Replaces dnsmasq with unbound for the local DNS cache server
   * Performs user configuration
 
--- Edward Smith <edwardsmith@devopsbroker.org>  Sun, 16 Sep 2018 22:37:43 -0500
+ -- Edward Smith <edwardsmith@devopsbroker.org>  Thu, 20 Sep 2018 12:36:56 -0500
