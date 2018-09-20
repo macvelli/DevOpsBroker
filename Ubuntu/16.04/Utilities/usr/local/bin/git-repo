@@ -427,7 +427,7 @@ elif [ $command == 'create-branch' ]; then
 
 	printInfo 'Pushing new branch to origin'
 	echo
-	$EXEC_GIT push origin $branchName
+	$EXEC_GIT push -u origin $branchName
 
 elif [ $command == 'delete-branch' ]; then
 
