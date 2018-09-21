@@ -55,6 +55,36 @@ if [ "$USER" == 'root' ]; then
 	exit 1
 fi
 
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     showHelp
+# Description:  Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+	# BEGIN showHelp function
+
+	if [ "$command" == 'compiz' ]; then
+		printUsage 'gnome-config compiz'
+		echo ${romantic}
+		echo 'Performs compiz configurations including enabling workspaces'${reset}
+	elif [ "$command" == 'gnome' ]; then
+		printUsage 'gnome-config gnome'
+		echo ${romantic}
+		echo 'Performs configurations of Gnome applications such as Terminal'${reset}
+	elif [ "$command" == 'nautilus' ]; then
+		printUsage 'gnome-config nautilus'
+		echo ${romantic}
+		echo "Sets ${yellow}'Show Hidden Files'${romantic} Nautilus default to ${yellow}'false'"${reset}
+	elif [ "$command" == 'unity' ]; then
+		printUsage 'git-repo delete-branch BRANCH_NAME'
+		echo ${romantic}
+		echo 'Performs Unity-specific configurations such as title bar placement'${reset}
+	fi
+
+	# END showHelp function
+}
+
 ################################## Variables ##################################
 
 ## Bash exec variables
@@ -62,21 +92,38 @@ EXEC_DCONF=/usr/bin/dconf
 EXEC_GSETTINGS=/usr/bin/gsettings
 
 ## Options
-command=${1:-'unity'}
+command="$1"
 
 ## Variables
 echoOnExit=false
+showCommandHelp=false
 validCommands=('compiz' 'gnome' 'nautilus' 'unity')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if [ "$command" == 'help' ]; then
+	showCommandHelp=true
+	command="$2"
+fi
+
+# Display usage if no parameters given
+if [ -z "$command" ]; then
+	printUsage "gnome-config ${gold}[help]${yellow} { compiz | gnome | nautilus | unity }"
+	exit 1
+fi
 
 # Display error if invalid command
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'gnome-config' "Invalid command: $command"
 	echo
-	printUsage 'gnome-config { compiz | gnome | nautilus | unity }'
+	printUsage "gnome-config ${gold}[help]${yellow} { compiz | gnome | nautilus | unity }"
 
 	exit 1
+fi
+
+if [ "$showCommandHelp" == 'true' ]; then
+	showHelp
+	exit 0
 fi
 
 ################################### Actions ###################################

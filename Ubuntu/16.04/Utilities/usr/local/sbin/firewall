@@ -67,12 +67,12 @@ function showHelp() {
 		echo 'List active iptables/ip6tables firewall rules'${reset}
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
-		echo -e ${bold}${gold}'  -4\t' ${reset}${romantic}'View IPv4 Firewall configuration'
-		echo -e ${bold}${gold}'  -6\t'  ${reset}${romantic}'View IPv6 Firewall configuration'
-		echo -e ${bold}${gold}'  raw\t'  ${reset}${romantic}'Limit output to the RAW table'
-		echo -e ${bold}${gold}'  mangle\t'  ${reset}${romantic}'Limit output to the MANGLE table'
-		echo -e ${bold}${gold}'  nat\t'  ${reset}${romantic}'Limit output to the NAT table'
-		echo -e ${bold}${gold}'  filter\t'  ${reset}${romantic}'Limit output to the FILTER table'
+		echo -e ${bold}${yellow}'  -4\t\t'    ${reset}${romantic}'View IPv4 Firewall configuration'
+		echo -e ${bold}${yellow}'  -6\t\t'    ${reset}${romantic}'View IPv6 Firewall configuration'
+		echo -e ${bold}${yellow}'  raw\t\t'   ${reset}${romantic}'Limit output to the RAW table'
+		echo -e ${bold}${yellow}'  mangle\t'  ${reset}${romantic}'Limit output to the MANGLE table'
+		echo -e ${bold}${yellow}'  nat\t\t'   ${reset}${romantic}'Limit output to the NAT table'
+		echo -e ${bold}${yellow}'  filter\t'  ${reset}${romantic}'Limit output to the FILTER table'
 		echo ${reset}
 	elif [ "$command" == 'log' ]; then
 		printUsage 'firewall log'
@@ -102,7 +102,16 @@ ipv6=true
 table=''
 chain=''
 
+## Variables
+showCommandHelp=false
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if [ "$command" == 'help' ]; then
+	showCommandHelp=true
+	command="$2"
+	shift
+fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
@@ -119,15 +128,15 @@ if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	exit 1
 fi
 
+if [ "$showCommandHelp" == 'true' ]; then
+	showHelp
+	exit 0
+fi
+
 # Display error if not running as root
 if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$USER" != 'root' ]; then
 	printError 'firewall' 'Permission denied (you must be root)'
 	exit 1
-fi
-
-if [ "$2" == 'help' ]; then
-	showHelp
-	exit 0
 fi
 
 # Process command-line options

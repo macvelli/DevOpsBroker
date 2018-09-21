@@ -173,6 +173,7 @@ function installUserConfig() {
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_LSPCI=/usr/bin/lspci
 EXEC_SSH_KEY=/usr/local/bin/ssh-key
 EXEC_SUDO=/usr/bin/sudo
 EXEC_SYMLINK=/usr/local/bin/symlink
@@ -182,6 +183,7 @@ username=${1:-$SUDO_USER}
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
+vgaDevice=$($EXEC_LSPCI | $EXEC_GREP -F --max-count 1 'VGA')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -468,6 +470,17 @@ excludeDirs="-type d ( -name '.git' -o -name '.svn' ) -prune"
 
 # Remove ----w-rwx file privileges
 $EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /027 -exec $EXEC_CHMOD g-w,o-rwx {} +
+
+#
+# NVIDIA Settings
+#
+
+regExpr="\\bNVIDIA\\b"
+if [[ "$vgaDevice" =~ $regExpr ]] && [ ! -f "$userhome/.nvidia-settings-rc" ]; then
+	echo
+	echo "${bold}${yellow}NOTE: ${white}Consider optimizing your NVidia graphics card either using the DevOpsBroker /home/nvidia-settings-rc file as a guide or executing 'nvidia-settings' from the command-line${reset}"
+	echoOnExit=true
+fi
 
 echo
 

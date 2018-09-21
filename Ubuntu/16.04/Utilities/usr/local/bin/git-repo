@@ -87,8 +87,8 @@ function showHelp() {
 		echo 'Configure the name and email address for the local Git repository'
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
-		echo -e ${bold}${gold}'  -e EMAIL_ADDR\t' ${reset}${romantic}'The email address to use'
-		echo -e ${bold}${gold}'  -n FULL_NAME\t'  ${reset}${romantic}'The name to use'
+		echo -e ${bold}${yellow}'  -e EMAIL_ADDR\t' ${reset}${romantic}'The email address to use'
+		echo -e ${bold}${yellow}'  -n FULL_NAME\t'  ${reset}${romantic}'The name to use'
 		echo ${reset}
 	elif [ "$command" == 'create-branch' ]; then
 		printUsage 'git-repo create-branch BRANCH_NAME'
@@ -148,8 +148,15 @@ branchName=''
 
 ## Variables
 isValidBranch=''
+showCommandHelp=false
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if [ "$command" == 'help' ]; then
+	showCommandHelp=true
+	command="$2"
+	shift
+fi
 
 # Do some "parameter mangling"
 if [ "$command" == 'list' ] && [ ! -z "$2" ]; then
@@ -168,7 +175,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage 'git-repo { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }'
+	printUsage "git-repo ${gold}[help]${yellow} { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }"
 	exit 1
 fi
 
@@ -176,9 +183,14 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'git-repo' "Invalid command: '$command'"
 	echo
-	printUsage 'git-repo { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }'
+	printUsage "git-repo ${gold}[help]${yellow} { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }"
 
 	exit 1
+fi
+
+if [ "$showCommandHelp" == 'true' ]; then
+	showHelp
+	exit 0
 fi
 
 # Display error if not within a Git repository
@@ -189,11 +201,6 @@ if [ $(containsElement "$command" "${repoCommands[@]}") == '0' ] && \
 		printUsage "git-repo $command"
 
 		exit 1
-fi
-
-if [ "$2" == 'help' ]; then
-	showHelp
-	exit 0
 fi
 
 if [ $command == 'config' ]; then

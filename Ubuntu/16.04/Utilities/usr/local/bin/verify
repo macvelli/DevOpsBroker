@@ -62,7 +62,6 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 # Description:  Displays usage information when the filename is missing
 # -----------------------------------------------------------------------------
 function showMissingFilename() {
-	# BEGIN showMissingFilename function
 
 	if [ "$command" == 'sha256' ]; then
 		printUsage "verify sha256 FILE ${gold}[SHA256_HASH]"
@@ -70,13 +69,12 @@ function showMissingFilename() {
 		printUsage "verify sign ${gold}[OPTION] ${yellow}FILE"
 		echo ${bold}
 		echo "Valid Options:${romantic}"
-		echo -e '  -a\t'       'Create an ASCII-format detached signature file'
+		echo -e ${gold}'  -a\t'  ${romantic}'Create an ASCII-format detached signature file'
 		echo ${reset}
 	elif [ "$command" == 'pgp' ]; then
 		printUsage 'verify pgp FILE SIG_FILE'
 	fi
 
-	# END showMissingFilename function
 }
 
 ################################## Variables ##################################
@@ -141,7 +139,7 @@ elif [ "$command" == 'pgp' ]; then
 	if [ "$errorMessage" != '0' ]; then
 		echo "$errorMessage"
 		echo
-		printUsage 'verify pgp FILE SIG_FILE'
+		showMissingFilename
 
 		exit 1
 	fi
@@ -170,7 +168,6 @@ elif [ "$command" == 'sha256' ]; then
 
 		# Compute SHA256 Hash for the given filename
 		$EXEC_SHA256SUM "$fileName"
-
 	else
 		if [ -f "$sha256Hash" ]; then
 
