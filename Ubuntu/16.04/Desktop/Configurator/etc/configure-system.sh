@@ -102,6 +102,7 @@ EXEC_UPDATE_INITRAMFS=/usr/sbin/update-initramfs
 export TMPDIR=${TMPDIR:-'/tmp'}
 echoOnExit=false
 updateInitramfs=false
+vgaDevice=$($EXEC_LSPCI | $EXEC_GREP -F --max-count 1 'VGA')
 
 ################################### Actions ###################################
 
@@ -238,16 +239,20 @@ fi
 # X11 Configuration
 #
 
-if $EXEC_LSPCI | $EXEC_GREP -q 'NVIDIA' && [ ! -f /etc/modprobe.d/nvidia.conf ]; then
+regExpr="\\bNVIDIA\\b"
+if [[ "$vgaDevice" =~ $regExpr ]] && [ ! -f /etc/modprobe.d/nvidia.conf ]; then
 	echo
 	echo "${bold}${yellow}NOTE: ${white}Consider optimizing your NVidia graphics card using the DevOpsBroker /etc/modprobe.d/nvidia.conf file as a guide${reset}"
 	echoOnExit=true
 fi
 
 if [ ! -f /etc/X11/xorg.conf ]; then
-	echo
-	echo "${bold}${yellow}NOTE: ${white}Consider optimizing your X11 configuration using the DevOpsBroker /etc/X11/xorg.conf file as a guide${reset}"
-	echoOnExit=true
+	# Suggest using /etc/X11/xorg-nvidia.conf
+	if [[ "$vgaDevice" =~ $regExpr ]]; then
+		echo
+		echo "${bold}${yellow}NOTE: ${white}Consider optimizing your X11 configuration using the DevOpsBroker /etc/X11/xorg-nvidia.conf file as a guide${reset}"
+		echoOnExit=true
+	fi
 fi
 
 #
