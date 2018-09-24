@@ -122,94 +122,6 @@ if [ ! -d /cache ]; then
 	$EXEC_CHOWN root:users /cache
 fi
 
-if [ -d /mnt/ssd ]; then
-	fstabEntries="$($EXEC_GREP -E '^# Bind mounts|^/mnt/ssd/(cache|opt|snap)' /etc/fstab)"
-
-	addCacheEntry=false
-	addOptEntry=false
-	addSnapEntry=false
-
-	# Create /mnt/ssd/cache directory for user cache
-	if [ ! -d /mnt/ssd/cache ]; then
-		printInfo 'Creating /mnt/ssd/cache directory'
-
-		$EXEC_MKDIR --mode=0755 /mnt/ssd/cache
-		$EXEC_CHOWN root:users /mnt/ssd/cache
-
-		addCacheEntry=true
-	fi
-
-	# Move /opt directory to /mnt/ssd/opt
-	if [ ! -d /mnt/ssd/opt ]; then
-		printInfo 'Creating /mnt/ssd/opt directory'
-
-		$EXEC_MKDIR --mode=0755 /mnt/ssd/opt
-
-		addOptEntry=true
-	fi
-
-	# Move /snap directory to /mnt/ssd/snap
-	if [ ! -d /mnt/ssd/snap ]; then
-		printInfo 'Creating /mnt/ssd/snap directory'
-
-		$EXEC_MKDIR --mode=0755 /mnt/ssd/snap
-
-		addSnapEntry=true
-	fi
-
-	regExpr='^# Bind mounts'
-	if [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		echo '# Bind mounts' >> /etc/fstab
-
-		addCacheEntry=true
-		addOptEntry=true
-		addSnapEntry=true
-	fi
-
-	regExpr='/mnt/ssd/cache'
-	if [ "$addCacheEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		printInfo "Adding /mnt/ssd/cache bind mount to /etc/fstab"
-		echo '/mnt/ssd/cache	/cache	none	bind	0	0' >> /etc/fstab
-
-		printInfo 'Bind mounting /mnt/ssd/cache directory to /cache'
-		$EXEC_MOUNT --bind /mnt/ssd/cache /cache
-	fi
-
-	regExpr='/mnt/ssd/opt'
-	if [ "$addOptEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		printInfo "Adding /mnt/ssd/opt bind mount to /etc/fstab"
-		echo '/mnt/ssd/opt	/opt	none	bind	0	0' >> /etc/fstab
-
-		if [ -z "$($EXEC_LS -A /mnt/ssd/opt)" ]; then
-			printInfo 'Copying /opt directory to /mnt/ssd'
-			$EXEC_CP -a /opt /mnt/ssd
-		fi
-
-		$EXEC_RM -rf /opt/*
-
-		printInfo 'Bind mounting /mnt/ssd/opt directory to /opt'
-		$EXEC_MOUNT --bind /mnt/ssd/opt /opt
-	fi
-
-	regExpr='/mnt/ssd/snap'
-	if [ "$addSnapEntry" == 'true' ] || [[ ! "$fstabEntries" =~ $regExpr ]]; then
-		printInfo "Adding /mnt/ssd/snap bind mount to /etc/fstab"
-		echo '/mnt/ssd/snap	/snap	none	bind	0	0' >> /etc/fstab
-
-		if [ -z "$($EXEC_LS -A /mnt/ssd/snap)" ]; then
-			printInfo 'Copying /snap directory to /mnt/ssd'
-			$EXEC_CP -a /snap /mnt/ssd
-		fi
-
-		$EXEC_RM -rf /snap/*
-
-		printInfo 'Bind mounting /mnt/ssd/snap directory to /snap'
-		$EXEC_MOUNT --bind /mnt/ssd/snap /snap
-	fi
-fi
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Installation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 # Create /opt/devopsbroker/xenial/desktop/configurator directory
 if [ ! -d $INSTALL_DIR ]; then
 	printInfo "Creating $INSTALL_DIR directory"
@@ -217,6 +129,8 @@ if [ ! -d $INSTALL_DIR ]; then
 	$EXEC_MKDIR --mode=2755 $INSTALL_DIR
 	$EXEC_CHOWN -R root:devops /opt/devopsbroker
 fi
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Installation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Copy files into the /opt/devopsbroker/xenial/desktop/configurator directory
 printBanner "Copying files to $INSTALL_DIR/"

@@ -219,6 +219,9 @@ installSystemUtility initcrwnd
 # Install logbroker system administration utility
 installSystemUtility logbroker
 
+# Install movedir system administration utility
+installSystemUtility movedir
+
 # Install pms system administration utility
 installSystemUtility pms
 
