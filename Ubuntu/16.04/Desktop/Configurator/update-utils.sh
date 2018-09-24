@@ -216,6 +216,9 @@ installSystemUtility firewall
 # Install initcrwnd system administration utility
 installSystemUtility initcrwnd
 
+# Install logbroker system administration utility
+installSystemUtility logbroker
+
 # Install pms system administration utility
 installSystemUtility pms
 
