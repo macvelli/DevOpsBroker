@@ -22,9 +22,10 @@
 # Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
 #
 # This configuration script performs the following tasks:
-#   o Installs/Updates /etc/samba/smb.conf
-#   o Disables the NetBIOS service (nmbd)
 #   o Creates /etc/samba/private directory for the passdb.tdb file
+#   o Installs or updates /etc/samba/smbshare.conf
+#   o Installs or updates /etc/samba/smb.conf
+#   o Disables the NetBIOS service (nmbd)
 # -----------------------------------------------------------------------------
 #
 
@@ -68,7 +69,7 @@ smbConfTpl=$(isExecutable "$SCRIPT_DIR"/smb.conf.tpl)
 ################################## Variables ##################################
 
 ## Options
-defaultNic="$1"
+DEFAULT_NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
@@ -97,12 +98,15 @@ if [ ! -d /etc/samba/private ]; then
 	echoOnExit=true
 fi
 
+# Install /etc/samba/smbshare.conf
+installConfig 'smbshare.conf' "$SCRIPT_DIR" /etc/samba
+
 # Install /etc/samba/smb.conf
 if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/samba/smb.conf; then
 	printInfo 'Installing /etc/samba/smb.conf'
 
 	# Execute template script
-	"$smbConfTpl" "$defaultNic" > "$TMPDIR"/smb.conf
+	"$smbConfTpl" "$DEFAULT_NIC" > "$TMPDIR"/smb.conf
 
 	# Install as root:root with rw-r--r-- privileges
 	$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/smb.conf /etc/samba
@@ -119,7 +123,7 @@ elif [ "$smbConfTpl" -nt /etc/samba/smb.conf ]; then
 	printInfo 'Updating /etc/samba/smb.conf'
 
 	# Execute template script
-	"$smbConfTpl" "$defaultNic" > "$TMPDIR"/smb.conf
+	"$smbConfTpl" "$DEFAULT_NIC" > "$TMPDIR"/smb.conf
 
 	# Install as root:root with rw-r--r-- privileges
 	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/smb.conf /etc/samba

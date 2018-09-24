@@ -304,9 +304,6 @@ echo
 # *********************
 #
 
-printInfo 'Drop incoming netbios-ns/netbios-dgm packets'
-$IPTABLES -t raw -A raw-udp-pre -p udp -m multiport --dports 137,138 -j DROP
-
 printInfo 'Drop all DHCP request packets'
 $IPTABLES -t raw -A raw-udp-pre -s 0.0.0.0 -d 255.255.255.255 -p udp -m udp --sport 68 --dport 67 -j DROP
 
@@ -342,11 +339,11 @@ $IPTABLES -t raw -N raw-udp-out
 $IPTABLES -t raw -A OUTPUT -p udp -j raw-udp-out
 
 ## IGMP
-printInfo 'Do not track outgoing IPv4 IGMP packets in the conntrack table'
+printInfo 'NOTRACK outgoing IPv4 IGMP packets'
 $IPTABLES -t raw -A OUTPUT -p igmp -j do_not_track
 
 ## ICMP
-printInfo 'Do not track outgoing IPv4 ICMP packets in the conntrack table'
+printInfo 'NOTRACK outgoing IPv4 ICMP packets'
 $IPTABLES -t raw -A OUTPUT -p icmp -j do_not_track
 
 ## ALL OTHERS
@@ -449,6 +446,18 @@ $IPTABLES -N in_deny
 $IPTABLES -A in_deny -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 INPUT BLOCK] ' --log-level 7
 $IPTABLES -A in_deny -j REJECT --reject-with icmp-port-unreachable
 
+# Rate limit OUTPUT Deny logging
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+$IPTABLES -N out_deny
+$IPTABLES -A out_deny -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 OUTPUT BLOCK] ' --log-level 7
+$IPTABLES -A out_deny -j REJECT --reject-with icmp-port-unreachable
+
+# Rate limit TCP REJECT logging
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+$IPTABLES -N tcp_reject
+$IPTABLES -A tcp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 TCP BLOCK] ' --log-level 7
+$IPTABLES -A tcp_reject -p tcp -j REJECT --reject-with tcp-reset
+
 #
 # ================================
 # = Configure FILTER INPUT Chain =
@@ -491,14 +500,13 @@ $IPTABLES -A filter-tcp-in -p tcp -m tcp --sport 443 -j ACCEPT
 $IPTABLES -A filter-tcp-in -p tcp -m tcp --sport 80 -j ACCEPT
 
 printInfo 'Allow incoming SMB TCP response packets'
-$IPTABLES -A filter-tcp-in -s $IPv4_SUBNET -p tcp -m tcp --sport 445 -j ACCEPT
+$IPTABLES -A filter-tcp-in -p tcp -m tcp --sport 445 -s $IPv4_SUBNET -j ACCEPT
 
 printInfo 'Allow Established TCP Sessions'
 $IPTABLES -A filter-tcp-in -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
 printInfo 'REJECT all other TCP input'
-$IPTABLES -A filter-tcp-in -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 TCP BLOCK] ' --log-level 7
-$IPTABLES -A filter-tcp-in -p tcp -j REJECT --reject-with tcp-reset
+$IPTABLES -A filter-tcp-in -j tcp_reject
 
 echo
 
@@ -528,7 +536,7 @@ $IPTABLES -A filter-udp-in -s $IPv4_SUBNET -p udp -m udp --sport 5353 -j ACCEPT
 printInfo 'Allow incoming NTP UDP packets'
 $IPTABLES -A filter-udp-in -p udp -m udp --sport 123 -j ACCEPT
 
-printInfo "Allow incoming DHCP UDP packets (from $IPv4_DEFAULT_GATEWAY)"
+printInfo "Allow incoming DHCP UDP packets from $IPv4_DEFAULT_GATEWAY"
 $IPTABLES -A filter-udp-in -s $IPv4_DEFAULT_GATEWAY -d $IPv4_SUBNET -p udp -m udp --sport 67 --dport 68 -j ACCEPT
 
 printInfo 'Allow incoming SNMP UDP packets'
@@ -599,6 +607,50 @@ echo
 # =================================
 #
 
+printInfo 'Allow Loopback interface OUTPUT'
+$IPTABLES -A OUTPUT -o lo -j ACCEPT
+
+echo
+
+# Create OUTPUT filter chains for each protocol
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+## TCP
+$IPTABLES -N filter-tcp-out
+$IPTABLES -A OUTPUT -p tcp -j filter-tcp-out
+
+## UDP
+$IPTABLES -N filter-udp-out
+$IPTABLES -A OUTPUT -p udp -j filter-udp-out
+
+## ALL OTHERS
+$IPTABLES -A OUTPUT -j ACCEPT
+
+#
+# ************************
+# * filter-tcp-out Rules *
+# ************************
+#
+
+printInfo "Deny outgoing SMB/NetBIOS TCP request packets not on $IPv4_SUBNET"
+$IPTABLES -A filter-tcp-out -p tcp -m multiport --dports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
+
+printInfo 'ACCEPT all other TCP output'
+$IPTABLES -A filter-tcp-out -j ACCEPT
+
+#
+# ************************
+# * filter-udp-out Rules *
+# ************************
+#
+
+printInfo "Deny outgoing NetBIOS UDP request packets not on $IPv4_SUBNET"
+$IPTABLES -A filter-udp-out -p udp -m multiport --dports 137,138 ! -d $IPv4_SUBNET -j out_deny
+
+printInfo 'ACCEPT all other UDP output'
+$IPTABLES -A filter-udp-out -j ACCEPT
+
+echo
 
 ################################ IPTABLES-SAVE ################################
 

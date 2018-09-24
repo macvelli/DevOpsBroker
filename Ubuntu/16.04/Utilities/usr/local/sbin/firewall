@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# firewall - Administrative tool for managing iptables/ip6tables
+# firewall - DevOpsBroker administrative tool for managing iptables/ip6tables
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -52,6 +52,8 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
+
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -61,7 +63,11 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'list' ]; then
+	if [ "$command" == 'enable' ]; then
+		printUsage 'firewall enable SERVICE_NAME'
+		echo ${romantic}
+		echo 'Enables the indicated service for the firewall'${reset}
+	elif [ "$command" == 'list' ]; then
 		printUsage "firewall list ${gold}[-4|-6] [raw|mangle|nat|filter] [CHAIN_NAME]"
 		echo ${romantic}
 		echo 'List active iptables/ip6tables firewall rules'${reset}
@@ -92,9 +98,6 @@ EXEC_FIRELOG=/usr/local/bin/firelog
 IPTABLES=/sbin/iptables
 IP6TABLES=/sbin/ip6tables
 
-sudoCommands=('list')
-validCommands=(${sudoCommands[@]} 'log')
-
 ## Options
 command="$1"
 ipv4=true
@@ -104,6 +107,8 @@ chain=''
 
 ## Variables
 showCommandHelp=false
+sudoCommands=('enable' 'list')
+validCommands=(${sudoCommands[@]} 'log')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -115,7 +120,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage 'firewall { list | log }'
+	printUsage 'firewall { enable | list | log }'
 	exit 1
 fi
 
@@ -123,7 +128,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'firewall' "Invalid command: '$command'"
 	echo
-	printUsage 'firewall { list | log }'
+	printUsage 'firewall { enable | list | log }'
 
 	exit 1
 fi
@@ -139,31 +144,55 @@ if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$USER" !=
 	exit 1
 fi
 
-# Process command-line options
-while [[ "$2" == -* ]]; do
+if [ "$command" == 'enable' ]; then
 
-	if [ "$2" == '-4' ]; then
-		ipv4=true
-		ipv6=false
-	elif [ "$2" == '-6' ]; then
-		ipv4=false
-		ipv6=true
-	else
-		# Display error and help if option parameter is not valid
-		printError 'firewall' "Invalid option: '$2'"
+	serviceName="$2"
+
+	if [ -z "$serviceName" ]; then
+		printError 'firewall' "Missing SERVICE_NAME parameter"
 		echo
-		showHelp
+		printUsage 'firewall enable SERVICE_NAME'
+
+		exit 1
+	elif [ ! -f "$SCRIPT_DIR/services/$serviceName" ]; then
+		printError 'firewall' "Invalid or unsupported service: '$serviceName'"
+		echo
+		printUsage 'firewall enable SERVICE_NAME'
 
 		exit 1
 	fi
 
-	shift
+else
+	# Process command-line options
+	while [[ "$2" == -* ]]; do
 
-done
+		if [ "$2" == '-4' ]; then
+			ipv4=true
+			ipv6=false
+		elif [ "$2" == '-6' ]; then
+			ipv4=false
+			ipv6=true
+		else
+			# Display error and help if option parameter is not valid
+			printError 'firewall' "Invalid option: '$2'"
+			echo
+			showHelp
+
+			exit 1
+		fi
+
+		shift
+
+	done
+fi
 
 ################################### Actions ###################################
 
-if [ $command == 'list' ]; then
+if [ $command == 'enable' ]; then
+
+	"$SCRIPT_DIR/services/$serviceName" enable
+
+elif [ $command == 'list' ]; then
 	# BEGIN list Command
 
 	# Process table/chain parameters

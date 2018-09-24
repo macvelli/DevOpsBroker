@@ -470,6 +470,9 @@ fi
 # Install samba
 installPackage '/usr/sbin/smbd' 'samba'
 
+# Install smbclient
+installPackage '/usr/bin/smbtree' 'smbclient'
+
 # Install shutter
 #if [ ! -f /usr/bin/shutter ]; then
 #  printBanner 'Installing shutter'
@@ -592,7 +595,7 @@ installPackage '/usr/bin/yad' 'yad'
 #
 
 # Configure /etc/samba/smb.conf with configure-samba.sh script
-"$SCRIPT_DIR"/etc/samba/configure-samba.sh
+"$SCRIPT_DIR"/etc/samba/configure-samba.sh $DEFAULT_NIC
 
 #
 # Systemwide Security Configuration

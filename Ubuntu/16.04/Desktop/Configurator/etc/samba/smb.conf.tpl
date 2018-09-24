@@ -28,6 +28,10 @@
 #   o NetBIOS is disabled
 #   o Samba only listens on port 445
 #
+# Because of this, browsing for Windows Network servers will not work in
+# Nautilus as it uses the SMBv1 protocol to look for other SMB shares on the
+# network.
+#
 # The Samba server can be accessed using:
 #   o The IP address of the server (smb://192.168.1.123/)
 #   o By mDNS convention (smb://hostname.local/)
@@ -69,20 +73,12 @@ fi
 EXEC_IFCONFIG=/sbin/ifconfig
 
 ## Options
-defaultNic=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
+DEFAULT_NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
+
+## Variables
+NIC_SUBNET=$($EXEC_IP -4 addr show dev $DEFAULT_NIC | $EXEC_AWK '/inet /{ print $2 }')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-## Template variables
-
-# ifconfig NIC information
-inetInfoList=($($EXEC_IFCONFIG $defaultNic | $EXEC_GREP -F 'inet addr:'))
-
-# Subnet
-SUBNET=$(echo "${inetInfoList[1]:5}" | $EXEC_SED 's/(.+\.)[0-9]+$/\10/')
-
-# Netmask
-NETMASK=${inetInfoList[3]:5}
 
 ## Template
 /bin/cat << EOF
@@ -103,6 +99,14 @@ NETMASK=${inetInfoList[3]:5}
 #
 # You should have received a copy of the GNU General Public License along with
 # this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Samba shares should be defined in the /etc/samba/smbshare.conf file which is
+# included at the very end of this file.
+#
+# Shares can be added to /etc/samba/smbshare.conf either manually or with the
+# DevOpsBroker smbshare administrative utility.
+# -----------------------------------------------------------------------------
 #
 
 [global]
@@ -139,13 +143,14 @@ NETMASK=${inetInfoList[3]:5}
 	bind interfaces only = yes
 
 # Only allow hosts on this subnet and localhost; deny the rest
-	hosts allow = $SUBNET/$NETMASK 127.0.0.1
+	hosts allow = $NIC_SUBNET 127.0.0.1
 	hosts deny = all
 
 #### Debugging/Accounting ####
 
 # Use a separate log file for each machine that connects
-	logging = syslog@0 /var/log/samba/%m.log@1
+	logging = syslog@0 /var/log/samba/%I-%U.log@3
+	log level = passdb:5 auth:5
 
 # Cap the size of the individual log files (in KiB)
 	max log size = 1000
@@ -234,5 +239,10 @@ NETMASK=${inetInfoList[3]:5}
 
 # This cache allows Samba to batch client writes into a more efficient write size
 	write cache size = 1027840
+
+########### Shares ###########
+
+# Include the /etc/samba/smbshare.conf file which contains the Samba share definitions
+include = /etc/samba/smbshare.conf
 
 EOF
