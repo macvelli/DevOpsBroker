@@ -64,7 +64,11 @@ fi
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'compiz' ]; then
+	if [ "$command" == 'all' ]; then
+		printUsage 'gnome-config all'
+		echo ${romantic}
+		echo 'Executes all gnome-config commands'${reset}
+	elif [ "$command" == 'compiz' ]; then
 		printUsage 'gnome-config compiz'
 		echo ${romantic}
 		echo 'Performs compiz configurations including enabling workspaces'${reset}
@@ -97,7 +101,7 @@ command="$1"
 ## Variables
 echoOnExit=false
 showCommandHelp=false
-validCommands=('compiz' 'gnome' 'nautilus' 'unity')
+validCommands=('all' 'compiz' 'gnome' 'nautilus' 'unity')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -108,7 +112,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "gnome-config ${gold}[help]${yellow} { compiz | gnome | nautilus | unity }"
+	printUsage "gnome-config ${gold}[help]${yellow} { all | compiz | gnome | nautilus | unity }"
 	exit 1
 fi
 
@@ -116,7 +120,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'gnome-config' "Invalid command: $command"
 	echo
-	printUsage "gnome-config ${gold}[help]${yellow} { compiz | gnome | nautilus | unity }"
+	printUsage "gnome-config ${gold}[help]${yellow} { all | compiz | gnome | nautilus | unity }"
 
 	exit 1
 fi
@@ -135,7 +139,7 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE GSettings Configurator" 'true'
 
-if [ "$command" == 'compiz' ]; then
+if [ "$command" == 'compiz' ] || [ "$command" == 'all' ]; then
 
 	#
 	# Enable workspaces
@@ -226,7 +230,9 @@ if [ "$command" == 'compiz' ]; then
 		echoOnExit=true
 	fi
 
-elif [ "$command" == 'gnome' ]; then
+fi
+
+if [ "$command" == 'gnome' ] || [ "$command" == 'all' ]; then
 
 	printBanner 'Gnome Terminal Settings'
 
@@ -281,7 +287,9 @@ elif [ "$command" == 'gnome' ]; then
 		echoOnExit=true
 	fi
 
-elif [ "$command" == 'nautilus' ]; then
+fi
+
+if [ "$command" == 'nautilus' ] || [ "$command" == 'all' ]; then
 
 	# Set 'Show Hidden Files' to 'false' in Nautilus
 	if [ "$($EXEC_DCONF read /org/gtk/settings/file-chooser/show-hidden)" == 'true' ]; then
@@ -291,7 +299,9 @@ elif [ "$command" == 'nautilus' ]; then
 		echoOnExit=true
 	fi
 
-elif [ "$command" == 'unity' ]; then
+fi
+
+if [ "$command" == 'unity' ] || [ "$command" == 'all' ]; then
 
 	#
 	# Show application menus in window title bar
