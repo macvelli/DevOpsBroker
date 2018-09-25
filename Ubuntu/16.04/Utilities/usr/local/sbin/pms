@@ -63,26 +63,66 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 # -----------------------------------------------------------------------------
 function showHelp() {
 	# BEGIN showHelp function
-	printUsage "pms COMMAND ${gold}[OPTION]..."
 
-	echo ${bold}
-	echo "Valid Privileged Commands:${romantic}"
-	echo '  autoremove			Remove packages that were installed to satisfy dependencies and are now no longer needed'
-	echo '  dist-upgrade			Performs an update and may remove some packages in the process'
-	echo '  full-upgrade			Same as dist-upgrade; just different command'
-	echo '  install PACKAGE_NAME...	Install one or more packages for installation or upgrading'
-	echo '  reconfigure PACKAGE_NAME	Reconfigure a package that is already installed'
-	echo '  reinstall PACKAGE_NAME	Reinstall a package that is already installed'
-	echo '  remove PACKAGE_NAME		Remove a package from the system'
-	echo '  uninstall PACKAGE_NAME...	Uninstall one or more packages'
-	echo '  update			Install the newest versions of all packages and snaps currently installed on the system'
-	echo '  upgrade			Same as update; just different command'
-	echo ${white}
-	echo "Valid User Commands:${romantic}"
-	echo '  info		Display information about an APT package or Snap'
-	echo '  list		Lists all installed APT packages and Snaps'
-	echo '  which FILE	Displays which package the given file belongs to'
-	echo ${reset}
+	if [ "$command" == 'autoremove' ]; then
+		printUsage 'pms autoremove'
+		echo ${romantic}
+		echo 'Removes all packages that were automatically installed to satisfy dependencies for other packages and are now no longer needed'${reset}
+	elif [ "$command" == 'full-upgrade' ]; then
+		printUsage 'pms full-upgrade'
+		echo ${romantic}
+		echo 'Performs an upgrade and will remove currently installed packages if this is needed to upgrade the system as a whole'${reset}
+	elif [ "$command" == 'info' ]; then
+		printUsage 'pms info { package-name | snap-name }'
+		echo ${romantic}
+		echo 'Displays information about the given package/snap'${reset}
+	elif [ "$command" == 'install' ]; then
+		printUsage 'pms install { package-name | snap-name | file.deb }'
+		echo ${romantic}
+		echo 'Installs the specified packages/snaps/.deb files'${reset}
+	elif [ "$command" == 'list' ]; then
+		printUsage "pms list ${gold}{ package-name | snap-name | file.deb }"
+		echo
+		echo ${bold}${white}'Valid Options:'${reset}
+		echo -e ${bold}${yellow}'  [none]\t' ${reset}${romantic}'Lists all installed packages and snaps on the system'
+		echo -e ${bold}${yellow}'  package-name\t'  ${reset}${romantic}'Lists all files that are included within the package'
+		echo -e ${bold}${yellow}'  snap-name\t'  ${reset}${romantic}'Lists all files that are included within the snap'
+		echo -e ${bold}${yellow}'  file.deb\t'  ${reset}${romantic}'Lists all files that are packaged within the .deb file'
+		echo ${reset}
+	elif [ "$command" == 'reconfigure' ]; then
+		printUsage 'pms reconfigure package-name'
+		echo ${romantic}
+		echo 'Reconfigures an already installed package'${reset}
+	elif [ "$command" == 'refresh' ]; then
+		printUsage "pms refresh ${gold}snap-name"
+		echo ${romantic}
+		echo 'Refresh a snap in the system'${reset}
+		echo
+		echo ${bold}${white}'Valid Options:'${reset}
+		echo -e ${bold}${yellow}'  [none]\t' ${reset}${romantic}'Refresh all snaps in the system'
+		echo -e ${bold}${yellow}'  snap-name\t'  ${reset}${romantic}'Refresh the specified snap'
+		echo ${reset}
+	elif [ "$command" == 'reinstall' ]; then
+		printUsage 'pms reinstall package-name'
+		echo ${romantic}
+		echo 'Re-install packages that are already installed and at the newest version'${reset}
+	elif [ "$command" == 'remove' ]; then
+		printUsage 'pms remove { package-name | snap-name }'
+		echo ${romantic}
+		echo 'Removes an installed package or snap from the system'${reset}
+	elif [ "$command" == 'uninstall' ]; then
+		printUsage 'pms uninstall package-name'
+		echo ${romantic}
+		echo 'Removes everything related to an installed or already removed package including configuration files'${reset}
+	elif [ "$command" == 'upgrade' ]; then
+		printUsage 'pms upgrade'
+		echo ${romantic}
+		echo 'Installs available upgrades of all packages currently installed on the system'${reset}
+	elif [ "$command" == 'which' ]; then
+		printUsage 'pms which FILE'
+		echo ${romantic}
+		echo 'Displays which package the given file belongs to'${reset}
+	fi
 
 	# END showHelp function
 }
@@ -100,27 +140,40 @@ EXEC_DPKG_RECONFIG=/usr/sbin/dpkg-reconfigure
 EXEC_LSB_RELEASE=/usr/bin/lsb_release
 EXEC_WHICH=/usr/bin/which
 
-sudoCommands=('autoremove' 'dist-upgrade' 'full-upgrade' 'install' 'reconfigure' 'reinstall' 'remove' 'uninstall' 'update' 'upgrade')
-validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
-
 ## Options
 command="$1"
 
+## Variables
+showCommandHelp=false
+sudoCommands=('autoremove' 'full-upgrade' 'install' 'reconfigure' 'refresh' 'reinstall' 'remove' 'uninstall' 'upgrade')
+validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display help if no parameters given
-if [ -z $command ]; then
-	showHelp
+if [ "$command" == 'help' ]; then
+	showCommandHelp=true
+	command="$2"
+	shift
+fi
+
+# Display usage if no parameters given
+if [ -z "$command" ]; then
+	printUsage "pms ${gold}[help]${yellow} { autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
 	exit 1
 fi
 
-# Ensure the first parameter is a valid command
+# Display error if invalid command
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError 'pms' "Invalid command: $command"
+	printError 'pms' "Invalid command: '$command'"
 	echo
-	showHelp
+	printUsage "pms ${gold}[help]${yellow} { autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
 
 	exit 1
+fi
+
+if [ "$showCommandHelp" == 'true' ]; then
+	showHelp
+	exit 0
 fi
 
 # Display error if not running as root
@@ -135,164 +188,190 @@ if [ $command == 'autoremove' ]; then
 
 	$EXEC_APT autoremove
 
-elif [ $command == 'update' ] || [ $command == 'upgrade' ]; then
+elif [ $command == 'upgrade' ] || [ $command == 'full-upgrade' ]; then
+
 	# Update apt packages
 	$EXEC_APT update
 	echo
 	$EXEC_APT list --upgradeable
 	echo
-	$EXEC_APT -y upgrade
+	$EXEC_APT -y $command
 	echo
 
 	# Update the last-update file to today
 	echo $($EXEC_DATE -I) > /etc/devops/last-update
 
-	# Update snap applications
-	$EXEC_SNAP refresh
-
-elif [ $command == 'dist-upgrade' ] || [ $command == 'full-upgrade' ]; then
-	# Update apt packages
-	$EXEC_APT update
-	echo
-	$EXEC_APT list --upgradeable
-	echo
-	$EXEC_APT -y full-upgrade
-	echo
-
-	# Update snap applications
-	$EXEC_SNAP refresh
-
 elif [ $command == 'info' ]; then
+
 	# Display usage if no package/snap name parameter given
 	if [ -z "$2" ]; then
-		printUsage 'pms info package-name|snap-name'
+		printUsage 'pms info { package-name | snap-name }'
 		exit 1
 	fi
 
-	printBanner 'Snap Information'
+	name="$2"
 
-	# List files installed from snap-name
-	echo "${gold}$($EXEC_SNAP info $2 2>&1)"
+	# Check for Snap information first
+	snapInfo="$($EXEC_SNAP info $name 2>/dev/null)"
 
-	printBanner 'Package Information'
+	if [ ! -z "$snapInfo" ]; then
+		printBanner 'Snap Information'
+		echo "${gold}$snapInfo"
+	fi
 
-	# List files installed from package-name
-	pkgInfo=$($EXEC_DPKG_QUERY -l $2 2>&1)
+	# Check for APT package information next
+	aptPackageInfo="$($EXEC_APT show $name 2>/dev/null)"
 
-	echo "${green}$pkgInfo"
+	if [ ! -z "$aptPackageInfo" ]; then
+		dpkgPackageInfo="$($EXEC_DPKG_QUERY -l $name 2>/dev/null)"
 
-	if [[ $pkgInfo == dpkg-query* ]]; then
-		# Show package information from APT
-		echo ${blue}
-		$EXEC_APT show "$2"
-		echo
-	else
-		# Show package information from the APT cache
-		echo ${blue}
-		$EXEC_APT_CACHE show --no-all-versions "$2"
-		echo
+		printBanner 'Package Information'
+
+		if [ ! -z "$dpkgPackageInfo" ];then
+			echo "${green}$dpkgPackageInfo${newline}"
+		fi
+
+		echo "${blue}$aptPackageInfo${newline}"
 	fi
 
 elif [ $command == 'install' ]; then
+
 	# Display usage if no package/snap name parameter given
 	if [ -z "$2" ]; then
-		printUsage 'pms install package-name|snap-name|file.deb'
+		printUsage 'pms install { package-name | snap-name | file.deb }'
 		exit 1
 	fi
 
 	# Gather all package names from the command-line
 	shift
-	pkgNames="$@"
+	debList=()
+	packageList=()
+	snapList=()
 
-	if (( $# > 1 )); then
-		# Assume APT installation if more than one package defined on command-line
-		aptPkgVersion=true
+	for name in "$@"; do
+		if [[ "$name" =~ \.deb$ ]]; then
 
-	elif [[ "$pkgNames" =~ \.deb$ ]]; then
-		# Installing a .deb package file
-		debPkg=true
+			debList+=( "$name" )
 
-	else
-		# 1) Find the APT package to install
-		printInfo "Searching for APT package $pkgNames"
-		aptPkgVersion=$($EXEC_APT_CACHE show "$pkgNames" 2>/dev/null | $EXEC_AWK -F ": " '/Version/{ print $2 }' | $EXEC_HEAD -1)
+		else
+			# Check the Apt cache first for the package
+			mapfile -t pkgInfo < <($EXEC_APT_CACHE policy $name 2>/dev/null)
 
-		# 2) Find the Snap to install
-		printInfo "Searching for Snap $pkgNames"
-		snapPkgVersion=$($EXEC_SNAP find "$pkgNames" 2>/dev/null | $EXEC_AWK '/^'$pkgNames' /{ print $2 }')
+			if [ ! -z "$pkgInfo" ]; then
+				if [[ ! "${pkgInfo[1]}" =~ 'Installed: (none)'$ ]]; then
+					printInfo "Package '$name' already installed"
+					continue
+				else
+					pkgInfo=( ${pkgInfo[2]} )
+				fi
+			fi
 
-		# 3) Take care of neither/both situations
-		if [ -z "$aptPkgVersion" ] && [ -z "$snapPkgVersion" ]; then
-			printError 'pms' "Invalid APT Package/Snap $pkgNames"
-			echo
-			printUsage 'pms install package-name|snap-name'
+			# Check Snap next
+			mapfile -t snapInfo < <($EXEC_SNAP list $name 2>/dev/null)
 
-			exit 1
-		elif [ ! -z "$aptPkgVersion" ] && [ ! -z "$snapPkgVersion" ]; then
-			echo "Which $pkgNames version do you want to install?"
-			select pkgVersion in "$aptPkgVersion (APT Package)" "$snapPkgVersion (Snap)"; do
-				break;
-			done
-			echo
-
-			if [[ "$pkgVersion" == *APT* ]]; then
-				snapPkgVersion=""
+			if [ ! -z "$snapInfo" ]; then
+				printInfo "Snap '$name' already installed"
+				continue
 			else
-				aptPkgVersion=""
+				printInfo "Searching for Snap '$name'"
+				snapInfo=($($EXEC_SNAP find $name 2>/dev/null | $EXEC_GREP -E ^$name\\b))
+			fi
+
+			# Take care of all possible situations
+			if [ -z "$pkgInfo" ] && [ -z "$snapInfo" ]; then
+
+				printError 'pms' "Cannot find '$name': No such package/snap"
+				continue
+
+			elif [ ! -z "$pkgInfo" ] && [ -z "$snapInfo" ]; then
+
+				packageList+=( "$name" )
+
+			elif [ -z "$pkgInfo" ] && [ ! -z "$snapInfo" ]; then
+
+				snapList+=( "$name" )
+
+			elif [ ! -z "$pkgInfo" ] && [ ! -z "$snapInfo" ]; then
+				echo ${bold}
+				echo $name="$2"{purple}"Which $name version do you want to install?"${white}
+				select version in "${pkgInfo[1]} (APT)" "${snapInfo[1]} (Snap)"; do
+					echo
+					if [[ "$version" =~ '(APT)'$ ]]; then
+						packageList+=( "$name" )
+					else
+						snapList+=( "$name" )
+					fi
+					break;
+				done
 			fi
 		fi
-	fi
+	done
 
-	# 4) Install APT Package/Snap
-	printBanner "Installing $pkgNames"
+	# Install .deb packages
+	for $debFile in "${debList[@]}"; do
+		printBanner "Installing $debFile"
+		$EXEC_APT -y install $debFile
+		echo
+	done
 
-	if [ ! -z "$aptPkgVersion" ]; then
-		$EXEC_APT -y install $pkgNames
-	elif [ ! -z "$debPkg" ]; then
-		$EXEC_DPKG -i "$pkgNames"
-#		$EXEC_APT install -f
-	else
-		$EXEC_SNAP install "$pkgNames"
-	fi
+	# Install APT packages
+	for $aptPackage in "${packageList[@]}"; do
+		printBanner "Installing $aptPackage"
+		$EXEC_APT -y install $aptPackage
+		echo
+	done
 
-	echo
+	# Install Snaps
+	for $snap in "${snapList[@]}"; do
+		printBanner "Installing $snap"
+		$EXEC_SNAP install $snap
+		echo
+	done
 
 elif [ $command == 'list' ]; then
-	# BEGIN list command
 
 	# List all installed packages if no package name given
 	if [ -z "$2" ]; then
+
 		printBanner 'Installed APT packages'
 		$EXEC_APT list --installed
 		echo
 		printBanner 'Installed Snaps'
 		$EXEC_SNAP list
 
-	# List the contents of a .deb package file
-	elif [ -f "$2" ] && [[ "$2" == *.deb ]]; then
-		$EXEC_DPKG --contents "$2"
 	else
-		isPkgInstalled=$($EXEC_APT_CACHE policy "$2" | $EXEC_AWK '/Installed/{ print $2 }')
 
-		# Display error if package name does not exist
-		if [ -z "$isPkgInstalled" ]; then
-			printError 'pms' "Cannot find '$2': No such package"
-			echo
-			printUsage 'pms list PACKAGE_NAME'
+		name="$2"
 
-			exit 1
+		if [[ "$name" =~ \.deb$ ]]; then
+			if [ ! -f "$name" ]; then
+				printError 'pms' "Cannot find '$name': No such .deb file"
+				echo
+				printUsage 'pms list file.deb'
 
-		# List files installed from package-name
-		elif [ "$isPkgInstalled" != '(none)' ]; then
-			echo "Installed: $isPkgInstalled${newline}"
+				exit 1
+			fi
 
-			$EXEC_DPKG -L "$2"
+			$EXEC_DPKG --contents "$name"
 
-		# List files from Ubuntu package file list
 		else
-			echo "Installed: $isPkgInstalled${newline}"
+			# Check for an installed snap first
+			if [ -L "/snap/$name/current" ]; then
+				$EXEC_FIND -L "/snap/$name/current" -type f
+			else
+				# Check the Apt cache first for the package
+				mapfile -t pkgInfo < <($EXEC_APT_CACHE policy $name 2>/dev/null)
 
-			$EXEC_CURL -s --no-buffer https://packages.ubuntu.com/$($EXEC_LSB_RELEASE -sc)/amd64/$2/filelist | $EXEC_BETWEEN "<pre>" "</pre>"
+				if [ ! -z "$pkgInfo" ]; then
+					echo "${pkgInfo[1]:2}"
+
+					if [[ ! "${pkgInfo[1]}" =~ 'Installed: (none)'$ ]]; then
+						$EXEC_DPKG -L "$name"
+					else
+						$EXEC_CURL -s --no-buffer https://packages.ubuntu.com/$($EXEC_LSB_RELEASE -sc)/amd64/$name/filelist | $EXEC_BETWEEN "<pre>" "</pre>"
+					fi
+				fi
+			fi
 		fi
 	fi
 
@@ -304,6 +383,19 @@ elif [ $command == 'reconfigure' ]; then
 	fi
 
 	$EXEC_DPKG_RECONFIG "$2"
+
+elif [ $command == 'refresh' ]; then
+
+	# Update all snap applications
+	if [ -z "$2" ]; then
+		$EXEC_SNAP refresh
+	else
+		# Gather all snap names from the command-line
+		shift
+		snapNames="$@"
+
+		$EXEC_SNAP refresh "$snapNames"
+	fi
 
 elif [ $command == 'reinstall' ]; then
 
@@ -317,11 +409,25 @@ elif [ $command == 'reinstall' ]; then
 elif [ $command == 'remove' ]; then
 
 	if [ -z "$2" ]; then
-		printUsage 'pms remove package-name'
+		printUsage 'pms remove { package-name | snap-name }'
 		exit 1
 	fi
 
-	$EXEC_DPKG -r "$2"
+	name="$2"
+
+	# Check to see if the package is installed
+	dpkgPackageInfo="$($EXEC_DPKG_QUERY -l $name 2>/dev/null)"
+
+	if [ ! -z "$dpkgPackageInfo" ]; then
+		$EXEC_DPKG --remove "$name"
+	else
+		snapInfo="$($EXEC_SNAP list $name 2>/dev/null)"
+
+		# Check for an installed Snap
+		if [ ! -z "$snapInfo" ]; then
+			$EXEC_SNAP remove "$name"
+		fi
+	fi
 
 elif [ $command == 'uninstall' ]; then
 
@@ -332,11 +438,11 @@ elif [ $command == 'uninstall' ]; then
 
 	# Gather all package names from the command-line
 	shift
-	pkgNames="$@"
+	packageNames="$@"
 
-	# Uninstall APT Package
-	printBanner "Uninstalling $pkgNames"
-	$EXEC_APT -y purge $pkgNames
+	# Uninstall packages
+	printBanner "Uninstalling $packageNames"
+	$EXEC_APT -y purge $packageNames
 
 elif [ $command == 'which' ]; then
 
@@ -350,7 +456,7 @@ elif [ $command == 'which' ]; then
 
 	# Attempt to find filename
 	if [ ! -f "$filename" ]; then
-		filename=$($EXEC_WHICH "$2")
+		filename=$($EXEC_WHICH "$filename")
 	fi
 
 	# Display error if file does not exist
