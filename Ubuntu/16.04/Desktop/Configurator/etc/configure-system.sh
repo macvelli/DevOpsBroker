@@ -42,6 +42,7 @@
 # o /etc/ssl/req.conf
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
+# o /etc/vim/vimrc.local
 #
 # Other configuration tasks include:
 # o Disable root login
@@ -202,6 +203,9 @@ if [ ! -f /etc/sudoers.d/20-env_keep ] || \
 	$EXEC_INSTALL -o root -g root -m 440 "$SCRIPT_DIR"/sudoers.d/20-env_keep /etc/sudoers.d
 	echoOnExit=true
 fi
+
+# Install /etc/vim/vimrc.local
+installConfig 'vimrc.local' "$SCRIPT_DIR"/vim /etc/vim
 
 #
 # UMASK Configuration

@@ -522,6 +522,12 @@ fi
 # Install unbound
 installPackage '/usr/sbin/unbound' 'unbound'
 
+# Uninstall vim-tiny
+uninstallPackage '/usr/bin/vim.tiny' 'vim-tiny'
+
+# Install vim
+installPackage '/usr/bin/vim.basic' 'vim'
+
 # Install vlc
 installSnap '/snap/vlc' 'vlc'
 
