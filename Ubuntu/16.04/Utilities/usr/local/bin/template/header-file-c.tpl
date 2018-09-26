@@ -56,18 +56,17 @@ headerFileName="$1"
 
 # Display usage if no header file name parameter specified
 if [ -z "$headerFileName" ]; then
-  printUsage "header-file-c.tpl file.h ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
-
-  exit 1
+	printUsage "header-file-c.tpl file.h ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	exit 1
 fi
 
 # Display error and usage if invalid header file name specified
 if [[ "$headerFileName" != *.h ]]; then
-  printError "header-file-c.tpl" "Invalid C header file name: '$headerFileName'"
-  echo
-  printUsage "header-file-c.tpl file.h ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	printError "header-file-c.tpl" "Invalid C header file name: '$headerFileName'"
+	echo
+	printUsage "header-file-c.tpl file.h ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
 
-  exit 1
+	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,10 +121,10 @@ includeGuard=${includeGuard/./_}
 // ════════════════════════════════ Structures ════════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
-
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
+
+
+// ═══════════════════════════ Function Declarations ══════════════════════════
 
 
 #endif /* $includeGuard */

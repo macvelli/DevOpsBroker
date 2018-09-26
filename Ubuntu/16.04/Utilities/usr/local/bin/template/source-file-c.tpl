@@ -56,18 +56,17 @@ sourceFileName="$1"
 
 # Display usage if no source file name parameter specified
 if [ -z "$sourceFileName" ]; then
-  printUsage "source-file-c.tpl file.c ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
-
-  exit 1
+	printUsage "source-file-c.tpl file.c ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	exit 1
 fi
 
 # Display error and usage if invalid source file name specified
 if [[ "$sourceFileName" != *.c ]]; then
-  printError "source-file-c.tpl" "Invalid C source file name: '$sourceFileName'"
-  echo
-  printUsage "source-file-c.tpl file.c ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	printError "source-file-c.tpl" "Invalid C source file name: '$sourceFileName'"
+	echo
+	printUsage "source-file-c.tpl file.c ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
 
-  exit 1
+	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,22 +122,22 @@ headerFileName=${sourceFileName/.c/.h}
 // ════════════════════════════════ Structures ════════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
-
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
+
+
+// ═══════════════════════════ Function Declarations ══════════════════════════
 
 
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
 
-  for (int i=0; i < argc; i++) {
-    printf("%s\n", argv[i]);
-  }
+	for (int i=0; i < argc; i++) {
+		printf("%s\n", argv[i]);
+	}
 
-  // Exit with success
-  exit(EXIT_SUCCESS);
+	// Exit with success
+	exit(EXIT_SUCCESS);
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════

@@ -251,7 +251,19 @@ elif [ $command == 'install' ]; then
 	for name in "$@"; do
 		if [[ "$name" =~ \.deb$ ]]; then
 
-			debList+=( "$name" )
+			fileName="$name"
+
+			# Assume the .deb file is in the current directory
+			if [[ ! "$fileName" =~ / ]]; then
+				fileName="${PWD}/${fileName}"
+
+				if [ ! -f "$fileName" ]; then
+					printError 'pms' "Cannot find '$name': No such file"
+					continue
+				fi
+			fi
+
+			debList+=( "$fileName" )
 
 		else
 			# Check the Apt cache first for the package
@@ -308,21 +320,21 @@ elif [ $command == 'install' ]; then
 	done
 
 	# Install .deb packages
-	for $debFile in "${debList[@]}"; do
+	for debFile in "${debList[@]}"; do
 		printBanner "Installing $debFile"
 		$EXEC_APT -y install $debFile
 		echo
 	done
 
 	# Install APT packages
-	for $aptPackage in "${packageList[@]}"; do
+	for aptPackage in "${packageList[@]}"; do
 		printBanner "Installing $aptPackage"
 		$EXEC_APT -y install $aptPackage
 		echo
 	done
 
 	# Install Snaps
-	for $snap in "${snapList[@]}"; do
+	for snap in "${snapList[@]}"; do
 		printBanner "Installing $snap"
 		$EXEC_SNAP install $snap
 		echo

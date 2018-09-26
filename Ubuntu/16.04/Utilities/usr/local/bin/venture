@@ -357,7 +357,7 @@ elif [ "$command" == "new" ]; then
 
 		# Execute template script and make Bash script executable
 		"$bashScriptTpl" "$fileName" > "$baseDir/$fileName"
-		$EXEC_CHMOD u+x "$baseDir/$fileName"
+		$EXEC_CHMOD u+x,g+x "$baseDir/$fileName"
 
 		echoOnExit=true
 
@@ -371,7 +371,7 @@ elif [ "$command" == "new" ]; then
 		# Execute template script
 		"$bashTemplateTpl" "$fileName" > "$baseDir/$fileName"
 
-		$EXEC_CHMOD u+x "$baseDir/$fileName"
+		$EXEC_CHMOD u+x,g+x "$baseDir/$fileName"
 
 		echoOnExit=true
 	fi
