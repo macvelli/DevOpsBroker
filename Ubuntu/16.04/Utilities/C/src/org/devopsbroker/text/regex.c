@@ -1,5 +1,5 @@
 /*
- * scriptinfo.c - DevOpsBroker C source file for providing Bash script information
+ * regex.c - DevOpsBroker C source file for providing regular expression functionality
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -17,9 +17,8 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-29
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
  *
- * Emits values for the SCRIPT_DIR and SCRIPT_EXEC Bash variables.
  * -----------------------------------------------------------------------------
  */
 
@@ -29,23 +28,12 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include <sys/stat.h>
-#include <limits.h>
-#include <unistd.h>
-
-#include "org/devopsbroker/io/file.h"
-#include "org/devopsbroker/lang/error.h"
+#include "regex.h"
+#include "../lang/error.h"
+#include "../lang/stringbuilder.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-// Global Constants
-#define ALL_VARS 0
-#define SCRIPT_DIR 1
-#define SCRIPT_EXEC 2
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -55,97 +43,34 @@
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static char *setScriptDir(char *pathName);
-static void setScriptExec(char *pathName);
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
-char *realPathName = NULL;
-char *scriptDir = NULL;
-char *scriptExec = NULL;
-
-// ══════════════════════════════════ main() ══════════════════════════════════
-
-int main(int argc, char *argv[]) {
-
-	programName = "scriptinfo";
-
-	if (argc == 1) {
-		c7c88e52_printUsage("scriptinfo SCRIPT_NAME");
-		exit(EXIT_FAILURE);
-	}
-
-	if (argv[1][0] == '\0') {
-		c7c88e52_printError_string("SCRIPT_NAME parameter is missing\n\n");
-		c7c88e52_printUsage("scriptinfo SCRIPT_NAME");
-		exit(EXIT_FAILURE);
-	}
-
-	char *pathName = argv[1];
-
-	// Stat the script
-	FileStatus fileStatus;
-	e2f74138_getLinkStatus(pathName, &fileStatus);
-
-	// Handle symbolic links
-	if (S_ISLNK(fileStatus.st_mode)) {
-		realPathName = e2f74138_readlink(pathName, fileStatus.st_size);
-
-		setScriptDir(realPathName);
-		setScriptExec(pathName);
-
-	// Handle regular files
-	} else if (S_ISREG(fileStatus.st_mode)) {
-		realPathName = e2f74138_realpath(pathName);
-
-		scriptExec = setScriptDir(realPathName);
-	}
-
-	// Cannot set environment variables in parent shell from binary executable
-	printf("%s %s\n", scriptDir, scriptExec);
-
-	if (realPathName != NULL) {
-		free(realPathName);
-	}
-
-	// Exit with success
-	exit(EXIT_SUCCESS);
-}
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-static char *setScriptDir(char *pathName) {
-	char *scriptName = NULL;
-	scriptDir = pathName;
+void b395ed5f_compileRegExpr(regex_t *patternBuf, const char *regExpr, const int flags) {
+	const int errorCode = regcomp(patternBuf, regExpr, flags | REG_NOSUB);
 
-	while (*pathName) {
-		if (*pathName == '/') {
-			scriptName = pathName;
+	if (errorCode) {
+		size_t errorMsgSize = regerror(errorCode, patternBuf, NULL, 0);
+
+		if (errorMsgSize) {
+			char errorMessage[errorMsgSize];
+			regerror(errorCode, patternBuf, errorMessage, errorMsgSize);
+
+			c7c88e52_printError_string(errorMessage);
+		} else {
+			StringBuilder *errorMessage = c598a24c_createStringBuilder();
+
+			c598a24c_append_string(errorMessage, "Could not compile regex '");
+			c598a24c_append_string(errorMessage, regExpr);
+			c598a24c_append_char(errorMessage, '\'');
+
+			c7c88e52_printError_string(errorMessage->buffer);
+			c598a24c_destroyStringBuilder(errorMessage);
 		}
 
-		pathName++;
-	}
-
-	if (scriptName != NULL) {
-		(*scriptName) = '\0';
-		scriptName++;
-	}
-
-	return scriptName;
-}
-
-static void setScriptExec(char *pathName) {
-	scriptExec = pathName;
-
-	while (*pathName) {
-		if (*pathName == '/') {
-			scriptExec = pathName;
-		}
-
-		pathName++;
-	}
-
-	if ((*scriptExec) == '/') {
-		scriptExec++;
+		exit(EXIT_FAILURE);
 	}
 }

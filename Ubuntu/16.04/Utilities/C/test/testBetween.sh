@@ -66,7 +66,7 @@ function negativeTest() {
 	local exitCode=0
 
 	# 1. Run the test
-	$EXEC_BETWEEN $1 $2 $3 1>/dev/null
+	$EXEC_BETWEEN $1 $2 $3 1>/dev/null 2>/dev/null
 	exitCode=$?
 
 	# 2. Check exit code for success/failure
@@ -89,12 +89,13 @@ function negativeTest() {
 # -----------------------------------------------------------------------------
 function positiveTest() {
 	local exitCode=0
+	diffOutput=''
 
-	# 1. Run the test and save output to $DATA_DIR/$3.out
+	# 1. Run the test and save output to $TMPDIR/$3.out
 	if [ ! -z "$1" ] && [ ! -z "$2" ] && [ -z "$3" ]; then
 		$EXEC_CAT "$DATA_DIR/pre-div-test.expect" | $EXEC_BETWEEN $1 $2
 	else
-		$EXEC_BETWEEN "$1" "$2" "$unicode" > "$DATA_DIR/$3.out"
+		$EXEC_BETWEEN "$1" "$2" "$unicode" > "$TMPDIR/$3.out"
 	fi
 	exitCode=$?
 
@@ -108,12 +109,12 @@ function positiveTest() {
 	fi
 
 	# 3. Compare expected and actual outputs
-	$EXEC_DIFF "$DATA_DIR/$3" "$DATA_DIR/$3.out"
+	diffOutput="$($EXEC_DIFF "$DATA_DIR/$3" "$TMPDIR/$3.out")"
 	exitCode=$?
 
 	if [ $exitCode -eq 0 ]; then
 		# Clean up successful output file
-		rm -f $DATA_DIR/$3.out
+		rm -f "$TMPDIR/$3.out"
 		echo $pass
 		return 0;
 	else
@@ -128,6 +129,10 @@ function positiveTest() {
 EXEC_BETWEEN="$EXEC_DIR/between"
 EXEC_DIFF='/usr/bin/diff -ad'
 
+## Variables
+export TMPDIR=${TMPDIR:-'/tmp'}
+diffOutput=''
+
 # Data input file
 unicode="$DATA_DIR/unicode.html"
 
@@ -138,7 +143,7 @@ fail="${bold}${red}fail${reset}"
 ################################### Testing ###################################
 
 # Clean any lingering .out files
-$EXEC_RM -f "$DATA_DIR/*.out"
+$EXEC_RM -f "$TMPDIR/*.out"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Positive Testing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -147,11 +152,23 @@ printBanner 'Positive Testing'
 # between "<pre>" "</pre>" unicode.html
 echo -e 'between "<pre>" "</pre>" unicode.html\t\t'        "[$(positiveTest '<pre>' '</pre>' 'pre-test.expect')]"
 
+if [ ! -z "$diffOutput" ]; then
+	echo "$diffOutput"
+fi
+
 # between "<title>" "</title>" unicode.html
 echo -e 'between "<title>" "</title>" unicode.html\t'      "[$(positiveTest '<title>' '</title>' 'title-test.expect')]"
 
+if [ ! -z "$diffOutput" ]; then
+	echo "$diffOutput"
+fi
+
 # between "</pre>" "</div>" unicode.html
 echo -e 'between "</pre>" "</div>" unicode.html\t\t'       "[$(positiveTest '</pre>' '</div>' 'pre-div-test.expect')]"
+
+if [ ! -z "$diffOutput" ]; then
+	echo "$diffOutput"
+fi
 
 # between foo bar
 echo -e 'between foo bar\t\t\t\t\t'                        "[$(positiveTest foo bar)]"
@@ -163,7 +180,6 @@ echo
 printBanner 'Negative Testing'
 
 ## Argument Testing
-printInfo 'Argument Testing'
 echo -e 'between\t\t\t\t\t\t'              "[$(negativeTest)]"
 echo -e 'between foo\t\t\t\t\t'            "[$(negativeTest foo)]"
 echo -e 'between foo bar baz\t\t\t\t'      "[$(negativeTest foo bar baz)]"

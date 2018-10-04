@@ -1,7 +1,5 @@
 /*
- * between.c - DevOpsBroker utility for extracting the string in between the
- *	       START and END parameters. Can either read from stdin or a file
- *	       specified on the command-line.
+ * between.c - DevOpsBroker utility for extracting the string in between the START and END parameters
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -21,180 +19,144 @@
  * -----------------------------------------------------------------------------
  * Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
  *
+ * Can either read from stdin or a file specified on the command-line.
  * -----------------------------------------------------------------------------
  */
 
-#include <stdio.h>
+ // ════════════════════════════ Feature Test Macros ═══════════════════════════
+
+ #define _DEFAULT_SOURCE
+
+ // ═════════════════════════════════ Includes ═════════════════════════════════
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "ansi.h"
+#include "org/devopsbroker/io/file.h"
+#include "org/devopsbroker/lang/error.h"
+#include "org/devopsbroker/lang/string.h"
+#include "org/devopsbroker/lang/stringbuilder.h"
+#include "org/devopsbroker/terminal/ansi.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-// Default buffer size
-#define DEFAULT_BUFFER_SIZE 1024
-
-// Default line length
-#define DEFAULT_LINE_LENGTH 512
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ════════════════════════════════ Structures ════════════════════════════════
-
-
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-void append(char *line, ssize_t len);
+// Remove trailing newline and carriage return
+static inline void removeNewline(char *endPtr) {
+	do {
+		*endPtr = '\0';
+		endPtr--;
+	} while (*endPtr == '\n' || *endPtr == '\r');
+}
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
-// Buffer string variables
-int bufSize = DEFAULT_BUFFER_SIZE;
-int bufLen = 0;
+char *pathName = NULL;
+char *startPtr = NULL;
+char *endPtr = NULL;
 
-char *buffer = NULL;
-char *startSubstr = NULL;
-char *endSubstr = NULL;
+StringBuilder *textBlock = NULL;
 
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
-  if (argc == 1) {
-    printUsage("between START END [input-file]");
-    exit(EXIT_FAILURE);
-  }
 
-  if (argv[1][0] == '\0') {
-    printError("between", "START parameter is missing\n\n");
-    printUsage("between START END [input-file]");
-    exit(EXIT_FAILURE);
-  }
+	programName = "between";
 
-  if (argc == 2 || argv[2][0] == '\0') {
-    printError("between", "END parameter is missing\n\n");
-    printf(BOLD "Usage: " YELLOW "between %s END [input-file]" RESET "\n", argv[1]);
-    exit(EXIT_FAILURE);
-  }
-
-  // Start parameter
-  const char *start = argv[1];
-  const size_t startLen = strlen(start);
-
-  // End parameter
-  const char *end = argv[2];
-
-  // File-related variables
-  FILE *fp = NULL;
-  char *line = NULL;
-  size_t lineLen = DEFAULT_LINE_LENGTH;
-  ssize_t read;
-
-  if (argc > 3) {
-    fp = fopen(argv[3], "r");
-
-    if (fp == NULL) {
-      printf(BOLD "between: " RED "Cannot open '%s': No such file" RESET "\n", argv[3]);
-      exit(EXIT_FAILURE);
-    }
-  } else {
-    fp = stdin;
-  }
-
-  line = malloc( sizeof(char) * ( DEFAULT_LINE_LENGTH ) );
-  buffer = malloc( sizeof(char) * ( DEFAULT_BUFFER_SIZE ) );
-
-  while ((read = getline(&line, &lineLen, fp)) != -1) {
-
-    // We have not yet found the start of the substring
-    if (startSubstr == NULL) {
-      startSubstr = strstr(line, start);
-
-      if (startSubstr != NULL) {
-	startSubstr += startLen;
-
-	endSubstr = strstr(startSubstr, end);
-
-	// Print substring and break from while loop for exit
-	if (endSubstr != NULL) {
-	  if (startSubstr != endSubstr) {
-	    *(endSubstr) = '\0';
-	    printf("%s\n", startSubstr);
-	  }
-
-	  break;
+	if (argc == 1) {
+		c7c88e52_printUsage("between START END " AQUA "[input-file]");
+		exit(EXIT_FAILURE);
 	}
 
-	// Append start of substring
-	append(startSubstr, read - (startSubstr - line));
-      }
-
-    // We now need to find the end of the substring
-    } else {
-      endSubstr = strstr(line, end);
-
-      if (endSubstr == NULL) {
-	// Append entire line
-	append(line, read);
-
-      } else {
-	if (endSubstr != line) {
-	  // Append end of substring
-	  *(endSubstr) = '\0';
-	  append(line, read - (endSubstr - line));
+	if (argv[1][0] == '\0') {
+		c7c88e52_printError_string("START parameter is missing\n\n");
+		c7c88e52_printUsage("between START END " AQUA "[input-file]");
+		exit(EXIT_FAILURE);
 	}
 
-	// Remove trailing newline and carriage return
-	char *ptr = buffer + bufLen - 1;
-	while (*(ptr) == '\n' || *(ptr) == '\r') {
-	  *(ptr--) = '\0';
+	if (argc == 2 || argv[2][0] == '\0') {
+		c7c88e52_printError_string("END parameter is missing\n\n");
+		char *usageMessage = f6215943_concatenate("between ", argv[1], " END " AQUA "[input-file]", NULL);
+		c7c88e52_printUsage(usageMessage);
+		free(usageMessage);
+		exit(EXIT_FAILURE);
 	}
 
-	// Print substring and break from while loop for exit
-	printf("%s\n", buffer);
+	// File-related variables
+	int fileDescriptor;
+	ssize_t numBytes;
 
-	break;
-      }
-    }
-  }
+	if (argc > 3) {
+		pathName = argv[3];
+		fileDescriptor = e2f74138_openFile(pathName, O_RDONLY);
+	} else {
+		pathName = "STDIN";
+		fileDescriptor = STDIN_FILENO;
+	}
 
-  // Close the file (if not stdin)
-  if (fp != NULL && fp != stdin) {
-    fclose(fp);
-  }
+	char buffer[PHYSICAL_BLOCK_SIZE];
 
-  // Free the line buffer
-  if (line) {
-    free(line);
-  }
+	numBytes = e2f74138_readFile(fileDescriptor, buffer, PHYSICAL_BLOCK_SIZE, pathName);
+	while (numBytes != END_OF_FILE) {
+		// We have not yet found the start of the substring
+		if (startPtr == NULL) {
+			startPtr = f6215943_search(argv[1], buffer);
 
-  // Free the string buffer
-  if (buffer) {
-    free(buffer);
-  }
+			if (startPtr != NULL) {
+				endPtr = strstr(startPtr, argv[2]);
 
-  // Exit with success
-  exit(EXIT_SUCCESS);
+				if (endPtr != NULL) {
+					removeNewline(endPtr);
+					if (startPtr != endPtr) {
+						printf("%s\n", startPtr);
+					}
+					break;
+				} else {
+					// Copy text into StringBuilder from startPtr to end of buffer
+					numBytes -= (startPtr - buffer);
+					textBlock = c598a24c_createStringBuilder_uint32(numBytes << 1);
+					c598a24c_append_string_uint32(textBlock, startPtr, numBytes);
+				}
+			}
+
+		// Looking for the end of the substring
+		} else {
+			endPtr = strstr(buffer, argv[2]);
+
+			if (endPtr != NULL) {
+				removeNewline(endPtr);
+
+				// Copy text into StringBuilder from start of buffer to endPtr
+				numBytes -= (endPtr - buffer);
+				c598a24c_append_string_uint32(textBlock, buffer, numBytes);
+				printf("%s\n", textBlock->buffer);
+				break;
+			} else {
+				// Copy all text into StringBuilder from buffer
+				c598a24c_append_string_uint32(textBlock, buffer, numBytes);
+			}
+		}
+
+		numBytes = e2f74138_readFile(fileDescriptor, buffer, PHYSICAL_BLOCK_SIZE, pathName);
+	}
+
+	// Close the file if not STDIN
+	if (fileDescriptor != STDIN_FILENO) {
+		e2f74138_closeFile(fileDescriptor, pathName);
+	}
+
+	// Clean up StringBuilder if allocated
+	if (textBlock != NULL) {
+		c598a24c_destroyStringBuilder(textBlock);
+	}
+
+	// Exit with success
+	exit(EXIT_SUCCESS);
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-
-void append(char *line, ssize_t len) {
-  const ssize_t newLen = bufLen + len;
-
-  if (newLen >= bufSize) {
-    bufSize = newLen << 1;
-
-    buffer = realloc(buffer, bufSize);
-  }
-
-  char *ptr = buffer + bufLen;
-
-  while ( (len--) > 0 ) {
-    *(ptr++) = *(line++);
-  }
-
-  bufLen = newLen;
-  ptr = '\0';
-}

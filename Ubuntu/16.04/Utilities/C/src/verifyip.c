@@ -1,6 +1,5 @@
 /*
- * verifyip.c - DevOpsBroker utility for validating the input parameter is
- *		either a valid IPv4 or IPv6 address
+ * verifyip.c - DevOpsBroker utility for validating IPv4 or IPv6 addresses
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -40,7 +39,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "ansi.h"
+#include "org/devopsbroker/lang/error.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -48,14 +47,11 @@
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ════════════════════════════════ Structures ════════════════════════════════
-
-
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-int detectIPType(char *ip);
-void verifyIPv4(char *ip);
-void verifyIPv6(char *ip);
+static int detectIPType(const char *ipAddress);
+static void verifyIPv4(const char *ipAddress);
+static void verifyIPv6(const char *ipAddress);
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -63,186 +59,209 @@ void verifyIPv6(char *ip);
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    printUsage("verifyip IP_ADDR");
-    exit(EXIT_FAILURE);
-  }
+	if (argc < 2) {
+		c7c88e52_printUsage("verifyip IP_ADDR");
+		exit(EXIT_FAILURE);
+	}
 
-  // IP Address parameter
-  char *ip = argv[1];
-  int ipType = detectIPType(ip);
+	// IP Address parameter
+	char *ip = argv[1];
+	int ipType = detectIPType(ip);
 
-  if (ipType == 4) {
-    verifyIPv4(ip);
-  } else if (ipType == 6) {
-    verifyIPv6(ip);
-  } else {
-    // Could not detect IP Address Type
-    exit(EXIT_FAILURE);
-  }
+	if (ipType == 4) {
+		verifyIPv4(ip);
+	} else if (ipType == 6) {
+		verifyIPv6(ip);
+	} else {
+		exit(EXIT_FAILURE);
+	}
 
-  // Exit with success
-  exit(EXIT_SUCCESS);
+	// Exit with success
+	exit(EXIT_SUCCESS);
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-int detectIPType(char *ip) {
-  if (*(ip) == ':') {
-    // IPv6 Address Type
-    return 6;
-  }
+static int detectIPType(register const char *ipAddress) {
+	register char ch = *ipAddress;
 
-  char ch;
-  for (char *ptr = ip; *(ptr) != '\0'; ptr++) {
-    ch = *(ptr);
+	while (ch) {
+		// IPv4 Address Type
+		if (ch == '.') {
+			return 4;
+		}
 
-    if (ch == '.') {
-      // IPv4 Address Type
-      return 4;
-    }
+		// IPv6 Address Type
+		if ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || ch == ':') {
+			return 6;
+		}
 
-    if ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || ch == ':') {
-      // IPv6 Address Type
-      return 6;
-    }
-  }
+		ch = (*++ipAddress);
+	}
 
-  // Could not detect IP Address Type
-  return 0;
+	// Could not detect IP Address Type
+	exit(EXIT_FAILURE);
 }
 
-void verifyIPv4(char *ip) {
-  int count = 0;
-  int groups = 1;
-  int octet = 0;
-  char ch;
+static void verifyIPv4(register const char *ipAddress) {
+	register char ch = *ipAddress;
+	register int octet = 0;
+	register int count = 0;
+	register int groups = 1;
 
-  for (char *ptr = ip; *(ptr) != '\0'; ptr++) {
-    ch = *(ptr);
+	while (ch) {
+		if (ch >= '0' && ch <= '9') {
+			octet *= 10;
+			octet += (ch - '0');
 
-    if (ch >= '0' && ch <= '9') {
-      count++;
-      octet = (octet * 10) + (ch - '0');
+			// Invalid IP Address format
+			if (octet > 255 || ++count > 3) {
+				exit(EXIT_FAILURE);
+			}
+		} else if (ch == '.') {
+			// Invalid IP Address format
+			if (count == 0 || ++groups > 4) {
+				exit(EXIT_FAILURE);
+			}
 
-    } else if (ch == '.') {
-      if (count == 0 || octet > 255) {
+			count = 0;
+			octet = 0;
+		} else {
+			// Invalid character detected in IP Address
+			exit(EXIT_FAILURE);
+		}
+
+		ch = (*++ipAddress);
+	}
+
 	// Invalid IP Address format
-	exit(EXIT_FAILURE);
-      }
-
-      groups++;
-      count = 0;
-      octet = 0;
-    } else {
-      // Invalid character detected in IP Address
-      exit(EXIT_FAILURE);
-    }
-
-    if (count > 3 || groups > 4) {
-      // Invalid IP Address format
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (groups != 4 || count == 0 || octet > 255) {
-    // Invalid IP Address format
-    exit(EXIT_FAILURE);
-  }
-
+	if (groups != 4 || count == 0) {
+		exit(EXIT_FAILURE);
+	}
 }
 
-void verifyIPv6(char *ip) {
-  char *ptr = ip;
-  int count = 0;
-  int groups = 1;
-  bool emptyGroup = false;
-  char ch = *(ptr);
+static void verifyIPv6(register const char *ipAddress) {
+	register char ch = *ipAddress;
+	register int count = 0;
+	register int groups = 1;
+	bool hasEmptyGroup = false;
 
-  // Verify IPv6 Address that starts with a colon
-  if (ch == ':') {
-    if (*(++ptr) != ':') {
-      // Invalid IP Address format
-      exit(EXIT_FAILURE);
-    }
+	// Verify IPv6 Address that starts with a colon
+	if (ch == ':') {
+		// Invalid IP Address format
+		if (*(++ipAddress) != ':') {
+			exit(EXIT_FAILURE);
+		}
 
-    if (*(++ptr) == ':') {
-      // Invalid IP Address format
-      exit(EXIT_FAILURE);
-    } else if (*(ptr) == '\0') {
-      // Valid IPv6 Address format
-      return;
-    }
+		ch = *(++ipAddress);
+		// Invalid IP Address format
+		if (ch == ':') {
+			exit(EXIT_FAILURE);
+		}
 
-    emptyGroup = true;
-    groups++;
+		// Valid IPv6 Address format
+		if (ch == '\0') {
+			return;
+		}
 
-    // Check for the special IPv4-mapped notation
-    while (*(ptr) == 'f' || *(ptr) == 'F') {
-      count++;
-      ptr++;
+		hasEmptyGroup = true;
+		groups++;
 
-      if (count > 4) {
+		// Check for the special IPv4-mapped notation
+		if (ch == 'f' || ch == 'F') {
+			do {
+				// Invalid IP Address format
+				if (++count > 4) {
+					exit(EXIT_FAILURE);
+				}
+
+				ch = *(++ipAddress);
+			} while (ch == 'f' || ch == 'F');
+
+			if (count == 4) {
+				// Invalid IP Address format
+				if (ch != ':') {
+					exit(EXIT_FAILURE);
+				}
+
+				ch = *(++ipAddress);
+				// Invalid IP Address format
+				if (ch == ':') {
+					exit(EXIT_FAILURE);
+				}
+
+				int ipType = detectIPType(ipAddress);
+				if (ipType == 4) {
+					verifyIPv4(ipAddress);
+					return;
+				}
+			} else {
+				while (ch != ':') {
+					if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
+						// Invalid IP Address format
+						if (++count > 4) {
+							exit(EXIT_FAILURE);
+						}
+
+						ch = *(++ipAddress);
+					} else {
+						// Invalid IP Address format
+						exit(EXIT_FAILURE);
+					}
+				}
+
+				ch = *(++ipAddress);
+				// Invalid IP Address format
+				if (ch == ':') {
+					exit(EXIT_FAILURE);
+				}
+			}
+
+			groups++;
+			count = 0;
+		}
+	}
+
+	do {
+		if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
+			// Invalid IP Address format
+			if (++count > 4) {
+				exit(EXIT_FAILURE);
+			}
+
+			ch = *(++ipAddress);
+		} else if (ch == ':') {
+			ch = *(++ipAddress);
+
+			if (ch == ':') {
+				// Invalid IP Address format
+				if (hasEmptyGroup) {
+					exit(EXIT_FAILURE);
+				}
+
+				ch = *(++ipAddress);
+				// Invalid IP Address format
+				if (ch == ':') {
+					exit(EXIT_FAILURE);
+				}
+
+				hasEmptyGroup = true;
+			}
+
+			// Invalid IP Address format
+			if (++groups > 8) {
+				exit(EXIT_FAILURE);
+			}
+
+			count = 0;
+		} else {
+			// Invalid character detected in IP Address
+			exit(EXIT_FAILURE);
+		}
+	} while (ch);
+
 	// Invalid IP Address format
-	exit(EXIT_FAILURE);
-      }
-    }
-
-    if (count == 4) {
-      if (*(ptr) == ':') {
-	if (*(++ptr) == ':') {
-	  // Invalid IP Address format
-	  exit(EXIT_FAILURE);
+	if (count == 0 || (hasEmptyGroup && groups > 6)) {
+		exit(EXIT_FAILURE);
 	}
-
-	int ipType = detectIPType(ptr);
-
-	if (ipType == 4) {
-	  verifyIPv4(ptr);
-
-	  return;
-	}
-
-	groups++;
-	count = 0;
-      }
-    }
-  }
-
-  while (*(ptr) != '\0') {
-    ch = *(ptr);
-
-    if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
-      count++;
-      ptr++;
-
-    } else if (ch == ':') {
-      groups++;
-      count = 0;
-
-      if (*(++ptr) == ':') {
-	if (emptyGroup || *(++ptr) == ':') {
-	  // Invalid IP Address format
-	  exit(EXIT_FAILURE);
-	}
-
-	emptyGroup = true;
-      }
-
-    } else {
-      // Invalid character detected in IP Address
-      exit(EXIT_FAILURE);
-    }
-
-    if (count > 4 || groups > 8) {
-      // Invalid IP Address format
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  if (count == 0 || (emptyGroup && groups > 6)) {
-    // Invalid IP Address format
-    exit(EXIT_FAILURE);
-  }
-
 }

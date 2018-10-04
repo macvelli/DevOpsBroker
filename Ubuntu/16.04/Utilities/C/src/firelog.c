@@ -22,242 +22,173 @@
  * -----------------------------------------------------------------------------
  */
 
-#include <regex.h>
+// ════════════════════════════ Feature Test Macros ═══════════════════════════
+
+#define _DEFAULT_SOURCE
+
+// ═════════════════════════════════ Includes ═════════════════════════════════
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
-#include "ansi.h"
+#include <locale.h>
+
+#include "org/devopsbroker/adt/listarray.h"
+#include "org/devopsbroker/firelog/logline.h"
+#include "org/devopsbroker/io/file.h"
+#include "org/devopsbroker/lang/error.h"
+#include "org/devopsbroker/text/linebuffer.h"
+#include "org/devopsbroker/text/regex.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-// Default input and output list array sizes
-#define DEFAULT_LIST_SIZE 32
-
-// Default line length
-#define DEFAULT_LINE_LENGTH 512
-
-// Empty IN record length
-#define EMPTY_IN_LEN 4
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-typedef struct LogLine {
-  char *buffer;
-  char *blockHeader;
-  char *in;
-  char *out;
-  char *macAddress;
-  char *sourceIPAddr;
-  char *destIPAddr;
-  char *protocol;
-  char *sourcePort;
-  char *destPort;
-  int inLen;
-  int outLen;
-  int count;
-} LogLine;
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-void populateLogLine(LogLine *logLine, char *line);
-void filterInputLogLine(LogLine logLine, ssize_t length);
-void filterOutputLogLine(LogLine logLine, ssize_t length);
+static void filterInputLogLine(LogLine *logLine);
+static void filterOutputLogLine(LogLine *logLine);
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
-// File-related variables
-FILE *fp = NULL;
-char *line = NULL;
-size_t lineLen = DEFAULT_LINE_LENGTH;
-ssize_t read;
-
-// Regular expression variables
-regex_t regex;
-int regexValue;
-
-// LogLine input/output arrays
-int inputSize = DEFAULT_LIST_SIZE;
-int inputLen = 0;
-
-int outputSize = DEFAULT_LIST_SIZE;
-int outputLen = 0;
-
-LogLine **inputList;
-LogLine **outputList;
+// Input/Output LogLine ListArrays
+ListArray *inputLogLineList;
+ListArray *outputLogLineList;
 
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
 
-  if (argc > 1) {
-    fp = fopen(argv[1], "r");
+	// For a list of all supported locales, try "locale -a" from the command-line
+	setlocale(LC_ALL, "C.UTF-8");
 
-    if (fp == NULL) {
-      printf(BOLD "firelog: " RED "Cannot open '%s': No such file" RESET "\n", argv[1]);
-      exit(EXIT_FAILURE);
-    }
-  } else {
-    fp = stdin;
-  }
+	programName = "firelog";
 
-  // Compile the BLOCK header regular expression
-  regexValue = regcomp(&regex, "^\\[.* BLOCK\\] ", REG_EXTENDED);
-  if (regexValue) {
-    fprintf(stderr, "Could not compile regex\n");
-    exit(EXIT_FAILURE);
-  }
+	// Compile the BLOCK header regular expression
+	regex_t regExpr;
+	b395ed5f_compileRegExpr(&regExpr, "^\\[.* BLOCK\\] ", REG_EXTENDED);
 
-  line = malloc( sizeof(char) * ( DEFAULT_LINE_LENGTH ) );
-  inputList = malloc(DEFAULT_LIST_SIZE * sizeof(LogLine*));
-  outputList = malloc(DEFAULT_LIST_SIZE * sizeof(LogLine*));
-  LogLine logLine;
+	// File-related variables
+	int fileDescriptor;
+	ssize_t numBytes;
+	char *pathName;
 
-  while ((read = getline(&line, &lineLen, fp)) != EOF) {
+	if (argc > 1) {
+		pathName = argv[1];
+		fileDescriptor = e2f74138_openFile(pathName, O_RDONLY);
+	} else {
+		pathName = "STDIN";
+		fileDescriptor = STDIN_FILENO;
+	}
 
-    // Check for a firewall BLOCK header
-    regexValue = regexec(&regex, line, 0, NULL, 0);
+	// Initialize the LineBuffer and the file data buffer
+	String *line = NULL;
+	LineBuffer lineBuffer;
+	char buffer[PHYSICAL_BLOCK_SIZE];
+	c196bc72_initLineBuffer(&lineBuffer, buffer);
 
-    if (!regexValue) {
-      populateLogLine(&logLine, line);
+	// Create the default LogLine and Input/Output LogLine ListArrays
+	LogLine logLine;
+	inputLogLineList = b196167f_createListArray();
+	outputLogLineList = b196167f_createListArray();
 
-      if (logLine.inLen > EMPTY_IN_LEN) {
-	filterInputLogLine(logLine, read);
-      } else {
-	filterOutputLogLine(logLine, read);
-      }
-    }
-  }
+	numBytes = e2f74138_readFile(fileDescriptor, buffer, PHYSICAL_BLOCK_SIZE, pathName);
+	while (numBytes != END_OF_FILE) {
 
-  // Close the file (if not stdin)
-  if (fp != NULL && fp != stdin) {
-    fclose(fp);
-  }
+		line = c196bc72_getLine(&lineBuffer, numBytes);
+		while (line != NULL) {
+			// Check for a firewall BLOCK header
+			if (b395ed5f_matchRegExpr(&regExpr, line->value, 0)) {
+				e88eda74_initLogLine(&logLine, line);
 
-  // Free memory allocated for the regular expression
-  regfree(&regex);
+				if (logLine.in) {
+					filterInputLogLine(&logLine);
+				} else {
+					filterOutputLogLine(&logLine);
+				}
+			}
 
-  // Free the line buffer
-  if (line) {
-    free(line);
-  }
+			line = c196bc72_getLine(&lineBuffer, numBytes);
+		}
 
-  // Free the inputList
-  if (inputList) {
-    LogLine *entry = NULL;
+		numBytes = e2f74138_readFile(fileDescriptor, buffer, PHYSICAL_BLOCK_SIZE, pathName);
+	}
 
-    if (inputLen > 0) {
-      printf("[1;38;2;127;186;147m");
-      printf("┌─────────────────────────────────┐\n");
-      printf("│[38;5;231m");
-      printf( " firelog INPUT BLOCK Log Entries ");
-      printf("[38;2;127;186;147m│\n");
-      printf("└─────────────────────────────────┘[0m\n");
+	// Close the file if not STDIN
+	if (fileDescriptor != STDIN_FILENO) {
+		e2f74138_closeFile(fileDescriptor, pathName);
+	}
 
-      // Loop over the inputList entries and free the LogLine buffers and instances
-      for (int i=0; i < inputLen; i++) {
-	entry = inputList[i];
-	printf("Count: %i %s %s %s %s %s %s %s %s\n", entry->count, entry->in, entry->out, entry->macAddress, entry->sourceIPAddr, entry->destIPAddr, entry->protocol, entry->sourcePort, entry->destPort);
-	free(entry->buffer);
-	free(entry);
-      }
-    }
+	// Free memory allocated for the regular expression
+	b395ed5f_freeRegExpr(&regExpr);
 
-    free(inputList);
-    printf("\n");
-  }
+	register uint32_t listLength;
+	register void **listValues;
+	register uint32_t i;
+	register LogLine *listEntry;
 
-  // Free the outputList
-  if (outputList) {
-    LogLine *entry = NULL;
+	// Process the inputLogLineList entries
+	if (inputLogLineList->length > 0) {
+		listLength = inputLogLineList->length;
+		listValues = inputLogLineList->values;
+		i = 0;
 
-    if (outputLen > 0) {
-      printf("[1;38;2;127;186;147m");
-      printf("┌──────────────────────────────────┐\n");
-      printf("│[38;5;231m");
-      printf( " firelog OUTPUT BLOCK Log Entries ");
-      printf("[38;2;127;186;147m│\n");
-      printf("└──────────────────────────────────┘[0m\n");
+		d99c60f5_printBox("firelog INPUT BLOCK Log Entries", false);
 
-      // Loop over the outputList entries and free the LogLine buffers and instances
-      for (int i=0; i < outputLen; i++) {
-	entry = outputList[i];
-	printf("Count: %i %s %s %s %s %s %s %s\n", entry->count, entry->in, entry->out, entry->sourceIPAddr, entry->destIPAddr, entry->protocol, entry->sourcePort, entry->destPort);
-	entry = outputList[i];
-	free(entry->buffer);
-	free(entry);
-      }
-    }
+		// Loop over the inputLogLineList entries and free the LogLine buffers and instances
+		while (i < listLength) {
+			listEntry = listValues[i++];
 
-    free(outputList);
-    printf("\n");
-  }
+			if (listEntry->destPort == 0) {
+				// Print ICMP firewall entry
+				printf("Count: %u IN=%s MAC=%s SRC=%s DST=%s PROTO=%s TYPE=%u\n", listEntry->count, listEntry->in, listEntry->macAddress, \
+					listEntry->sourceIPAddr, listEntry->destIPAddr, listEntry->protocol, listEntry->sourcePort);
+			} else {
+				// Print non-ICMP firewall entry
+				printf("Count: %u IN=%s MAC=%s SRC=%s DST=%s PROTO=%s SPT=%u DPT=%u\n", listEntry->count, listEntry->in, listEntry->macAddress, \
+					listEntry->sourceIPAddr, listEntry->destIPAddr, listEntry->protocol, listEntry->sourcePort, listEntry->destPort);
+			}
 
-  // Exit with success
-  exit(EXIT_SUCCESS);
+			e88eda74_destroyLogLine(listEntry);
+		}
+
+		b196167f_destroyListArray(inputLogLineList);
+		printf("\n");
+	}
+
+	fflush(stdout);
+
+	// Process the outputLogLineList entries
+	if (outputLogLineList->length > 0) {
+		listLength = outputLogLineList->length;
+		listValues = outputLogLineList->values;
+		i = 0;
+
+		d99c60f5_printBox("firelog OUTPUT BLOCK Log Entries", false);
+
+		// Loop over the outputLogLineList entries and free the LogLine buffers and instances
+		while (i < listLength) {
+			listEntry = listValues[i++];
+
+			printf("Count: %u OUT=%s SRC=%s DST=%s PROTO=%s SPT=%u DPT=%u\n", listEntry->count, listEntry->out, listEntry->sourceIPAddr, \
+				 listEntry->destIPAddr, listEntry->protocol, listEntry->sourcePort, listEntry->destPort);
+
+			e88eda74_destroyLogLine(listEntry);
+		}
+
+		b196167f_destroyListArray(outputLogLineList);
+		printf("\n");
+	}
+
+	// Exit with success
+	exit(EXIT_SUCCESS);
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-
-void populateLogLine(LogLine *logLine, char *line) {
-  // Set the LogLine attributes
-  char *ptr = line;
-
-  // buffer
-  logLine->buffer = line;
-
-  // blockHeader
-  logLine->blockHeader = ptr;
-  while (*(++ptr) != ']');
-  *(++ptr) = '\0';
-
-  // in
-  logLine->in = ++ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr++) = '\0';
-  logLine->inLen = ptr - logLine->in;
-
-  // out
-  logLine->out = ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr++) = '\0';
-  logLine->outLen = ptr - logLine->out;
-
-  // macAddress
-  if (*(ptr) == 'M') {
-    logLine->macAddress = ptr;
-    while (*(++ptr) != ' ' && *(ptr) != '\0');
-    *(ptr++) = '\0';
-  } else {
-    logLine->macAddress = NULL;
-  }
-
-  // sourceIPAddr
-  logLine->sourceIPAddr = ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr++) = '\0';
-
-  // destIPAddr
-  logLine->destIPAddr = ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr++) = '\0';
-
-  // protocol
-  ptr = strstr(ptr, "PROTO=");
-  logLine->protocol = ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr++) = '\0';
-
-  // sourcePort
-  logLine->sourcePort = ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr++) = '\0';
-
-  // destPort
-  logLine->destPort = ptr;
-  while (*(++ptr) != ' ' && *(ptr) != '\0');
-  *(ptr) = '\0';
-}
 
 /*
  * IN=enp4s0 OUT= MAC=ff:ff:ff:ff:ff:ff:aa:bb:cc:dd:ee:ff:11:00 SRC=192.168.1.110 DST=192.168.1.255 PROTO=UDP SPT=59391 DPT=15600
@@ -267,45 +198,34 @@ void populateLogLine(LogLine *logLine, char *line) {
  *   o Ignore changes in SRC
  *   o Ignore changes in SPT and/or DPT
  */
-void filterInputLogLine(LogLine logLine, ssize_t length) {
-  LogLine *entry = NULL;
+void filterInputLogLine(register LogLine *logLine) {
+	register const uint32_t listLength = inputLogLineList->length;
+	register void **listValues = inputLogLineList->values;
+	register uint32_t i = 0;
+	register LogLine *listEntry;
 
-  // 1. Loop over the existing inputList entries
-  for (int i=0; i < inputLen; i++) {
-    entry = inputList[i];
+	// 1. Loop over the existing inputLogLineList entries
+	while (i < listLength) {
+		listEntry = listValues[i++];
 
-    if (strcmp(entry->in, logLine.in) == 0
-	&& strcmp(entry->out, logLine.out) == 0
-	&& strcmp(entry->macAddress, logLine.macAddress) == 0
-	&& strcmp(entry->destIPAddr, logLine.destIPAddr) == 0
-	&& strcmp(entry->protocol, logLine.protocol) == 0) {
+		if (f6215943_isEqual(listEntry->in, logLine->in)
+			&& f6215943_isEqual(listEntry->out, logLine->out)
+			&& f6215943_isEqual(listEntry->macAddress, logLine->macAddress)
+			&& f6215943_isEqual(listEntry->destIPAddr, logLine->destIPAddr)
+			&& f6215943_isEqual(listEntry->protocol, logLine->protocol)) {
 
-      if (strcmp(entry->sourcePort, logLine.sourcePort) == 0
-	|| strcmp(entry->destPort, logLine.destPort) == 0) {
+			if (listEntry->sourcePort == logLine->sourcePort
+				|| listEntry->destPort == logLine->destPort) {
 
-	entry->count++;
-	return;
-      }
-    }
-  }
+				listEntry->count++;
+				return;
+			}
+		}
+	}
 
-  // 2. Manage the size of the inputList
-  if (inputLen == inputSize) {
-    inputSize <<= 1;
-
-    inputList = realloc(inputList, inputSize);
-  }
-
-  // 3. Add LogLine to the inputList
-  LogLine *newListItem = malloc(sizeof(LogLine));
-  char *lineBuf = malloc(length + 1);
-  memcpy(lineBuf, logLine.buffer, length + 1);
-
-  populateLogLine(newListItem, lineBuf);
-
-  newListItem->count = 1;
-
-  inputList[inputLen++] = newListItem;
+	// 2. Add LogLine to the inputLogLineList
+	LogLine *newListItem = e88eda74_cloneLogLine(logLine);
+	b196167f_add(inputLogLineList, newListItem);
 }
 
 /*
@@ -314,41 +234,29 @@ void filterInputLogLine(LogLine logLine, ssize_t length) {
  * If an output rule triggered:
  *   o Ignore changes in SPT
  */
-void filterOutputLogLine(LogLine logLine, ssize_t length) {
-  LogLine *entry = NULL;
+void filterOutputLogLine(register LogLine *logLine) {
+	register const uint32_t listLength = outputLogLineList->length;
+	register void **listValues = outputLogLineList->values;
+	register uint32_t i = 0;
+	register LogLine *listEntry;
 
-  // 1. Loop over the existing outputList entries
-  for (int i=0; i < outputLen; i++) {
-    entry = outputList[i];
+	// 1. Loop over the existing outputLogLineList entries
+	while (i < listLength) {
+		listEntry = listValues[i++];
 
-    if (strcmp(entry->in, logLine.in) == 0
-	&& strcmp(entry->out, logLine.out) == 0
-	&& strcmp(entry->sourceIPAddr, logLine.sourceIPAddr) == 0
-	&& strcmp(entry->destIPAddr, logLine.destIPAddr) == 0
-	&& strcmp(entry->protocol, logLine.protocol) == 0
-	&& strcmp(entry->destPort, logLine.destPort) == 0) {
+		if (f6215943_isEqual(listEntry->in, logLine->in)
+			&& f6215943_isEqual(listEntry->out, logLine->out)
+			&& f6215943_isEqual(listEntry->sourceIPAddr, logLine->sourceIPAddr)
+			&& f6215943_isEqual(listEntry->destIPAddr, logLine->destIPAddr)
+			&& f6215943_isEqual(listEntry->protocol, logLine->protocol)
+			&& listEntry->destPort == logLine->destPort) {
 
-      entry->count++;
-      return;
+			listEntry->count++;
+			return;
+		}
+	}
 
-    }
-  }
-
-  // 2. Manage the size of the outputList
-  if (outputLen == outputSize) {
-    outputSize <<= 1;
-
-    outputList = realloc(outputList, outputSize);
-  }
-
-  // 3. Add LogLine to the outputList
-  LogLine *newListItem = malloc(sizeof(LogLine));
-  char *lineBuf = malloc(length + 1);
-  memcpy(lineBuf, logLine.buffer, length + 1);
-
-  populateLogLine(newListItem, lineBuf);
-
-  newListItem->count = 1;
-
-  outputList[outputLen++] = newListItem;
+	// 2. Add LogLine to the outputLogLineList
+	LogLine *newListItem = e88eda74_cloneLogLine(logLine);
+	b196167f_add(outputLogLineList, newListItem);
 }
