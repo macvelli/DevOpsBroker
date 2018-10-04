@@ -385,6 +385,7 @@ fi
 
 installTemplate 'bash-script.tpl'
 installTemplate 'bash-template.tpl'
+installTemplate 'c-struct-source.tpl'
 installTemplate 'fileinfo.tpl'
 installTemplate 'header-file-c.tpl'
 installTemplate 'html5.tpl'

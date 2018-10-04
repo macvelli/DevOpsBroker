@@ -106,20 +106,21 @@ headerFileName=${sourceFileName/.c/.h}
 
 // ════════════════════════════ Feature Test Macros ═══════════════════════════
 
+#define _DEFAULT_SOURCE
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <locale.h>
+
 #include "$headerFileName"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
-
-
-// ════════════════════════════════ Structures ════════════════════════════════
 
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
@@ -131,6 +132,9 @@ headerFileName=${sourceFileName/.c/.h}
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
+
+	// For a list of all supported locales, try "locale -a" from the command-line
+	setlocale(LC_ALL, "C.UTF-8");
 
 	for (int i=0; i < argc; i++) {
 		printf("%s\n", argv[i]);
