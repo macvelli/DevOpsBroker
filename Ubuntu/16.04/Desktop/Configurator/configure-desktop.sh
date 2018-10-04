@@ -510,6 +510,9 @@ if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then
 	echo
 fi
 
+# Install traceroute
+installPackage '/usr/sbin/traceroute' 'traceroute'
+
 # Install ttf-mscorefonts-installer
 installPackage '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf' 'ttf-mscorefonts-installer'
 

@@ -73,12 +73,12 @@ function showHelp() {
 		echo 'List active iptables/ip6tables firewall rules'${reset}
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
-		echo -e ${bold}${yellow}'  -4\t\t'    ${reset}${romantic}'View IPv4 Firewall configuration'
-		echo -e ${bold}${yellow}'  -6\t\t'    ${reset}${romantic}'View IPv6 Firewall configuration'
-		echo -e ${bold}${yellow}'  raw\t\t'   ${reset}${romantic}'Limit output to the RAW table'
-		echo -e ${bold}${yellow}'  mangle\t'  ${reset}${romantic}'Limit output to the MANGLE table'
-		echo -e ${bold}${yellow}'  nat\t\t'   ${reset}${romantic}'Limit output to the NAT table'
-		echo -e ${bold}${yellow}'  filter\t'  ${reset}${romantic}'Limit output to the FILTER table'
+		echo -e ${bold}${yellow}'  -4\t\t'    ${romantic}'View IPv4 Firewall configuration'
+		echo -e ${bold}${yellow}'  -6\t\t'    ${romantic}'View IPv6 Firewall configuration'
+		echo -e ${bold}${yellow}'  raw\t\t'   ${romantic}'Limit output to the RAW table'
+		echo -e ${bold}${yellow}'  mangle\t'  ${romantic}'Limit output to the MANGLE table'
+		echo -e ${bold}${yellow}'  nat\t\t'   ${romantic}'Limit output to the NAT table'
+		echo -e ${bold}${yellow}'  filter\t'  ${romantic}'Limit output to the FILTER table'
 		echo ${reset}
 	elif [ "$command" == 'log' ]; then
 		printUsage 'firewall log'

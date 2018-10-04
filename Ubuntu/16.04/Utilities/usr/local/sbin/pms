@@ -84,10 +84,10 @@ function showHelp() {
 		printUsage "pms list ${gold}{ package-name | snap-name | file.deb }"
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
-		echo -e ${bold}${yellow}'  [none]\t' ${reset}${romantic}'Lists all installed packages and snaps on the system'
-		echo -e ${bold}${yellow}'  package-name\t'  ${reset}${romantic}'Lists all files that are included within the package'
-		echo -e ${bold}${yellow}'  snap-name\t'  ${reset}${romantic}'Lists all files that are included within the snap'
-		echo -e ${bold}${yellow}'  file.deb\t'  ${reset}${romantic}'Lists all files that are packaged within the .deb file'
+		echo -e ${bold}${yellow}'  [none]\t'        ${romantic}'Lists all installed packages and snaps on the system'
+		echo -e ${bold}${yellow}'  package-name\t'  ${romantic}'Lists all files that are included within the package'
+		echo -e ${bold}${yellow}'  snap-name\t'     ${romantic}'Lists all files that are included within the snap'
+		echo -e ${bold}${yellow}'  file.deb\t'      ${romantic}'Lists all files that are packaged within the .deb file'
 		echo ${reset}
 	elif [ "$command" == 'reconfigure' ]; then
 		printUsage 'pms reconfigure package-name'
@@ -99,8 +99,8 @@ function showHelp() {
 		echo 'Refresh a snap in the system'${reset}
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
-		echo -e ${bold}${yellow}'  [none]\t' ${reset}${romantic}'Refresh all snaps in the system'
-		echo -e ${bold}${yellow}'  snap-name\t'  ${reset}${romantic}'Refresh the specified snap'
+		echo -e ${bold}${yellow}'  [none]\t'        ${romantic}'Refresh all snaps in the system'
+		echo -e ${bold}${yellow}'  snap-name\t'     ${romantic}'Refresh the specified snap'
 		echo ${reset}
 	elif [ "$command" == 'reinstall' ]; then
 		printUsage 'pms reinstall package-name'

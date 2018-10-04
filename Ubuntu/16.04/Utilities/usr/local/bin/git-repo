@@ -87,8 +87,8 @@ function showHelp() {
 		echo 'Configure the name and email address for the local Git repository'
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
-		echo -e ${bold}${yellow}'  -e EMAIL_ADDR\t' ${reset}${romantic}'The email address to use'
-		echo -e ${bold}${yellow}'  -n FULL_NAME\t'  ${reset}${romantic}'The name to use'
+		echo -e ${bold}${yellow}'  -e EMAIL_ADDR\t'     ${romantic}'The email address to use'
+		echo -e ${bold}${yellow}'  -n FULL_NAME\t'      ${romantic}'The name to use'
 		echo ${reset}
 	elif [ "$command" == 'create-branch' ]; then
 		printUsage 'git-repo create-branch BRANCH_NAME'
