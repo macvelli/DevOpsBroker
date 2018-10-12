@@ -33,9 +33,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "memory.h"
 #include "string.h"
 #include "stringbuilder.h"
-#include "system.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -66,6 +66,9 @@ const char f6215943_digitTens[128] = { '0', '0', '0', '0', '0', '0', '0', '0',
 	'8', '8', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '9', '9', '9',
 	'9', '9' };
 
+const char f6215943_digitHex[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
+	'8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
 // ═════════════════════════ Function Implementations ═════════════════════════
 
 String *f6215943_cloneString(String *string) {
@@ -87,32 +90,24 @@ String *f6215943_cloneString(String *string) {
 
 char *f6215943_concatenate(char *string, ...) {
 	// Append first string argument to the StringBuilder
-	StringBuilder *strBuilder = c598a24c_createStringBuilder();
-	c598a24c_append_string(strBuilder, string);
+	StringBuilder strBuilder;
+	c598a24c_initStringBuilder(&strBuilder);
+	c598a24c_append_string(&strBuilder, string);
 
 	// Initialize the varargs argument list
 	va_list ap;
 	va_start(ap, string);
 
-	string = va_arg(ap, char*);
-	while (string != NULL) {
-		c598a24c_append_string(strBuilder, string);
-
-		// Get the next argument value
-		string = va_arg(ap, char*);
-	}
+	c598a24c_append_string_va_list(&strBuilder, &ap);
 
 	// Clean up varargs
 	va_end(ap);
 
-	string = strBuilder->buffer;
-	c598a24c_freeStringBuilder(strBuilder);
-
-	return string;
+	return strBuilder.buffer;
 }
 
 char *f6215943_copy(register const char *source, register const uint32_t length) {
-	char *copy = c16819a0_malloc_size_size(sizeof(char), length + 1);
+	char *copy = f668c4bd_malloc_size_size(sizeof(char), length + 1);
 
 	register char *ptr = copy;
 	register uint32_t i = 0;
@@ -152,6 +147,29 @@ bool f6215943_isEqual(register const char *foo, register const char *bar) {
 	return (fooCh == barCh);
 }
 
+bool f6215943_isNotEqual(register const char *foo, register const char *bar) {
+	if (foo == bar) {
+		return false;
+	}
+
+	if (foo == NULL || bar == NULL) {
+		return true;
+	}
+
+	register char fooCh = *foo;
+	register char barCh = *bar;
+
+	while (fooCh && barCh && fooCh == barCh) {
+		foo++;
+		bar++;
+
+		fooCh = *foo;
+		barCh = *bar;
+	}
+
+	return (fooCh != barCh);
+}
+
 char *f6215943_search(char *pattern, char *text) {
 	char *ptr = pattern;
 
@@ -173,4 +191,15 @@ char *f6215943_search(char *pattern, char *text) {
 	}
 
 	return NULL;
+}
+
+char *f6215943_startsWith(register const char *pattern, register char *text) {
+	register char ch = *pattern;
+
+	while (ch && ch == *text) {
+		text++;
+		ch = *(++pattern);
+	}
+
+	return (ch == '\0') ? text : NULL;
 }

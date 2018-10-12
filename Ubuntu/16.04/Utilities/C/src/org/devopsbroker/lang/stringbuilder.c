@@ -29,12 +29,14 @@
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 
+#include "integer.h"
 #include "long.h"
+#include "memory.h"
 #include "stringbuilder.h"
-#include "system.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -50,18 +52,20 @@
 /*
  * Static functions in C restrict their scope to the file where they are declared
  */
-static inline void resizeStringBuilder(StringBuilder* strBuilder) {
+static inline char *resizeStringBuilder(register StringBuilder* strBuilder) {
 	strBuilder->size <<= 1;
-	strBuilder->buffer = c16819a0_realloc_void_size_size(strBuilder->buffer, sizeof(char), strBuilder->size);
+	strBuilder->buffer = f668c4bd_realloc_void_size_size(strBuilder->buffer, sizeof(char), strBuilder->size);
+
+	return strBuilder->buffer + strBuilder->length;
 }
 
-static inline void appendNull(StringBuilder* strBuilder) {
-	// Resize strBuilder->string if necessary
+static inline void appendNull(register StringBuilder* strBuilder, register char *target) {
+	// Resize strBuilder->buffer if necessary
 	if (strBuilder->length == strBuilder->size) {
-		resizeStringBuilder(strBuilder);
+		target = resizeStringBuilder(strBuilder);
 	}
 
-	strBuilder->buffer[strBuilder->length] = '\0';
+	*target = '\0';
 }
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
@@ -69,68 +73,168 @@ static inline void appendNull(StringBuilder* strBuilder) {
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-void c598a24c_append_char(register StringBuilder *strBuilder, const char ch) {
-	uint32_t length = strBuilder->length;
-	strBuilder->length++;
+void c598a24c_append_char(register StringBuilder *strBuilder, register const char ch) {
+	register char *target = strBuilder->buffer + strBuilder->length;
 
 	// Resize strBuilder->buffer if necessary
-	if (strBuilder->length >= strBuilder->size) {
-		resizeStringBuilder(strBuilder);
+	if ((strBuilder->length + 1) >= strBuilder->size) {
+		target = resizeStringBuilder(strBuilder);
 	}
 
-	strBuilder->buffer[length++] = ch;
-	strBuilder->buffer[length] = '\0';
+	strBuilder->length++;
+	*(target++) = ch;
+	*target = '\0';
 }
 
-void c598a24c_append_int64(StringBuilder *strBuilder, const int64_t signedLong) {
-	char* signedLongStr = db0acb04_toString_int64(signedLong);
+void c598a24c_append_int32(register StringBuilder *strBuilder, register const int32_t signedInt) {
+	register char* signedIntStr = f45efac2_toString_int32(signedInt);
+
+	c598a24c_append_string(strBuilder, signedIntStr);
+
+	f668c4bd_free(signedIntStr);
+}
+
+void c598a24c_append_int64(register StringBuilder *strBuilder, register const int64_t signedLong) {
+	register char* signedLongStr = db0acb04_toString_int64(signedLong);
 
 	c598a24c_append_string(strBuilder, signedLongStr);
 
-	c16819a0_free(signedLongStr);
+	f668c4bd_free(signedLongStr);
 }
 
-void c598a24c_append_uint64(StringBuilder *strBuilder, const uint64_t unsignedLong) {
-	char* unsignedLongStr = db0acb04_toString_uint64(unsignedLong);
+void c598a24c_append_uint64(register StringBuilder *strBuilder, register const uint64_t unsignedLong) {
+	register char* unsignedLongStr = db0acb04_toString_uint64(unsignedLong);
 
 	c598a24c_append_string(strBuilder, unsignedLongStr);
 
-	c16819a0_free(unsignedLongStr);
+	f668c4bd_free(unsignedLongStr);
 }
 
-void c598a24c_append_string(StringBuilder *strBuilder, const char *source) {
-	char* target = strBuilder->buffer + strBuilder->length;
+void c598a24c_append_string(register StringBuilder *strBuilder, register const char *source) {
+	register char* target = strBuilder->buffer + strBuilder->length;
+	register char ch = *source;
 
-	while (*source) {
-		// Resize strBuilder->string if necessary
+	while (ch) {
+		// Resize strBuilder->buffer if necessary
 		if (strBuilder->length == strBuilder->size) {
-			resizeStringBuilder(strBuilder);
+			target = resizeStringBuilder(strBuilder);
 		}
 
-		*target = *source;
-		source++;
-		target++;
 		strBuilder->length++;
+		*(target++) = ch;
+		ch = *(++source);
 	}
 
-	appendNull(strBuilder);
+	appendNull(strBuilder, target);
 }
 
-void c598a24c_append_string_uint32(StringBuilder *strBuilder, const char *source, const uint32_t length) {
-	char* target = strBuilder->buffer + strBuilder->length;
-	const char* end = source + length;
+void c598a24c_append_string_varg(StringBuilder *strBuilder, char *string, ...) {
+	// Append first string argument to the StringBuilder
+	c598a24c_append_string(strBuilder, string);
+
+	// Initialize the varargs argument list
+	va_list ap;
+	va_start(ap, string);
+
+	string = va_arg(ap, char*);
+	while (string != NULL) {
+		c598a24c_append_string(strBuilder, string);
+
+		// Get the next argument value
+		string = va_arg(ap, char*);
+	}
+
+	// Clean up varargs
+	va_end(ap);
+}
+
+void c598a24c_append_string_va_list(StringBuilder *strBuilder, va_list *argList) {
+	char *string = va_arg(*argList, char*);
+
+	while (string != NULL) {
+		c598a24c_append_string(strBuilder, string);
+
+		// Get the next argument value
+		string = va_arg(*argList, char*);
+	}
+}
+
+void c598a24c_append_stringArray(register StringBuilder *strBuilder, register char *const array[]) {
+	register char* target = strBuilder->buffer + strBuilder->length;
+
+	// Resize strBuilder->buffer if necessary
+	if ((strBuilder->length + 3) >= strBuilder->size) {
+		target = resizeStringBuilder(strBuilder);
+	}
+
+	*(target++) = '[';
+	strBuilder->length++;
+
+	register char ch;
+	register char *string = *array;
+	if (string != NULL) {
+		ch = *string;
+
+		while (ch) {
+			// Resize strBuilder->buffer if necessary
+			if (strBuilder->length == strBuilder->size) {
+				target = resizeStringBuilder(strBuilder);
+			}
+
+			strBuilder->length++;
+			*(target++) = ch;
+			ch = *(++string);
+		}
+
+		string = *(++array);
+	}
+
+	while (string != NULL) {
+		// Resize strBuilder->buffer if necessary
+		if (strBuilder->length == strBuilder->size) {
+			target = resizeStringBuilder(strBuilder);
+		}
+
+		strBuilder->length++;
+		*(target++) = ',';
+		ch = *string;
+
+		while (ch) {
+			// Resize strBuilder->buffer if necessary
+			if (strBuilder->length == strBuilder->size) {
+				target = resizeStringBuilder(strBuilder);
+			}
+
+			strBuilder->length++;
+			*(target++) = ch;
+			ch = *(++string);
+		}
+
+		string = *(++array);
+	}
+
+	strBuilder->length++;
+	*target = ']';
+
+	appendNull(strBuilder, target);
+}
+
+void c598a24c_append_string_uint32(register StringBuilder *strBuilder, register const char *source, const uint32_t length) {
+	register char* target = strBuilder->buffer + strBuilder->length;
+	register const char* end = source + length;
+
+	// Resize strBuilder->buffer if necessary
+	const uint32_t newLength = strBuilder->length + length;
+	if ((newLength + 1) >= strBuilder->size) {
+		strBuilder->size = (newLength >> 2) * 3;
+		target = resizeStringBuilder(strBuilder);
+	}
+
+	strBuilder->length += length;
 
 	while (source != end) {
-		// Resize strBuilder->string if necessary
-		if (strBuilder->length == strBuilder->size) {
-			resizeStringBuilder(strBuilder);
-		}
-
-		*target = *source;
-		source++;
-		target++;
-		strBuilder->length++;
+		*(target++) = *(source++);
 	}
 
-	appendNull(strBuilder);
+	*target = '\0';
 }

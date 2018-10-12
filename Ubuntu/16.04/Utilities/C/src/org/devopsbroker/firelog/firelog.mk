@@ -33,7 +33,7 @@ OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/firelog
 
 LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
 
-LL_DEPS := $(LANG_DIR)/string.h $(LANG_DIR)/system.h
+LL_DEPS := $(LANG_DIR)/integer.h $(LANG_DIR)/memory.h $(LANG_DIR)/string.h
 
 ################################### Targets ###################################
 

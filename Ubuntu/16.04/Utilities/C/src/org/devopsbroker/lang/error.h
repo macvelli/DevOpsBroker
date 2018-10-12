@@ -27,11 +27,13 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <errno.h>
 
+#include "string.h"
 #include "../terminal/ansi.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
@@ -52,6 +54,20 @@ const char* programName;
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c7c88e52_ensureUserIsRoot
+ * Description: Ensures the executing user is root
+ * ----------------------------------------------------------------------------
+ */
+static inline void c7c88e52_ensureUserIsRoot() {
+	// Display error if not running as root
+	const char* user = getenv("USER");
+	if (f6215943_isNotEqual(user, "root")) {
+		printf(BOLD "%s: " RED "Permission denied (you must be root)\n" RESET, programName);
+		exit(EXIT_FAILURE);
+	}
+}
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c7c88e52_printError_string
  * Description: Prints error message for the given executable
  *
@@ -60,7 +76,7 @@ const char* programName;
  * ----------------------------------------------------------------------------
  */
 static inline void c7c88e52_printError_string(const char* errorMessage) {
-	printf(BOLD "%s: " RED "%s" RESET, programName, errorMessage);
+	printf(BOLD "%s: " RED "%s\n" RESET, programName, errorMessage);
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -73,7 +89,7 @@ static inline void c7c88e52_printError_string(const char* errorMessage) {
  * ----------------------------------------------------------------------------
  */
 static inline void c7c88e52_printError_string_int(const char* errorMessage, const int errorNumber) {
-	fprintf(stderr, BOLD "%s: " RED "%s: %s" RESET "\n", programName, errorMessage, strerror( errorNumber ));
+	fprintf(stderr, BOLD "%s: " RED "%s: %s\n" RESET, programName, errorMessage, strerror( errorNumber ));
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -85,7 +101,7 @@ static inline void c7c88e52_printError_string_int(const char* errorMessage, cons
  * ----------------------------------------------------------------------------
  */
 static inline void c7c88e52_printUsage(const char* message) {
-	printf(BOLD "Usage: " YELLOW "%s" RESET "\n", message);
+	printf(BOLD "Usage: " YELLOW "%s\n" RESET, message);
 }
 
 #endif /* ORG_DEVOPSBROKER_LANG_ERROR_H */

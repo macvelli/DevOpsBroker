@@ -1,5 +1,5 @@
 /*
- * system.h - DevOpsBroker C header file for providing system-level functionality
+ * formfactor.h - DevOpsBroker C header file for the org.devopsbroker.sysfs.MemoryType enum
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -16,41 +16,49 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
- * echo ORG_DEVOPSBROKER_LANG_SYSTEM | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_SYSFS_FORMFACTOR | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_LANG_SYSTEM_H
-#define ORG_DEVOPSBROKER_LANG_SYSTEM_H
-
-// ═════════════════════════════════ Includes ═════════════════════════════════
-
-#include "stringbuilder.h"
+#ifndef ORG_DEVOPSBROKER_SYSFS_FORMFACTOR_H
+#define ORG_DEVOPSBROKER_SYSFS_FORMFACTOR_H
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define a88c5c62_NUM_VALUES 3
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-
-// ═════════════════════════════ Global Variables ═════════════════════════════
-
+typedef enum FormFactor {
+	FormFactor_UNKNOWN = 0,
+	FormFactor_DIMM,
+	FormFactor_SODIMM
+} FormFactor;
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c16819a0_execute
- * Description: Executes the specified file with the specified arguments
- *        NOTE: Terminate the argv[] array with NULL as the last value
+ * Function:    a88c5c62_getFormFactor
+ * Description: Returns the FormFactor associated with the char* string
  *
  * Parameters:
- *   path       The name of the file to execute
- *   argv       The argument list available to the new program
- * Returns:     A StringBuilder containing the STDOUT output from the program execution
+ *   source     The char* pointer to convert to an FormFactor value
+ * Returns:     The associated FormFactor value
  * ----------------------------------------------------------------------------
  */
-StringBuilder *c16819a0_execute(const char *path, char *const argv[]);
+FormFactor a88c5c62_getFormFactor(const char *source);
 
-#endif /* ORG_DEVOPSBROKER_LANG_SYSTEM_H */
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    a88c5c62_toStringFormFactor
+ * Description: Returns the char* string representation of the FormFactor value
+ *
+ * Parameters:
+ *   formFactor	The FormFactor value to convert to a char* string
+ * Returns:     The char* string representation of the FormFactor value
+ * ----------------------------------------------------------------------------
+ */
+char *a88c5c62_toStringFormFactor(const FormFactor formFactor);
+
+#endif /* ORG_DEVOPSBROKER_SYSFS_FORMFACTOR_H */

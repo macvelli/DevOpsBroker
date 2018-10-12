@@ -63,6 +63,43 @@ uint32_t db0acb04_getStringSize_int64(const int64_t value);
 uint32_t db0acb04_getStringSize_uint64(const uint64_t value);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    db0acb04_min_uint64
+ * Description: Returns the minimum unsigned long int value
+ *
+ * Parameters:
+ *   foo        An unsigned long int value to evaluate
+ *   bar        An unsigned long int value to evaluate
+ * Returns:     The minimum unsigned long int value
+ * ----------------------------------------------------------------------------
+ */
+static inline uint64_t db0acb04_min_uint64(register const uint64_t foo, register const uint64_t bar) {
+	return (foo < bar) ? foo : bar;
+}
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    db0acb04_parse_uint64
+ * Description: Converts a char* to an unsigned long integer
+ *
+ * Parameters:
+ *   source     A char* representation of an unsigned long integer
+ * Returns:     The unsigned long integer value
+ * ----------------------------------------------------------------------------
+ */
+uint64_t db0acb04_parse_uint64(const char *source);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    db0acb04_parse_uint64_ssize
+ * Description: Converts a char* to an unsigned long integer
+ *
+ * Parameters:
+ *   source     A char* representation of an unsigned long integer
+ *   length     The length of the char* to convert
+ * Returns:     The unsigned long integer value
+ * ----------------------------------------------------------------------------
+ */
+uint64_t db0acb04_parse_uint64_ssize(const char *source, ssize_t length);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    db0acb04_toString_uint64
  * Description: Returns a char* representation of the unsigned long int value
  *

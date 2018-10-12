@@ -28,7 +28,9 @@
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include "logline.h"
+
 #include "../lang/integer.h"
+#include "../lang/memory.h"
 #include "../lang/string.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
@@ -58,7 +60,7 @@ static inline char *terminateField(char *field) {
 // ═════════════════════════ Function Implementations ═════════════════════════
 
 LogLine *e88eda74_cloneLogLine(LogLine *logLine) {
-	register LogLine *clone = c16819a0_malloc_size(sizeof(LogLine));
+	register LogLine *clone = f668c4bd_malloc_size(sizeof(LogLine));
 
 	// in
 	clone->in = f6215943_copy(logLine->in, logLine->lineLength);

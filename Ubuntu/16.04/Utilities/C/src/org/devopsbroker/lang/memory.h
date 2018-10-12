@@ -1,5 +1,5 @@
 /*
- * logline.h - DevOpsBroker C header file for the org.devopsbroker.firelog.LogLine struct
+ * memory.h - DevOpsBroker C header file for providing memory management functionality
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -16,40 +16,24 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
- * echo ORG_DEVOPSBROKER_FIRELOG_LOGLINE | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_LANG_MEMORY | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H
-#define ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H
+#ifndef ORG_DEVOPSBROKER_LANG_MEMORY_H
+#define ORG_DEVOPSBROKER_LANG_MEMORY_H
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <stdlib.h>
-#include <stdint.h>
-
-#include "../lang/memory.h"
-#include "../lang/string.h"
+#include <malloc.h>
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-typedef struct LogLine {
-	char *in;
-	char *out;
-	char *macAddress;
-	char *sourceIPAddr;
-	char *destIPAddr;
-	char *protocol;
-	uint32_t sourcePort;
-	uint32_t destPort;
-	uint32_t count;
-	uint32_t lineLength;
-} LogLine;
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -57,61 +41,65 @@ typedef struct LogLine {
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_cloneLogLine
- * Description: Clones the LogLine contents contained within the pointer
+ * Function:    f668c4bd_free
+ * Description: Performs the free() operation *only* on pointers with space to free
  *
  * Parameters:
- *   logLine    The LogLine instance to clone
- * Returns:     A cloned instance of the LogLine
+ *   ptr        A pointer to the memory block to free
  * ----------------------------------------------------------------------------
  */
-LogLine *e88eda74_cloneLogLine(LogLine *logLine);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_createLogLine
- * Description: Creates a LogLine struct instance
- *
- * Returns:     A LogLine struct instance
- * ----------------------------------------------------------------------------
- */
-static inline LogLine *e88eda74_createLogLine() {
-	LogLine *logLine = f668c4bd_malloc_size(sizeof(LogLine));
-
-	logLine->in = NULL;
-	logLine->out = NULL;
-	logLine->macAddress = NULL;
-	logLine->sourceIPAddr = NULL;
-	logLine->destIPAddr = NULL;
-	logLine->protocol = NULL;
-	logLine->sourcePort = 0;
-	logLine->destPort = 0;
-	logLine->count = 0;
-
-	return logLine;
+static inline void f668c4bd_free(void *ptr) {
+	if (malloc_usable_size(ptr) > 0) {
+		free(ptr);
+	}
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_destroyLogLine
- * Description: Frees the memory allocated to the LogLine struct pointer
+ * Function:    f668c4bd_malloc_size
+ * Description: Performs the malloc() operation along with error-checking
  *
  * Parameters:
- *   logLine	A pointer to the LogLine instance to destroy
+ *   size       The size of the memory block to allocate
+ * Returns:     A pointer to the allocated memory block
  * ----------------------------------------------------------------------------
  */
-static inline void e88eda74_destroyLogLine(LogLine *logLine) {
-	f668c4bd_free(logLine->in);
-	f668c4bd_free(logLine);
-}
+void *f668c4bd_malloc_size(const size_t size);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_initLogLine
- * Description: Initializes an existing LogLine struct
+ * Function:    f668c4bd_malloc_size_size
+ * Description: Performs the malloc() operation with error-checking and memory block calculation
  *
  * Parameters:
- *   logLine	A pointer to the LogLine instance to initalize
- *   line       A pointer reference to the line data
+ *   typeSize       The size of the type being allocated (using sizeof())
+ *   numBlocks      The number of blocks of type to allocate
+ * Returns:         A pointer to the allocated memory block
  * ----------------------------------------------------------------------------
  */
-void e88eda74_initLogLine(LogLine *logLine, String *line);
+void *f668c4bd_malloc_size_size(const size_t typeSize, const size_t numBlocks);
 
-#endif /* ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H */
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f668c4bd_realloc_void_size
+ * Description: Performs the realloc() operation with error-checking
+ *
+ * Parameters:
+ *   ptr            The pointer to the memory block to reallocate
+ *   newSize        The new size of the memory block
+ * Returns:         A pointer to the re-allocated memory block
+ * ----------------------------------------------------------------------------
+ */
+void *f668c4bd_realloc_void_size(void *ptr, const size_t newSize);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f668c4bd_realloc_void_size_size
+ * Description: Performs the realloc() operation with error-checking and memory block calculation
+ *
+ * Parameters:
+ *   ptr            The pointer to the memory block to reallocate
+ *   typeSize       The size of the type being allocated (using sizeof())
+ *   numBlocks      The number of blocks of type to allocate
+ * Returns:         A pointer to the re-allocated memory block
+ * ----------------------------------------------------------------------------
+ */
+void *f668c4bd_realloc_void_size_size(void *ptr, const size_t typeSize, const size_t numBlocks);
+
+#endif /* ORG_DEVOPSBROKER_LANG_MEMORY_H */

@@ -1,5 +1,5 @@
 /*
- * listarray.c - DevOpsBroker C source file for providing array-based dynamic list functionality
+ * memory.c - DevOpsBroker C source file for providing memory management functionality
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -15,9 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
  * -----------------------------------------------------------------------------
  */
@@ -28,9 +27,9 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include "listarray.h"
-
-#include "../lang/memory.h"
+#include "error.h"
+#include "memory.h"
+#include "stringbuilder.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -40,9 +39,19 @@
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static inline void resizeListArray(ListArray* listArray) {
-	listArray->size <<= 1;
-	listArray->values = f668c4bd_realloc_void_size_size(listArray->values, sizeof(void *), listArray->size);
+/*
+ * Static functions in C restrict their scope to the file where they are declared
+ */
+static void printErrorMessage(register const size_t size) {
+	StringBuilder errorMessage;
+	c598a24c_initStringBuilder(&errorMessage);
+
+	c598a24c_append_string(&errorMessage, "Cannot allocate buffer of size '");
+	c598a24c_append_uint64(&errorMessage, size);
+	c598a24c_append_char(&errorMessage, '\'');
+
+	c7c88e52_printError_string_int(errorMessage.buffer, errno);
+	c598a24c_destroyStringBuilder(&errorMessage);
 }
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
@@ -50,10 +59,48 @@ static inline void resizeListArray(ListArray* listArray) {
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-void b196167f_add(ListArray *listArray, void *element) {
-	if (listArray->length == listArray->size) {
-		resizeListArray(listArray);
+void* f668c4bd_malloc_size(const size_t size) {
+	void *buffer = malloc(size);
+
+	if (buffer == NULL && size != 0) {
+		printErrorMessage(size);
+		abort();
 	}
 
-	listArray->values[listArray->length++] = element;
+	return buffer;
+}
+
+void *f668c4bd_malloc_size_size(const size_t typeSize, const size_t numBlocks) {
+	const size_t size = typeSize * numBlocks;
+	void *buffer = malloc(size);
+
+	if (buffer == NULL && size != 0) {
+		printErrorMessage(size);
+		abort();
+	}
+
+	return buffer;
+}
+
+void *f668c4bd_realloc_void_size(void *ptr, const size_t newSize) {
+	void *buffer = realloc(ptr, newSize);
+
+	if (buffer == NULL && newSize != 0) {
+		printErrorMessage(newSize);
+		abort();
+	}
+
+	return buffer;
+}
+
+void *f668c4bd_realloc_void_size_size(void *ptr, const size_t typeSize, const size_t numBlocks) {
+	const size_t newSize = typeSize * numBlocks;
+	void *buffer = realloc(ptr, newSize);
+
+	if (buffer == NULL && newSize != 0) {
+		printErrorMessage(newSize);
+		abort();
+	}
+
+	return buffer;
 }

@@ -1,5 +1,5 @@
 /*
- * listarray.c - DevOpsBroker C source file for providing array-based dynamic list functionality
+ * units.h - DevOpsBroker C header file for common size-related constants
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -15,45 +15,45 @@
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
+ * echo ORG_DEVOPSBROKER_LANG_UNITS | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-// ════════════════════════════ Feature Test Macros ═══════════════════════════
-
-#define _DEFAULT_SOURCE
+#ifndef ORG_DEVOPSBROKER_LANG_UNITS_H
+#define ORG_DEVOPSBROKER_LANG_UNITS_H
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include "listarray.h"
-
-#include "../lang/memory.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define UNITS_KHz 1000U
+#define UNITS_MHz 1000000U
+#define UNITS_GHz 1000000000U
+
+#define UNITS_KB 1000U
+#define UNITS_MB 1000000U
+#define UNITS_GB 1000000000U
+#define UNITS_TB 1000000000000UL
+
+#define UNITS_KiB 1024U
+#define UNITS_MiB 1048576U
+#define UNITS_GiB 1073741824U
+#define UNITS_TiB 1099511627776UL
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
+// ════════════════════════════════ Structures ════════════════════════════════
 
-static inline void resizeListArray(ListArray* listArray) {
-	listArray->size <<= 1;
-	listArray->values = f668c4bd_realloc_void_size_size(listArray->values, sizeof(void *), listArray->size);
-}
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
-// ═════════════════════════ Function Implementations ═════════════════════════
+// ═══════════════════════════ Function Declarations ══════════════════════════
 
-void b196167f_add(ListArray *listArray, void *element) {
-	if (listArray->length == listArray->size) {
-		resizeListArray(listArray);
-	}
 
-	listArray->values[listArray->length++] = element;
-}
+#endif /* ORG_DEVOPSBROKER_LANG_UNITS_H */

@@ -33,8 +33,8 @@
 #include <stdint.h>
 
 #include "long.h"
+#include "memory.h"
 #include "string.h"
-#include "system.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -122,11 +122,55 @@ uint32_t db0acb04_getStringSize_uint64(register const uint64_t value) {
 	return 21;
 }
 
+uint64_t db0acb04_parse_uint64(register const char *source) {
+	register char ch = *source;
+	register uint64_t value = 0UL;
+	register int digit;
+
+	while (ch) {
+		digit = ch - '0';
+
+		// Bomb out if digit is not a number
+		if (digit < 0 || digit > 9) {
+			abort();
+		}
+
+		value *= 10UL;
+		value += digit;
+		ch = *(++source);
+	}
+
+	return value;
+}
+
+uint64_t db0acb04_parse_uint64_ssize(register const char *source, register ssize_t length) {
+	register char ch = *source;
+	register uint64_t value = 0UL;
+	register int digit;
+	register int i = 0;
+
+	while (i < length) {
+		digit = ch - '0';
+
+		// Bomb out if digit is not a number
+		if (digit < 0 || digit > 9) {
+			abort();
+		}
+
+		value *= 10UL;
+		value += digit;
+		ch = *(++source);
+		i++;
+	}
+
+	return value;
+}
+
 char* db0acb04_toString_uint64(register uint64_t value) {
 	const int mallocSize = sizeof(char) * db0acb04_getStringSize_uint64(value);
 	register int remainder;
 
-	register char* target = c16819a0_malloc_size(mallocSize);
+	register char* target = f668c4bd_malloc_size(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 
@@ -161,7 +205,7 @@ char* db0acb04_toString_int64(register int64_t value) {
 		value = -value;
 	}
 
-	register char* target = c16819a0_malloc_size(mallocSize);
+	register char* target = f668c4bd_malloc_size(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 

@@ -34,7 +34,7 @@ OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/text
 IO_DIR := $(CURDIR)/src/org/devopsbroker/io
 LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
 
-LB_DEPS := $(IO_DIR)/file.h $(LANG_DIR)/string.h $(LANG_DIR)/stringbuilder.h $(LANG_DIR)/system.h
+LB_DEPS := $(IO_DIR)/file.h $(LANG_DIR)/memory.h $(LANG_DIR)/string.h $(LANG_DIR)/stringbuilder.h
 
 ################################### Targets ###################################
 

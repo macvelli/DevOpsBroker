@@ -94,14 +94,14 @@ void e2f74138_getLinkStatus(const char *pathName, FileStatus* fileStatus);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e2f74138_readFile
- * Description: Reads the value of a symbolic link
+ * Description: Reads up to count bytes from the file descriptor into the buffer
  *
  * Parameters:
  *   fd             The file descriptor of the file to read
  *   buffer         The buffer to read into
- *   count          The maximum number of bytes to
+ *   count          The maximum number of bytes to read
  *   pathName       The name of the file to read (used for error handling)
- * Returns:         The real path name of the file referenced by the symbolic link
+ * Returns:         The actual number of bytes read
  * ----------------------------------------------------------------------------
  */
 ssize_t e2f74138_readFile(const int fd, void *buffer, size_t count, const char *pathName);
@@ -117,6 +117,17 @@ ssize_t e2f74138_readFile(const int fd, void *buffer, size_t count, const char *
  * ----------------------------------------------------------------------------
  */
 char *e2f74138_readlink(const char *pathName, const ssize_t fileSize);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_read_uint64
+ * Description: Returns the unsigned long int value in the specified file
+ *
+ * Parameters:
+ *   pathName       The path name of the file
+ * Returns:         The unsigned long int value contained within the file
+ * ----------------------------------------------------------------------------
+ */
+uint64_t e2f74138_read_uint64(const char *pathName);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e2f74138_realpath

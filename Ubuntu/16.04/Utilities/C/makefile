@@ -38,13 +38,14 @@ OBJ_DIR := obj/org/devopsbroker
 LIB_SRC := $(wildcard $(LIB_DIR)/adt/*.c) \
 	   $(wildcard $(LIB_DIR)/io/*.c) \
 	   $(wildcard $(LIB_DIR)/lang/*.c) \
+	   $(wildcard $(LIB_DIR)/sysfs/*.c) \
 	   $(wildcard $(LIB_DIR)/terminal/*.c) \
 	   $(wildcard $(LIB_DIR)/text/*.c)
 
 LIB_OBJ := $(subst src/,obj/,$(LIB_SRC:.c=.o))
 
 INC :=	-I$(LIB_DIR)/adt -I$(LIB_DIR)/firelog -I$(LIB_DIR)/io -I$(LIB_DIR)/lang \
-	-I$(LIB_DIR)/terminal -I$(LIB_DIR)/text
+	-I$(LIB_DIR)/sysfs -I$(LIB_DIR)/terminal -I$(LIB_DIR)/text
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Exports ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -54,23 +55,25 @@ export CFLAGS
 ################################### Targets ###################################
 
 .ONESHELL:
-.PHONY: default all clean install lib-adt lib-firelog lib-io lib-lang lib-terminal lib-text library ls
+.PHONY: default all clean install lib-adt lib-firelog lib-io lib-lang lib-sysfs lib-terminal lib-text library ls
 
 default: all
 
-all: between firelog scriptinfo verifyip
+all: between firelog scriptinfo verifyclass verifyip
 
 clean:
 	/bin/rm -f between obj/between.o
 	/bin/rm -f firelog obj/firelog.o
 	/bin/rm -f schedtuner obj/schedtuner.o
 	/bin/rm -f scriptinfo obj/scriptinfo.o
+	/bin/rm -f verifyclass obj/verifyclass.o
 	/bin/rm -f verifyip obj/verifyip.o
 	/bin/rm -f lib/libdevopsbroker.a
 	$(MAKE) -f src/org/devopsbroker/adt/adt.mk clean
 	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk clean
 	$(MAKE) -f src/org/devopsbroker/io/io.mk clean
 	$(MAKE) -f src/org/devopsbroker/lang/lang.mk clean
+	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk clean
 	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk clean
 	$(MAKE) -f src/org/devopsbroker/text/text.mk clean
 
@@ -96,6 +99,11 @@ lib-lang:
 	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/lang/lang.mk $(filter-out $@ library,$(MAKECMDGOALS))
 
+lib-sysfs:
+	@umask $(UMASK) && \
+	source /etc/devops/ansi.conf && \
+	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk $(filter-out $@ library,$(MAKECMDGOALS))
+
 lib-terminal:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
@@ -107,7 +115,7 @@ lib-text:
 	$(MAKE) -f src/org/devopsbroker/text/text.mk $(filter-out $@ library,$(MAKECMDGOALS))
 
 # Deterministic archives do not store file timestamps, so the 'u' option to only replace newer files cannot work
-lib/libdevopsbroker.a: | lib-adt lib-io lib-lang lib-terminal lib-text
+lib/libdevopsbroker.a: | lib-adt lib-io lib-lang lib-sysfs lib-terminal lib-text
 	$(call printInfo,Building library $(@F))
 	/usr/bin/ar cr lib/libdevopsbroker.a $(LIB_OBJ)
 	/usr/bin/ranlib lib/libdevopsbroker.a
@@ -153,11 +161,19 @@ scriptinfo: obj/scriptinfo.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) obj/scriptinfo.o lib/libdevopsbroker.a -o scriptinfo
 
+obj/verifyclass.o: src/verifyclass.c
+	$(call printInfo,Compiling $(@F))
+	$(CC) $(CFLAGS) -c src/verifyclass.c -o obj/verifyclass.o
+
+verifyclass: obj/verifyclass.o
+	$(call printInfo,Creating $(@) executable)
+	$(CC) $(LDFLAGS) obj/verifyclass.o -o verifyclass
+
 obj/verifyip.o: src/verifyip.c
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c src/verifyip.c -o obj/verifyip.o
 
-# Have to put the library AFTER obj/schedtuner.o else the linker blows chunks
+# Have to put the library AFTER obj/verifyip.o else the linker blows chunks
 verifyip: obj/verifyip.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) obj/verifyip.o lib/libdevopsbroker.a -o verifyip
@@ -168,6 +184,8 @@ install: all
 	/bin/cp between ../usr/local/bin
 	/bin/cp firelog ../usr/local/bin
 	/bin/cp scriptinfo ../usr/local/bin
+	/bin/cp schedtuner ../usr/local/sbin
+	/bin/cp verifyclass ../usr/local/bin
 	/bin/cp verifyip ../usr/local/bin
 
 ls:

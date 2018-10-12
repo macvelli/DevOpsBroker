@@ -32,8 +32,6 @@
 #include <regex.h>
 #include <sys/types.h>
 
-#include "../lang/system.h"
-
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 #define REG_MATCH 0

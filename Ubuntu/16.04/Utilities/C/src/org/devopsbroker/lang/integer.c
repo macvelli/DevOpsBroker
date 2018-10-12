@@ -31,8 +31,8 @@
 #include <stdint.h>
 
 #include "integer.h"
+#include "memory.h"
 #include "string.h"
-#include "system.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -48,7 +48,15 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-uint32_t f45efac2_getStringSize_uint32(const uint32_t value) {
+uint32_t f45efac2_getStringSize_int32(register const int32_t value) {
+	if (value >= 0) {
+		return f45efac2_getStringSize_uint32(value);
+	}
+
+	return f45efac2_getStringSize_uint32(-value) + 1;
+}
+
+uint32_t f45efac2_getStringSize_uint32(register const uint32_t value) {
 	if (value < 100000) {
 		if (value < 10) {
 			return 2;
@@ -104,11 +112,47 @@ uint32_t f45efac2_parse_uint32(register const char *source) {
 	return value;
 }
 
-char *f45efac2_toString_uint32(uint32_t value) {
-	const size_t mallocSize = sizeof(char) * f45efac2_getStringSize_uint32(value);
-	uint32_t remainder;
+uint32_t f45efac2_parseHex_uint32(register const char *source) {
+	register char ch = *source | 0x20;
+	register uint32_t value = 0;
+	register int digit;
 
-	char* target = c16819a0_malloc_size(mallocSize);
+	// Skip 0x00 portion of hexadecimal value, if present
+	while (ch == '0' || ch == 'x') {
+		ch = *(++source) | 0x20;
+	}
+
+	while (ch != ' ') {
+		digit = (ch >= 'a') ? (ch - 'a') + 10 : ch - '0';
+
+		// Bomb out if digit is not a hexadecimal number
+		if (digit < 0 || digit > 15) {
+			abort();
+		}
+
+		value <<= 4;
+		value += digit;
+		ch = *(++source) | 0x20;
+	}
+
+	return value;
+}
+
+char *f45efac2_toString_int32(register int32_t value) {
+	// Return the int32_t minimum value string
+	if (value == INT32_MIN) {
+		return "-2147483648";
+	}
+
+	const int mallocSize = sizeof(char) * f45efac2_getStringSize_int32(value);
+	const bool sign = (value < 0);
+	register int remainder;
+
+	if (sign) {
+		value = -value;
+	}
+
+	register char* target = f668c4bd_malloc_size(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 
@@ -125,6 +169,75 @@ char *f45efac2_toString_uint32(uint32_t value) {
 		(*--target) = f6215943_digitOnes[value];
 		(*--target) = f6215943_digitTens[value];
 	}
+
+	if (sign) {
+		(*--target) = '-';
+	}
+
+	return target;
+}
+
+char *f45efac2_toString_uint32(register uint32_t value) {
+	const size_t mallocSize = sizeof(char) * f45efac2_getStringSize_uint32(value);
+	register uint32_t remainder;
+
+	register char* target = f668c4bd_malloc_size(mallocSize);
+	target += mallocSize;
+	(*--target) = '\0';
+
+	while (value >= 100) {
+		remainder = value % 100;
+		value /= 100;
+		(*--target) = f6215943_digitOnes[remainder];
+		(*--target) = f6215943_digitTens[remainder];
+	}
+
+	if (value < 10) {
+		(*--target) = '0' + value;
+	} else {
+		(*--target) = f6215943_digitOnes[value];
+		(*--target) = f6215943_digitTens[value];
+	}
+
+	return target;
+}
+
+char *f45efac2_toStringHex_uint32(register uint32_t value, const uint32_t precision) {
+	size_t mallocSize = sizeof(char) * (f45efac2_max_uint32(precision + 1, f45efac2_getStringSize_uint32(value)) + 2);
+	register uint32_t remainder;
+
+	register char *target = f668c4bd_malloc_size(mallocSize);
+	register const char *end = (target + 2);
+	target += mallocSize;
+	(*--target) = '\0';
+
+	while (value >= 256) {
+		remainder = value % 16;
+		value >>= 4;
+		(*--target) = f6215943_digitHex[remainder];
+
+		remainder = value % 16;
+		value >>= 4;
+		(*--target) = f6215943_digitHex[remainder];
+	}
+
+	if (value < 16) {
+		(*--target) = f6215943_digitHex[value];
+	} else {
+		remainder = value % 16;
+		value >>= 4;
+		(*--target) = f6215943_digitHex[remainder];
+		(*--target) = f6215943_digitHex[value];
+	}
+
+	// Add leading zeros according to the precision argument
+	while (target != end) {
+		*(--target) = '0';
+	}
+
+	// Add 0x prefix
+	*(--target) = 'x';
+	*(--target) = '0';
 
 	return target;
 }

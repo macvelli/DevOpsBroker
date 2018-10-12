@@ -33,6 +33,8 @@ OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/io
 
 LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
 
+FILE_DEPS := $(LANG_DIR)/error.h $(LANG_DIR)/long.h $(LANG_DIR)/memory.h $(LANG_DIR)/stringbuilder.h
+
 ################################### Targets ###################################
 
 .ONESHELL:
@@ -50,7 +52,7 @@ prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
 # For some reason I have to put "| prepare" else this target is rebuilt all the time
-$(OBJ_DIR)/file.o: $(SRC_DIR)/file.c $(SRC_DIR)/file.h $(LANG_DIR)/error.h $(LANG_DIR)/stringbuilder.h $(LANG_DIR)/system.h | prepare
+$(OBJ_DIR)/file.o: $(SRC_DIR)/file.c $(SRC_DIR)/file.h $(FILE_DEPS) | prepare
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/file.c -o $(OBJ_DIR)/file.o
 

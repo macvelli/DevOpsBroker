@@ -36,7 +36,6 @@
 
 #include "ansi.h"
 #include "../lang/string.h"
-#include "../lang/system.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 

@@ -179,6 +179,9 @@ function tuneNetwork() {
 
 ################################## Variables ##################################
 
+## Bash exec variables
+EXEC_SCHEDTUNER=/usr/local/sbin/schedtuner
+
 ## Configuration
 NUM_CONNECTIONS=25
 
@@ -198,14 +201,7 @@ PAGESIZE=$(/usr/bin/getconf PAGE_SIZE)
 
 # --------------------------- Scheduler Information ---------------------------
 
-# CPU Maximum Frequency
-CPU_MAX_FREQ=$[ $($EXEC_CAT /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq) * 1000 ]
-
-# Task Scheduling Calculations
-SCHED_LATENCY_NS=$(echo "scale=8; (16777216 / $CPU_MAX_FREQ) * 1000000000" | $EXEC_BC)
-SCHED_LATENCY_NS=${SCHED_LATENCY_NS::-9}
-SCHED_MIN_GRANULARITY_NS=$[ $SCHED_LATENCY_NS / 3 * 2 ]
-SCHED_WAKEUP_GRANULARITY_NS=$[ $SCHED_LATENCY_NS / 10 * 4 ]
+CFS_SCHED_TUNE=$($EXEC_SCHEDTUNER)
 
 # --------------------------- Filesystem Information --------------------------
 
@@ -337,12 +333,7 @@ kernel.perf_cpu_time_max_percent = 5
 kernel.pid_max = 1048576
 
 # Kernel Task Scheduler Optimizations
-kernel.sched_child_runs_first = 1
-kernel.sched_latency_ns = $SCHED_LATENCY_NS
-kernel.sched_min_granularity_ns = $SCHED_MIN_GRANULARITY_NS
-kernel.sched_schedstats = 0
-kernel.sched_tunable_scaling = 0
-kernel.sched_wakeup_granularity_ns = $SCHED_WAKEUP_GRANULARITY_NS
+$CFS_SCHED_TUNE
 
 # Disable Magic SysRq Key
 kernel.sysrq = 0

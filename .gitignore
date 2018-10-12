@@ -34,7 +34,9 @@
 *.hex
 Ubuntu/16.04/Utilities/C/between
 Ubuntu/16.04/Utilities/C/firelog
+Ubuntu/16.04/Utilities/C/schedtuner
 Ubuntu/16.04/Utilities/C/scriptinfo
+Ubuntu/16.04/Utilities/C/verifyclass
 Ubuntu/16.04/Utilities/C/verifyip
 
 # Debug files

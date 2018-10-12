@@ -50,7 +50,7 @@ prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
 # For some reason I have to put "| prepare" else this target is rebuilt all the time
-$(OBJ_DIR)/listarray.o: $(SRC_DIR)/listarray.c $(SRC_DIR)/listarray.h $(LANG_DIR)/system.h | prepare
+$(OBJ_DIR)/listarray.o: $(SRC_DIR)/listarray.c $(SRC_DIR)/listarray.h $(LANG_DIR)/memory.h | prepare
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/listarray.c -o $(OBJ_DIR)/listarray.o
 

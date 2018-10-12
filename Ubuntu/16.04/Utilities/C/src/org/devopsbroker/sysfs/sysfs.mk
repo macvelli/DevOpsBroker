@@ -1,5 +1,5 @@
 #
-# terminal.mk - DevOpsBroker makefile for compiling the org.devopsbroker.terminal package
+# sysfs.mk - DevOpsBroker makefile for compiling the org.devopsbroker.sysfs package
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -17,7 +17,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
 #
 # -----------------------------------------------------------------------------
 #
@@ -28,10 +28,13 @@ include /etc/devops/globals.mk
 
 ################################## Variables ##################################
 
-SRC_DIR := $(CURDIR)/src/org/devopsbroker/terminal
-OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/terminal
+SRC_DIR := $(CURDIR)/src/org/devopsbroker/sysfs
+OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/sysfs
 
 LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
+
+ENUM_DEPS := $(LANG_DIR)/error.h $(LANG_DIR)/string.h $(LANG_DIR)/stringbuilder.h
+MEMARRAY_DEPS := $(LANG_DIR)/memory.h $(LANG_DIR)/stringbuilder.h
 
 ################################### Targets ###################################
 
@@ -40,7 +43,8 @@ LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
 
 default: all
 
-all: $(OBJ_DIR)/ansi.o
+all: $(OBJ_DIR)/errorcorrectiontype.o $(OBJ_DIR)/formfactor.o $(OBJ_DIR)/memoryarray.o \
+	$(OBJ_DIR)/memorytype.o
 
 clean:
 	$(call printInfo,Cleaning $(OBJ_DIR) directory)
@@ -50,9 +54,24 @@ prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
 # For some reason I have to put "| prepare" else this target is rebuilt all the time
-$(OBJ_DIR)/ansi.o: $(SRC_DIR)/ansi.c $(SRC_DIR)/ansi.h $(LANG_DIR)/string.h | prepare
+$(OBJ_DIR)/errorcorrectiontype.o: $(SRC_DIR)/errorcorrectiontype.c $(SRC_DIR)/errorcorrectiontype.h $(ENUM_DEPS) | prepare
 	$(call printInfo,Compiling $(@F))
-	$(CC) $(CFLAGS) -c $(SRC_DIR)/ansi.c -o $(OBJ_DIR)/ansi.o
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/errorcorrectiontype.c -o $(OBJ_DIR)/errorcorrectiontype.o
+
+# For some reason I have to put "| prepare" else this target is rebuilt all the time
+$(OBJ_DIR)/formfactor.o: $(SRC_DIR)/formfactor.c $(SRC_DIR)/formfactor.h $(ENUM_DEPS) | prepare
+	$(call printInfo,Compiling $(@F))
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/formfactor.c -o $(OBJ_DIR)/formfactor.o
+
+# For some reason I have to put "| prepare" else this target is rebuilt all the time
+$(OBJ_DIR)/memoryarray.o: $(SRC_DIR)/memoryarray.c $(SRC_DIR)/memoryarray.h $(MEMARRAY_DEPS) | prepare
+	$(call printInfo,Compiling $(@F))
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/memoryarray.c -o $(OBJ_DIR)/memoryarray.o
+
+# For some reason I have to put "| prepare" else this target is rebuilt all the time
+$(OBJ_DIR)/memorytype.o: $(SRC_DIR)/memorytype.c $(SRC_DIR)/memorytype.h $(ENUM_DEPS) | prepare
+	$(call printInfo,Compiling $(@F))
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/memorytype.c -o $(OBJ_DIR)/memorytype.o
 
 printenv:
 	echo "  MAKEFILE_LIST: $(MAKEFILE_LIST)"

@@ -1,5 +1,5 @@
 /*
- * system.h - DevOpsBroker C header file for providing system-level functionality
+ * memorytype.h - DevOpsBroker C header file for the org.devopsbroker.sysfs.MemoryType enum
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -16,41 +16,52 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
- * echo ORG_DEVOPSBROKER_LANG_SYSTEM | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_SYSFS_MEMORYTYPE | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_LANG_SYSTEM_H
-#define ORG_DEVOPSBROKER_LANG_SYSTEM_H
-
-// ═════════════════════════════════ Includes ═════════════════════════════════
-
-#include "stringbuilder.h"
+#ifndef ORG_DEVOPSBROKER_SYSFS_MEMORYTYPE_H
+#define ORG_DEVOPSBROKER_SYSFS_MEMORYTYPE_H
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define c8391d73_NUM_VALUES 6
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-
-// ═════════════════════════════ Global Variables ═════════════════════════════
-
+typedef enum MemoryType {
+	MemoryType_UNKNOWN = 0,
+	MemoryType_SDRAM,
+	MemoryType_DDR,
+	MemoryType_DDR2,
+	MemoryType_DDR3,
+	MemoryType_DDR4
+} MemoryType;
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c16819a0_execute
- * Description: Executes the specified file with the specified arguments
- *        NOTE: Terminate the argv[] array with NULL as the last value
+ * Function:    c8391d73_getMemoryType
+ * Description: Returns the MemoryType associated with the char* string
  *
  * Parameters:
- *   path       The name of the file to execute
- *   argv       The argument list available to the new program
- * Returns:     A StringBuilder containing the STDOUT output from the program execution
+ *   source     The char* pointer to convert to an MemoryType value
+ * Returns:     The associated MemoryType value
  * ----------------------------------------------------------------------------
  */
-StringBuilder *c16819a0_execute(const char *path, char *const argv[]);
+MemoryType c8391d73_getMemoryType(char *source);
 
-#endif /* ORG_DEVOPSBROKER_LANG_SYSTEM_H */
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c8391d73_toStringMemoryType
+ * Description: Returns the char* string representation of the MemoryType value
+ *
+ * Parameters:
+ *   memoryType	The MemoryType value to convert to a char* string
+ * Returns:     The char* string representation of the MemoryType value
+ * ----------------------------------------------------------------------------
+ */
+char *c8391d73_toStringMemoryType(const MemoryType memoryType);
+
+#endif /* ORG_DEVOPSBROKER_SYSFS_MEMORYTYPE_H */

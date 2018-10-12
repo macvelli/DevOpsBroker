@@ -1,5 +1,5 @@
 /*
- * listarray.c - DevOpsBroker C source file for providing array-based dynamic list functionality
+ * verifyclass.c - DevOpsBroker utility for validating Java-like fully-qualified class names
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -17,7 +17,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
  * -----------------------------------------------------------------------------
  */
@@ -28,9 +28,9 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include "listarray.h"
+#include <stdlib.h>
 
-#include "../lang/memory.h"
+#include "org/devopsbroker/lang/error.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -38,22 +38,69 @@
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
-
-static inline void resizeListArray(ListArray* listArray) {
-	listArray->size <<= 1;
-	listArray->values = f668c4bd_realloc_void_size_size(listArray->values, sizeof(void *), listArray->size);
-}
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
-// ═════════════════════════ Function Implementations ═════════════════════════
+// ═══════════════════════════ Function Declarations ══════════════════════════
 
-void b196167f_add(ListArray *listArray, void *element) {
-	if (listArray->length == listArray->size) {
-		resizeListArray(listArray);
+
+// ══════════════════════════════════ main() ══════════════════════════════════
+
+int main(int argc, char *argv[]) {
+	if (argc < 2) {
+		c7c88e52_printUsage("verifyclass com.example.foo.Bar");
+		exit(EXIT_FAILURE);
 	}
 
-	listArray->values[listArray->length++] = element;
+	// Classname parameter
+	register const char *classname = argv[1];
+	register char ch = *classname;
+	register int domainNameLength;
+
+	while (ch >= 'a' && ch <= 'z') {
+		ch = *(++classname);
+	}
+
+	while (ch == '.') {
+		if (*(classname-1) == '-') {
+			exit(EXIT_FAILURE);
+		}
+
+		ch = *(++classname);
+
+		if (ch >= 'A' && ch <= 'Z') {
+			do {
+				ch = *(++classname) | 0x20;
+			} while (ch >= 'a' && ch <= 'z');
+
+			if (ch == ' ') {
+				// Exit with success
+				exit(EXIT_SUCCESS);
+			}
+
+			exit(EXIT_FAILURE);
+		}
+
+		if (ch == '-') {
+			exit(EXIT_FAILURE);
+		}
+
+		domainNameLength = 0;
+		while ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-') {
+			if (++domainNameLength > 63) {
+				exit(EXIT_FAILURE);
+			}
+
+			ch = *(++classname);
+		}
+
+		if (domainNameLength < 2) {
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	// Exit with failure
+	exit(EXIT_FAILURE);
 }
+
+// ═════════════════════════ Function Implementations ═════════════════════════

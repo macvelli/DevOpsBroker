@@ -1,5 +1,5 @@
 /*
- * linebuffer.h - DevOpsBroker C header file for providing text line-processing functionality
+ * pipe.h - DevOpsBroker C header file for providing a unidirectional data channel used for interprocess communication
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -16,36 +16,38 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
- * echo ORG_DEVOPSBROKER_TEXT_LINEBUFFER | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_IO_PIPE | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_TEXT_LINEBUFFER_H
-#define ORG_DEVOPSBROKER_TEXT_LINEBUFFER_H
+#ifndef ORG_DEVOPSBROKER_IO_PIPE_H
+#define ORG_DEVOPSBROKER_IO_PIPE_H
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <stdlib.h>
-#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
 
-#include "../io/file.h"
-#include "../lang/memory.h"
-#include "../lang/string.h"
-#include "../lang/stringbuilder.h"
+#include <linux/limits.h>
+
+#include "file.h"
+#include "../lang/error.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define PIPE_IO_SIZE 2
+#define PIPE_BUFFER_LENGTH PIPE_BUF
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-typedef struct LineBuffer {
-	char *buffer;
-	uint32_t length;
-	String line;
-	StringBuilder bufferTail;
-} LineBuffer;
+typedef struct Pipe {
+	int io[PIPE_IO_SIZE];
+	int *read;
+	int *write;
+} Pipe;
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -53,87 +55,94 @@ typedef struct LineBuffer {
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_createLineBuffer
- * Description: Creates a LineBuffer struct with the specified char* buffer
+ * Function:    c31ab0c3_closePipe
+ * Description: Closes both the read and write ends of the pipe()
  *
  * Parameters:
- *   buffer     A pointer to the char* buffer
- * Returns:     A LineBuffer struct with the specified char* buffer
+ *   pipe	A pointer to the Pipe instance to modify
  * ----------------------------------------------------------------------------
  */
-static inline LineBuffer *c196bc72_createLineBuffer(char *buffer) {
-	LineBuffer *lineBuffer = f668c4bd_malloc_size(sizeof(LineBuffer));
+static inline void c31ab0c3_closePipe(register Pipe *pipe) {
+	// Close the read end of the pipe
+	if (close(*pipe->read) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to close read end of pipe() failed", errno);
+		exit(EXIT_FAILURE);
+	}
 
-	lineBuffer->buffer = buffer;
-	lineBuffer->length = 0;
-	lineBuffer->line.value = buffer;
-	lineBuffer->line.length = 0;
-
-	c598a24c_initStringBuilder_uint32(&lineBuffer->bufferTail, LOGICAL_BLOCK_SIZE);
-
-	return lineBuffer;
+	// Close the write end of the pipe
+	if (close(*pipe->write) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to close write end of pipe() failed", errno);
+		exit(EXIT_FAILURE);
+	}
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_destroyLineBuffer
- * Description: Frees the memory allocated to the LineBuffer struct pointer
+ * Function:    c31ab0c3_closeRead
+ * Description: Closes the read end of the pipe()
  *
  * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to destroy
+ *   pipe	A pointer to the Pipe instance to modify
  * ----------------------------------------------------------------------------
  */
-static inline void c196bc72_destroyLineBuffer(LineBuffer *lineBuffer) {
-	c598a24c_destroyStringBuilder(&lineBuffer->bufferTail);
-	f668c4bd_free(lineBuffer);
+static inline void c31ab0c3_closeRead(register Pipe *pipe) {
+	// Close the read end of the pipe
+	if (close(*pipe->read) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to close read end of pipe() failed", errno);
+		exit(EXIT_FAILURE);
+	}
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_getLine
- * Description: Returns a String* to the next line in the LineBuffer
+ * Function:    c31ab0c3_closeWrite
+ * Description: Closes the write end of the pipe()
  *
  * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance
- *   numBytes       The number of bytes available in the buffer
- * Returns:         A String* pointer to the next line, or NULL if no line found
- *
- * NOTE: This method will bomb out with a SIGSEGV Segmentation Fault if the
- *       char* buffer refers to data that resides within the read-only Data
- *       Segment area of your program.
+ *   pipe	A pointer to the Pipe instance to modify
  * ----------------------------------------------------------------------------
  */
-String *c196bc72_getLine(LineBuffer *lineBuffer, const ssize_t numBytes);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_initLineBuffer
- * Description: Initializes an existing LineBuffer struct with the specified char* buffer
- *
- * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to initalize
- *   buffer         A pointer to the char* buffer
- * ----------------------------------------------------------------------------
- */
-static inline void c196bc72_initLineBuffer(LineBuffer *lineBuffer, char *buffer) {
-	lineBuffer->buffer = buffer;
-	lineBuffer->length = 0;
-	lineBuffer->line.value = buffer;
-	lineBuffer->line.length = 0;
-
-	c598a24c_initStringBuilder_uint32(&lineBuffer->bufferTail, LOGICAL_BLOCK_SIZE);
+static inline void c31ab0c3_closeWrite(register Pipe *pipe) {
+	// Close the write end of the pipe
+	if (close(*pipe->write) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to close write end of pipe() failed", errno);
+		exit(EXIT_FAILURE);
+	}
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_resetLineBuffer
- * Description: Resets an existing LineBuffer struct to its initial state
+ * Function:    c31ab0c3_createPipe
+ * Description: Initializes an existing Pipe struct by creating a pipe()
  *
  * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to reset
- *   buffer         A pointer to the char* buffer
+ *   pipeObj    A pointer to the Pipe instance to initalize
  * ----------------------------------------------------------------------------
  */
-static inline void c196bc72_resetLineBuffer(LineBuffer *lineBuffer) {
-	lineBuffer->length = 0;
-	lineBuffer->line.value = lineBuffer->buffer;
-	lineBuffer->line.length = 0;
+static inline void c31ab0c3_createPipe(register Pipe *pipeObj) {
+	// Create the pipe
+	if (pipe(pipeObj->io) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to create pipe() failed", errno);
+		exit(EXIT_FAILURE);
+	}
+
+	// Initialize the read/write attributes
+	int *ptr = pipeObj->io;
+	pipeObj->read = ptr++;
+	pipeObj->write = ptr;
 }
 
-#endif /* ORG_DEVOPSBROKER_TEXT_LINEBUFFER_H */
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c31ab0c3_redirectToStdout
+ * Description: Redirects the write end of the pipe() to STDOUT
+ *
+ * Parameters:
+ *   pipe	A pointer to the Pipe instance to redirect
+ * ----------------------------------------------------------------------------
+ */
+static inline void c31ab0c3_redirectToStdout(register Pipe *pipe) {
+	// Redirect the pipe to STDOUT
+	if (dup2(*pipe->write, STDOUT_FILENO) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to redirect pipe() to STDOUT failed", errno);
+		exit(EXIT_FAILURE);
+	}
+}
+
+#endif /* ORG_DEVOPSBROKER_IO_PIPE_H */

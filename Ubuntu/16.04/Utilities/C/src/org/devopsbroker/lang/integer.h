@@ -41,6 +41,17 @@
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f45efac2_getStringSize_int32
+ * Description: Calculates the string size of a signed integer value
+ *
+ * Parameters:
+ *   value      The signed integer value to evaluate
+ * Returns:     The size of the string including null termination
+ * ----------------------------------------------------------------------------
+ */
+uint32_t f45efac2_getStringSize_int32(const int32_t value);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f45efac2_getStringSize_uint32
  * Description: Calculates the string size of an unsigned integer value
  *
@@ -50,6 +61,20 @@
  * ----------------------------------------------------------------------------
  */
 uint32_t f45efac2_getStringSize_uint32(const uint32_t value);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f45efac2_max_uint32
+ * Description: Returns the maximum unsigned integer value
+ *
+ * Parameters:
+ *   foo        An unsigned integer value to evaluate
+ *   bar        An unsigned integer value to evaluate
+ * Returns:     The maximum unsigned integer value
+ * ----------------------------------------------------------------------------
+ */
+static inline uint32_t f45efac2_max_uint32(register const uint32_t foo, register const uint32_t bar) {
+	return (foo > bar) ? foo : bar;
+}
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f45efac2_parse_uint32
@@ -63,6 +88,28 @@ uint32_t f45efac2_getStringSize_uint32(const uint32_t value);
 uint32_t f45efac2_parse_uint32(const char *source);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f45efac2_parseHex_uint32
+ * Description: Converts a hexadecimal char* to an unsigned integer
+ *
+ * Parameters:
+ *   source     A hexadecimal char* representation of an unsigned integer
+ * Returns:     The unsigned integer value
+ * ----------------------------------------------------------------------------
+ */
+uint32_t f45efac2_parseHex_uint32(const char *source);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f45efac2_toString_int32
+ * Description: Converts a signed integer to a string
+ *
+ * Parameters:
+ *   value      An signed integer value
+ * Returns:     The string representation of the signed integer value
+ * ----------------------------------------------------------------------------
+ */
+char *f45efac2_toString_int32(int32_t value);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f45efac2_toString_uint32
  * Description: Converts an unsigned integer to a string
  *
@@ -72,5 +119,17 @@ uint32_t f45efac2_parse_uint32(const char *source);
  * ----------------------------------------------------------------------------
  */
 char *f45efac2_toString_uint32(uint32_t value);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f45efac2_toStringHex_uint32
+ * Description: Converts an unsigned integer to a hexadecimal string
+ *
+ * Parameters:
+ *   value      An unsigned integer value
+ *   precision  The minimum number of hexadecimal characters required
+ * Returns:     The hexadecimal string representation of the unsigned integer value
+ * ----------------------------------------------------------------------------
+ */
+char *f45efac2_toStringHex_uint32(uint32_t value, const uint32_t precision);
 
 #endif /* ORG_DEVOPSBROKER_LANG_INTEGER_H */

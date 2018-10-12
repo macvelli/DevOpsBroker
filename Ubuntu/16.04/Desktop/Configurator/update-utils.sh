@@ -225,6 +225,9 @@ installSystemUtility movedir
 # Install pms system administration utility
 installSystemUtility pms
 
+# Install schedtuner system administration utility
+installSystemUtility schedtuner
+
 # Install smbshare system administration utility
 installSystemUtility smbshare
 
@@ -369,6 +372,9 @@ installUserUtility venture
 # Install verify user utility
 installUserUtility verify
 
+# Install verifyclass user utility
+installUserUtility verifyclass
+
 # Install verifyip user utility
 installUserUtility verifyip
 
@@ -385,6 +391,7 @@ fi
 
 installTemplate 'bash-script.tpl'
 installTemplate 'bash-template.tpl'
+installTemplate 'c-enum-source.tpl'
 installTemplate 'c-struct-source.tpl'
 installTemplate 'fileinfo.tpl'
 installTemplate 'header-file-c.tpl'

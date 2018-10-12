@@ -29,6 +29,7 @@
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <errno.h>
@@ -38,9 +39,11 @@
 #include <sys/stat.h>
 
 #include "file.h"
+
 #include "../lang/error.h"
+#include "../lang/long.h"
+#include "../lang/memory.h"
 #include "../lang/stringbuilder.h"
-#include "../lang/system.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -143,7 +146,7 @@ ssize_t e2f74138_readFile(const int fd, void *buffer, size_t count, const char *
 char *e2f74138_readlink(const char *pathName, const ssize_t fileSize) {
 	const ssize_t bufSize = (fileSize == 0) ? PATH_MAX : fileSize;
 
-	char *realPathName = c16819a0_malloc_size_size(sizeof(char), bufSize + 1);
+	char *realPathName = f668c4bd_malloc_size_size(sizeof(char), bufSize + 1);
 
 	if (readlink(pathName, realPathName, bufSize) == SYSTEM_ERROR_CODE) {
 		StringBuilder *errorMessage = c598a24c_createStringBuilder();
@@ -161,6 +164,22 @@ char *e2f74138_readlink(const char *pathName, const ssize_t fileSize) {
 	realPathName[fileSize] = '\0';
 
 	return realPathName;
+}
+
+uint64_t e2f74138_read_uint64(register const char *pathName) {
+	register int fileDescriptor;
+	register ssize_t numBytes;
+	char buffer[32];
+
+	fileDescriptor = e2f74138_openFile(pathName, O_RDONLY);
+	numBytes = e2f74138_readFile(fileDescriptor, buffer, 32, pathName);
+	e2f74138_closeFile(fileDescriptor, pathName);
+
+	if (numBytes != END_OF_FILE) {
+		return db0acb04_parse_uint64_ssize(buffer, numBytes - 1);
+	}
+
+	return 0UL;
 }
 
 char *e2f74138_realpath(const char *pathName) {

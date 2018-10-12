@@ -1,5 +1,5 @@
 /*
- * listarray.c - DevOpsBroker C source file for providing array-based dynamic list functionality
+ * float.c - DevOpsBroker C source file for providing float-related functionality
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -15,9 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
  *
  * -----------------------------------------------------------------------------
  */
@@ -28,32 +27,77 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include "listarray.h"
+#include <stdlib.h>
+#include <stdint.h>
 
-#include "../lang/memory.h"
+#include "float.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define Float_SIGN_MASK 0x80000000
+#define Float_EXPONENT_MASK 0x7f800000
+#define Float_SIGNIFICAND_MASK 0x7fffff
+
+#define Float_EXPONENT_BIAS 127
+#define Float_IMPLICIT_BIT 0x800000
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static inline void resizeListArray(ListArray* listArray) {
-	listArray->size <<= 1;
-	listArray->values = f668c4bd_realloc_void_size_size(listArray->values, sizeof(void *), listArray->size);
-}
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-void b196167f_add(ListArray *listArray, void *element) {
-	if (listArray->length == listArray->size) {
-		resizeListArray(listArray);
+char *b08dcfcc_toString_float(float value) {
+	// TODO
+	return NULL;
+}
+
+float b08dcfcc_parse_float(register const char *source) {
+	register char ch = *source;
+	register float value = 0.0f;
+	register int digit;
+
+	// Calculate the integer portion of the float
+	while (ch) {
+		if (ch == '.') {
+			ch = *(++source);
+			break;
+		}
+
+		digit = ch - '0';
+
+		// Bomb out if digit is not a number
+		if (digit < 0 || digit > 9) {
+			abort();
+		}
+
+		value *= 10;
+		value += digit;
+		ch = *(++source);
 	}
 
-	listArray->values[listArray->length++] = element;
+	// Calculate the fractional portion of the float
+	if (ch) {
+		register uint32_t magnitude = 10U;
+
+		do {
+			digit = ch - '0';
+
+			// Bomb out if digit is not a number
+			if (digit < 0 || digit > 9) {
+				abort();
+			}
+
+			value += ( ((float) digit) / magnitude );
+			magnitude++;
+			ch = *(++source);
+		} while (ch);
+	}
+
+	return value;
 }

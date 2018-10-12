@@ -31,7 +31,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
-#include "system.h"
+#include "memory.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -59,6 +59,8 @@ typedef struct String {
 extern const char f6215943_digitOnes[128];
 
 extern const char f6215943_digitTens[128];
+
+extern const char f6215943_digitHex[16];
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
@@ -97,7 +99,7 @@ char *f6215943_concatenate(char *string, ...);
 static inline String *f6215943_createString(const size_t length) {
 	String *string = malloc(sizeof(String));
 
-	string->value = c16819a0_malloc_size_size(sizeof(char), length + 1);
+	string->value = f668c4bd_malloc_size_size(sizeof(char), length + 1);
 	string->length = length;
 
 	return string;
@@ -124,8 +126,8 @@ char *f6215943_copy(const char *source, const uint32_t length);
  * ----------------------------------------------------------------------------
  */
 static inline void f6215943_destroyString(String *string) {
-	c16819a0_free(string->value);
-	c16819a0_free(string);
+	f668c4bd_free(string->value);
+	f668c4bd_free(string);
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -160,6 +162,18 @@ static inline uint32_t f6215943_getLength(register const char *string) {
 bool f6215943_isEqual(const char *foo, const char *bar);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f6215943_isNotEqual
+ * Description: Compares the two strings for inequality
+ *
+ * Parameters:
+ *   foo        The first string instance to check for inequality
+ *   bar        The second string instance to check for inequality
+ * Returns:     True if the two string instances are not equal, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool f6215943_isNotEqual(const char *foo, const char *bar);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f6215943_search
  * Description: Searches the text parameter for the pattern parameter
  *
@@ -171,5 +185,18 @@ bool f6215943_isEqual(const char *foo, const char *bar);
  * ----------------------------------------------------------------------------
  */
 char *f6215943_search(char *pattern, char *text);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f6215943_startsWith
+ * Description: Determines if text starts with the pattern
+ *
+ * Parameters:
+ *   pattern    The pattern to search for at the beginning of the text
+ *   text       The text to search
+ * Returns:     A char* pointer to the character immediately after the found pattern,
+ *              or NULL if the pattern was not found
+ * ----------------------------------------------------------------------------
+ */
+char *f6215943_startsWith(const char *pattern, char *text);
 
 #endif /* ORG_DEVOPSBROKER_LANG_STRING_H */

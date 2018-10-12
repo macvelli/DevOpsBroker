@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../lang/system.h"
+#include "../lang/memory.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -69,9 +69,9 @@ void b196167f_add(ListArray *listArray, void *element);
  * ----------------------------------------------------------------------------
  */
 static inline ListArray *b196167f_createListArray() {
-	ListArray *listArray = c16819a0_malloc_size(sizeof(ListArray));
+	ListArray *listArray = f668c4bd_malloc_size(sizeof(ListArray));
 
-	listArray->values = c16819a0_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
 	listArray->size = LISTARRAY_DEFAULT_SIZE;
 	listArray->length = 0;
 
@@ -88,9 +88,9 @@ static inline ListArray *b196167f_createListArray() {
  * ----------------------------------------------------------------------------
  */
 static inline ListArray *b196167f_createListArray_uint32(const uint32_t size) {
-	ListArray *listArray = c16819a0_malloc_size(sizeof(ListArray));
+	ListArray *listArray = f668c4bd_malloc_size(sizeof(ListArray));
 
-	listArray->values = c16819a0_malloc_size_size(sizeof(void*), size);
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
 	listArray->size = size;
 	listArray->length = 0;
 
@@ -106,8 +106,8 @@ static inline ListArray *b196167f_createListArray_uint32(const uint32_t size) {
  * ----------------------------------------------------------------------------
  */
 static inline void b196167f_destroyListArray(ListArray *listArray) {
-	c16819a0_free(listArray->values);
-	c16819a0_free(listArray);
+	f668c4bd_free(listArray->values);
+	f668c4bd_free(listArray);
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -119,7 +119,7 @@ static inline void b196167f_destroyListArray(ListArray *listArray) {
  * ----------------------------------------------------------------------------
  */
 static inline void b196167f_initListArray(ListArray *listArray) {
-	listArray->values = c16819a0_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
 	listArray->size = LISTARRAY_DEFAULT_SIZE;
 	listArray->length = 0;
 }
@@ -134,7 +134,7 @@ static inline void b196167f_initListArray(ListArray *listArray) {
  * ----------------------------------------------------------------------------
  */
 static inline void b196167f_initListArray_uint32(ListArray *listArray, const uint32_t size) {
-	listArray->values = c16819a0_malloc_size_size(sizeof(void*), size);
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
 	listArray->size = size;
 	listArray->length = 0;
 }
