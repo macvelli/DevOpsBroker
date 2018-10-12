@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# c-struct-source.tpl - DevOpsBroker template script for generating C struct source files
+# c-enum-source.tpl - DevOpsBroker template script for generating C enum source files
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -19,7 +19,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
 #
 # -----------------------------------------------------------------------------
 #
@@ -54,7 +54,7 @@ EXEC_MD5SUM=/usr/bin/md5sum
 EXEC_VERIFYCLASS=/usr/local/bin/verifyclass
 
 ## Options
-structName="$1"
+enumName="$1"
 
 ## Variables
 includeGuard=''
@@ -65,17 +65,17 @@ variableName=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if struct name is missing
-if [ -z "$structName" ]; then
-	printUsage 'c-struct-source.tpl com.example.foo.Bar'
+# Display usage if enum name is missing
+if [ -z "$enumName" ]; then
+	printUsage 'c-enum-source.tpl com.example.foo.Bar'
 	exit 1
 fi
 
-# Display error if struct name is invalid
-if ! $EXEC_VERIFYCLASS "$structName"; then
-	printError 'c-struct-source.tpl' "Invalid C struct name: '$structName'"
+# Display error if enum name is invalid
+if ! $EXEC_VERIFYCLASS "$enumName"; then
+	printError 'c-enum-source.tpl' "Invalid C enum name: '$enumName'"
 	echo
-	printUsage 'c-struct-source.tpl com.example.foo.Bar'
+	printUsage 'c-enum-source.tpl com.example.foo.Bar'
 
 	exit 1
 fi
@@ -83,11 +83,11 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Set the C header file include guard
-includeGuard="${structName//./_}"
+includeGuard="${enumName//./_}"
 includeGuard="${includeGuard^^}"
 
 # Set the typedef name
-typedefName="$(echo $structName | $EXEC_GREP -Eo '([A-Z][a-zA-Z]+){1}$')"
+typedefName="$(echo $enumName | $EXEC_GREP -Eo '([A-Z][a-zA-Z]+){1}$')"
 
 # Set the md5hash of the include guard
 md5Hash=$(echo $includeGuard | $EXEC_MD5SUM | $EXEC_CUT -c 25-32)
@@ -105,7 +105,7 @@ kernelVersion=${3:-"$(getKernelVersion)"}
 ## Template
 /bin/cat << EOF > $filename.h
 /*
- * $filename.h - C header file for the ${structName} struct
+ * $filename.h - C header file for the ${enumName} enum
  *
  * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
  *
@@ -131,74 +131,48 @@ kernelVersion=${3:-"$(getKernelVersion)"}
 #ifndef ${includeGuard}_H
 #define ${includeGuard}_H
 
-// ═════════════════════════════════ Includes ═════════════════════════════════
-
-#include <stdlib.h>
-
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define ${md5Hash}_NUM_VALUES 2
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-typedef struct $typedefName {
-
-	// TODO: Fill in with the attributes for the struct
-
+typedef enum $typedefName {
+	FOO = 0,
+	BAR
 } $typedefName;
-
-// ═════════════════════════════ Global Variables ═════════════════════════════
-
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    ${md5Hash}_create${typedefName}
- * Description: Creates a ${typedefName} struct instance
- *
- * Returns:     A ${typedefName} struct instance
- * ----------------------------------------------------------------------------
- */
-static inline ${typedefName} *${md5Hash}_create${typedefName}() {
-	${typedefName} *${variableName} = malloc(sizeof(${typedefName}));
-
-	// TODO: Fill in with struct initialization code
-
-	return ${variableName};
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    ${md5Hash}_destroy${typedefName}
- * Description: Frees the memory allocated to the ${typedefName} struct pointer
+ * Function:    ${md5Hash}_get${typedefName}
+ * Description: Returns the ${typedefName} associated with the char* string
  *
  * Parameters:
- *   ${variableName}	A pointer to the ${typedefName} instance to destroy
+ *   source     The char* pointer to convert to an ${typedefName} value
+ * Returns:     The associated ${typedefName} value
  * ----------------------------------------------------------------------------
  */
-static inline void ${md5Hash}_destroy${typedefName}(${typedefName} *${variableName}) {
-	free(${variableName});
-}
+${typedefName} ${md5Hash}_get${typedefName}(const char *source);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    ${md5Hash}_init${typedefName}
- * Description: Initializes an existing ${typedefName} struct
+ * Function:    ${md5Hash}_toString${typedefName}
+ * Description: Returns the char* string representation of the ${typedefName} value
  *
  * Parameters:
- *   ${variableName}	A pointer to the ${typedefName} instance to initalize
+ *   ${variableName}	The ${typedefName} value to convert to a char* string
+ * Returns:     The char* string representation of the ${typedefName} value
  * ----------------------------------------------------------------------------
  */
-static inline void ${md5Hash}_init${typedefName}(${typedefName} *${variableName}) {
-
-	// TODO: Fill in with struct initialization code
-
-}
+char *${md5Hash}_toString${typedefName}(const ${typedefName} ${variableName});
 
 #endif /* ${includeGuard}_H */
 
 EOF
 
-/bin/cat << EOF >> $filename.c
+/bin/cat << EOF > $filename.c
 /*
- * $filename.c - C source file for the ${structName} struct
+ * $filename.c - C source file for the ${enumName} enum
  *
  * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
  *
@@ -228,20 +202,28 @@ EOF
 
 #include "$filename.h"
 
-// ═══════════════════════════════ Preprocessor ═══════════════════════════════
-
-
-// ═════════════════════════════════ Typedefs ═════════════════════════════════
-
-
-// ═══════════════════════════ Function Declarations ══════════════════════════
-
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
+char *${md5Hash}_stringList[] = { "Foo", "Bar" };
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
+${typedefName} ${md5Hash}_get${typedefName}(register const char *source) {
+	// Find the appropriate ${typedefName}
+	for (register int i = 0; i < ${md5Hash}_NUM_VALUES; i++) {
+
+		// TODO: Put logic here to check for equality between source and ${md5Hash}_stringList items
+
+	}
+
+	// TODO: Put error logic here when no match is found
+
+	exit(EXIT_FAILURE);
+}
+
+char *${md5Hash}_toString${typedefName}(const ${typedefName} ${variableName}) {
+	return ${md5Hash}_stringList[${variableName}];
+}
 
 EOF
 

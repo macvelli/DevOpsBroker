@@ -100,6 +100,10 @@ function showHelp() {
 		printUsage "venture struct ${gold}[-d directory] ${yellow}${paramNameMap['struct']}"
 		echo ${romantic}
 		echo 'Creates a new C struct header and source files'${reset}
+	elif [ "$command" == 'enum' ]; then
+		printUsage "venture enum ${gold}[-d directory] ${yellow}${paramNameMap['enum']}"
+		echo ${romantic}
+		echo 'Creates a new C enum header and source files'${reset}
 	fi
 
 	echo ${reset}
@@ -112,18 +116,20 @@ function showHelp() {
 
 ## Bash exec variables
 EXEC_SHA256SUM=/usr/bin/sha256sum
+EXEC_VERIFYCLASS=/usr/local/bin/verifyclass
 
 ## Options
 command="$1"
 baseDir='.'
 
 ## Variables
-validCommands=('create' 'fileinfo' 'new' 'struct')
+validCommands=('create' 'enum' 'fileinfo' 'new' 'struct')
 showCommandHelp=false
 
 declare -A paramNameMap
 
 paramNameMap['create']='PROJECT_NAME'
+paramNameMap['enum']='com.example.foo.Bar'
 paramNameMap['fileinfo']='FILE'
 paramNameMap['new']='FILE'
 paramNameMap['struct']='com.example.foo.Bar'
@@ -138,7 +144,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "venture ${gold}[help]${yellow} { create | fileinfo | new | struct }"
+	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct }"
 	exit 1
 fi
 
@@ -146,7 +152,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'venture' "Invalid command: '$command'"
 	echo
-	printUsage "venture ${gold}[help]${yellow} { create | fileinfo | new | struct }"
+	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct }"
 
 	exit 1
 fi
@@ -200,22 +206,23 @@ if [ "$command" == 'create' ]; then
 
 	baseDir="$baseDir/$projectName"
 
-elif [ "$command" == 'struct' ]; then
-	structName="$2"
+elif [ "$command" == 'struct' ] || [ "$command" == 'enum' ]; then
+	className="$2"
 
-	if [ -z "$structName" ]; then
-		printError 'venture' 'Missing C struct name'
+	# Display error if class name is missing
+	if [ -z "$className" ]; then
+		printError 'venture' "Missing C $command name"
 		echo
-		printUsage "venture struct ${paramNameMap['struct']}"
+		printUsage "venture $command ${paramNameMap[$command]}"
 
 		exit 1
 	fi
 
-	regExpr='^[a-z]+(\.[a-z0-9-]{3,63})*(\.[A-Z][a-zA-Z]+){1}$'
-	if [[ ! "$structName" =~ $regExpr ]]; then
-		printError 'venture' "Invalid C struct name: '$structName'"
+	# Display error if class name is invalid
+	if ! $EXEC_VERIFYCLASS "$className"; then
+		printError 'venture' "Invalid C $command name: '$className'"
 		echo
-		printUsage "venture struct ${paramNameMap['struct']}"
+		printUsage "venture $command ${paramNameMap[$command]}"
 
 		exit 1
 	fi
@@ -349,7 +356,7 @@ elif [ "$command" == 'new' ]; then
 	elif [[ "$fileName" == *.html ]]; then
 		printInfo "Creating new blank HTML5 file '$fileName'"
 
-		# Set html.tpl location and make it executable
+		# Set html5.tpl location and make it executable
 		html5Tpl=$(isExecutable "$SCRIPT_DIR"/template/html5.tpl)
 
 		# Execute template script
@@ -380,7 +387,7 @@ elif [ "$command" == 'new' ]; then
 	elif [[ "$fileName" == *.tpl ]]; then
 		printInfo "Creating new Bash shell template '$fileName'"
 
-		# Set template.tpl location and make it executable
+		# Set bash-template.tpl location and make it executable
 		bashTemplateTpl=$(isExecutable "$SCRIPT_DIR"/template/bash-template.tpl)
 
 		# Execute template script and make Bash script executable
@@ -392,15 +399,27 @@ elif [ "$command" == 'new' ]; then
 elif [ "$command" == 'struct' ]; then
 	# BEGIN Create new C struct
 
-	printInfo "Creating new C struct '$structName'"
+	printInfo "Creating new C struct '$className'"
 
-	# Set template.tpl location and make it executable
-	cStructTpl=$(isExecutable "$SCRIPT_DIR/template/c-struct-source.tpl")
+	# Set c-struct-source.tpl location and make it executable
+	cStructSourceTpl=$(isExecutable "$SCRIPT_DIR/template/c-struct-source.tpl")
 
 	# Execute template script
-	"$cStructTpl" "$structName"
+	"$cStructSourceTpl" "$className"
 
 	# END Create new C struct
+elif [ "$command" == 'enum' ]; then
+	# BEGIN Create new C enum
+
+	printInfo "Creating new C enum '$className'"
+
+	# Set c-enum-source.tpl location and make it executable
+	cEnumSourceTpl=$(isExecutable "$SCRIPT_DIR/template/c-enum-source.tpl")
+
+	# Execute template script
+	"$cEnumSourceTpl" "$className"
+
+	# END Create new C enum
 fi
 
 exit 0
