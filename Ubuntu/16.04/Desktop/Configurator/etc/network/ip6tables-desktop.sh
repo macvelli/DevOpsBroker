@@ -709,4 +709,6 @@ fi
 # Save /etc/network/ip6tables.rules
 $IP6TABLES_SAVE > /etc/network/ip6tables.rules
 
+echo
+
 exit 0
