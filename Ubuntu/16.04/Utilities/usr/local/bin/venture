@@ -104,12 +104,18 @@ function showHelp() {
 		printUsage "venture enum ${gold}[-d directory] ${yellow}${paramNameMap['enum']}"
 		echo ${romantic}
 		echo 'Creates a new C enum header and source files'${reset}
+	elif [ "$command" == 'timestamp' ]; then
+		printUsage 'venture timestamp { changelog }'
+		echo ${romantic}
+		echo 'Generates a proper timestamp for changelog entries'${reset}
 	fi
 
-	echo ${reset}
-	echo ${bold}${white}'Valid Options:'${reset}
-	echo -e ${bold}${yellow}'  -d directory\t'  ${romantic}'The target directory'
-	echo ${reset}
+	if [ "$command" != 'timestamp' ]; then
+		echo ${reset}
+		echo ${bold}${white}'Valid Options:'${reset}
+		echo -e ${bold}${yellow}'  -d directory\t'  ${romantic}'The target directory'
+		echo ${reset}
+	fi
 }
 
 ################################## Variables ##################################
@@ -123,7 +129,7 @@ command="$1"
 baseDir='.'
 
 ## Variables
-validCommands=('create' 'enum' 'fileinfo' 'new' 'struct')
+validCommands=('create' 'enum' 'fileinfo' 'new' 'struct' 'timestamp' )
 showCommandHelp=false
 
 declare -A paramNameMap
@@ -227,7 +233,7 @@ elif [ "$command" == 'struct' ] || [ "$command" == 'enum' ]; then
 		exit 1
 	fi
 
-else
+elif [ "$command" != 'timestamp' ]; then
 	fileName="$2"
 
 	# Display error and usage if no file name parameter given
@@ -420,6 +426,11 @@ elif [ "$command" == 'enum' ]; then
 	"$cEnumSourceTpl" "$className"
 
 	# END Create new C enum
+elif [ "$command" == 'timestamp' ]; then
+
+	# Proper timestamp for a changelog entry
+	$EXEC_DATE +"%a, %d %b %Y %T %z"
+
 fi
 
 exit 0

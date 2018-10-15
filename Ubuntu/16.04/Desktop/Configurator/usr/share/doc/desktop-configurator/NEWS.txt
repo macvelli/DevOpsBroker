@@ -1,3 +1,21 @@
+2018-10-14: Version 1.1.0
+
+  * Complete solution for setting up a Samba server
+    - smbshare utility for creating Samba shares
+    - firewall service smbd for managing Samba firewall rules
+  * Added logbroker administrative utility
+  * Added movedir administrative utility
+  * Added sample xorg.conf for NVIDIA dual monitor setup
+  * Revamped the pms administrative utility providing better help and cleaner functionality
+  * Replaced vim-tiny with vim
+    - Added /etc/vim/vimrc.local global configuration file for vim editor
+  * Created libdevopsbroker.a library and refactored existing C binary executables
+  * Added C struct template and C enum template to venture
+  * Added schedtuner and verifyclass C binary utilities
+  * Added sample xorg.conf file for AMD video cards
+    - Includes additional configuration files for AMD video cards
+  * Made numerous bug fixes and code cleanup
+
 2018-09-20: Version 1.0.0
 
   * Inital release

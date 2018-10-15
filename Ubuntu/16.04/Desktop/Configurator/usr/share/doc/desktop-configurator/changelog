@@ -1,3 +1,24 @@
+desktop-configurator (1.1.0) xenial; urgency=medium
+
+  [ Edward Smith ]
+  * Complete solution for setting up a Samba server
+    - smbshare utility for creating Samba shares
+    - firewall service smbd for managing Samba firewall rules
+  * Added logbroker administrative utility
+  * Added movedir administrative utility
+  * Added sample xorg.conf for NVIDIA dual monitor setup
+  * Revamped the pms administrative utility providing better help and cleaner functionality
+  * Replaced vim-tiny with vim
+    - Added /etc/vim/vimrc.local global configuration file for vim editor
+  * Created libdevopsbroker.a library and refactored existing C binary executables
+  * Added C struct template and C enum template to venture
+  * Added schedtuner and verifyclass C binary utilities
+  * Added sample xorg.conf file for AMD video cards
+    - Includes additional configuration files for AMD video cards
+  * Made numerous bug fixes and code cleanup
+
+ -- Edward Smith <edwardsmith@devopsbroker.org>  Sun, 14 Oct 2018 21:19:58 -0500
+
 desktop-configurator (1.0.0) xenial; urgency=low
 
   * Initial release

@@ -59,7 +59,7 @@ export CFLAGS
 
 default: all
 
-all: between firelog scriptinfo verifyclass verifyip
+all: between firelog schedtuner scriptinfo verifyclass verifyip
 
 clean:
 	/bin/rm -f between obj/between.o
@@ -87,7 +87,7 @@ lib-adt:
 lib-firelog:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ firelog,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ install firelog,$(MAKECMDGOALS))
 
 lib-io:
 	@umask $(UMASK) && \
@@ -183,8 +183,8 @@ verifyip: obj/verifyip.o
 install: all
 	/bin/cp between ../usr/local/bin
 	/bin/cp firelog ../usr/local/bin
-	/bin/cp scriptinfo ../usr/local/bin
 	/bin/cp schedtuner ../usr/local/sbin
+	/bin/cp scriptinfo ../usr/local/bin
 	/bin/cp verifyclass ../usr/local/bin
 	/bin/cp verifyip ../usr/local/bin
 
@@ -198,6 +198,7 @@ ls:
 	echo "  lib-firelog"
 	echo "  lib-io"
 	echo "  lib-lang"
+	echo "  lib-sysfs"
 	echo "  lib-terminal"
 	echo "  lib-text"
 	echo "  library"
@@ -205,7 +206,9 @@ ls:
 	echo "Executable Targets:"
 	echo "  between"
 	echo "  firelog"
+	echo "  schedtuner"
 	echo "  scriptinfo"
+	echo "  verifyclass"
 	echo "  verifyip"
 	echo
 

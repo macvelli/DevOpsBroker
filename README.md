@@ -7,6 +7,9 @@ The DevOpsBroker Ubuntu 16.04 Desktop Configurator is a complete turn-key soluti
 
 A complete list of features and installation instructions can be found [here](Ubuntu/16.04/Desktop/Configurator/doc/README.md).
 
+### Current Release
+**October 14th, 2018:** desktop-configurator 1.1.0 was released
+
 ### Installation Overview
 1. Download the latest Ubuntu 16.04 Desktop ISO from [Ubuntu 16.04 Releases](http://releases.ubuntu.com/16.04/)
 
@@ -21,7 +24,7 @@ A complete list of features and installation instructions can be found [here](Ub
 
 5. Install the **desktop-configurator** package
 
-   * `sudo apt install ./desktop-configurator_1.0.0_amd64.deb`
+   * `sudo apt install ./desktop-configurator_1.1.0_amd64.deb`
 
 
 6. Configure your desktop

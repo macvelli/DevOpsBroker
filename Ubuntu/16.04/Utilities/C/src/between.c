@@ -30,6 +30,7 @@
  // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "org/devopsbroker/io/file.h"

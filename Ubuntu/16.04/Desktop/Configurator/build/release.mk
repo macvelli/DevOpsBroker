@@ -29,7 +29,7 @@ include /etc/devops/globals.mk
 ################################## Variables ##################################
 
 PKG_NAME := desktop-configurator
-VERSION := 1.0.0
+VERSION := 1.1.0
 ARCH := amd64
 PKG_ARCHIVE := $(PKG_NAME)_$(VERSION)_$(ARCH)
 
@@ -61,6 +61,7 @@ makeutils:
 	echo
 	$(call printInfo,Making C language utility binaries)
 	$(MAKE) TMPDIR=$(TMPDIR) --directory=$(UTILITIES_DIR)/C clean
+	$(MAKE) TMPDIR=$(TMPDIR) --directory=$(UTILITIES_DIR)/C library
 	$(MAKE) TMPDIR=$(TMPDIR) --directory=$(UTILITIES_DIR)/C install
 
 createdirs: clean
@@ -158,6 +159,7 @@ installutils: copyusr
 	/bin/ln -sT $(INSTALL_DIR)/ttf-msclearfonts.sh $(BUILD_DIR)/usr/local/sbin/ttf-msclearfonts
 
 	$(call printInfo,Creating symbolic links for $(INSTALL_DIR)/etc files)
+	/bin/ln -sT $(INSTALL_DIR)/etc/configure-amdgpu.sh $(BUILD_DIR)/usr/local/sbin/configure-amdgpu
 	/bin/ln -sT $(INSTALL_DIR)/etc/apt/configure-apt-mirror.sh $(BUILD_DIR)/usr/local/sbin/configure-apt-mirror
 	/bin/ln -sT $(INSTALL_DIR)/etc/configure-fstab.sh $(BUILD_DIR)/usr/local/sbin/configure-fstab
 	/bin/ln -sT $(INSTALL_DIR)/etc/default/configure-grub.sh $(BUILD_DIR)/usr/local/sbin/configure-grub
