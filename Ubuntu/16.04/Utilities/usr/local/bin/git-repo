@@ -486,7 +486,7 @@ elif [ $command == 'release' ]; then
 
 	printBanner "Release branch '$branchName'"
 
-	echo "${bold}${yellow}Are you sure you want to release branch '${green}$branchName{yellow}'?${white}"
+	echo "${bold}${yellow}Are you sure you want to release branch '${green}$branchName${yellow}'?${white}"
 	select confirmRelease in 'Yes' 'No'; do
 		if [ "$confirmRelease" == 'Yes' ]; then
 			echo
