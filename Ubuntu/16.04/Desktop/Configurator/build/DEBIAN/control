@@ -1,5 +1,5 @@
 Package: desktop-configurator
-Version: 1.0.0
+Version: 1.1.0
 Section: utils
 Priority: optional
 Architecture: amd64
@@ -28,4 +28,5 @@ Description: Configures fresh installation of Ubuntu 16.04 Desktop
  * Configures the Disk I/O schedulers and tunes each disk independently
  * Replaces dnsmasq with unbound for the local DNS cache server
  * Performs user configuration
+ * Complete solution for setting up a Samba server
 Homepage: https://www.devopsbroker.org/ubuntu/xenial/desktop-configurator/
