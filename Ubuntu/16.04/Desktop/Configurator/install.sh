@@ -176,6 +176,9 @@ createSymlink /usr/local/sbin/ttf-msclearfonts "$INSTALL_DIR"/ttf-msclearfonts.s
 # Make symlink to update-utils.sh
 createSymlink /usr/local/sbin/update-utils "$INSTALL_DIR"/update-utils.sh
 
+# Make symlink to etc/configure-amdgpu.sh
+createSymlink /usr/local/sbin/configure-amdgpu "$INSTALL_DIR"/etc/configure-amdgpu.sh
+
 # Make symlink to etc/configure-fstab.sh
 createSymlink /usr/local/sbin/configure-fstab "$INSTALL_DIR"/etc/configure-fstab.sh
 

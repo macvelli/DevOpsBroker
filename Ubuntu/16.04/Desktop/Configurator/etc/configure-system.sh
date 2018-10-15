@@ -244,17 +244,32 @@ fi
 #
 
 regExpr="\\bNVIDIA\\b"
-if [[ "$vgaDevice" =~ $regExpr ]] && [ ! -f /etc/modprobe.d/nvidia.conf ]; then
-	echo
-	echo "${bold}${yellow}NOTE: ${white}Consider optimizing your NVidia graphics card using the DevOpsBroker /etc/modprobe.d/nvidia.conf file as a guide${reset}"
-	echoOnExit=true
-fi
+if [[ "$vgaDevice" =~ $regExpr ]]; then
 
-if [ ! -f /etc/X11/xorg.conf ]; then
+	if [ ! -f /etc/modprobe.d/nvidia.conf ]; then
+		echo
+		echo "${bold}${yellow}NOTE: ${white}Consider optimizing your NVidia graphics card using the DevOpsBroker /etc/modprobe.d/nvidia.conf file as a guide${reset}"
+		echoOnExit=true
+	fi
+
 	# Suggest using /etc/X11/xorg-nvidia.conf
-	if [[ "$vgaDevice" =~ $regExpr ]]; then
+	if [ ! -f /etc/X11/xorg.conf ]; then
 		echo
 		echo "${bold}${yellow}NOTE: ${white}Consider optimizing your X11 configuration using the DevOpsBroker /etc/X11/xorg-nvidia.conf file as a guide${reset}"
+		echoOnExit=true
+	fi
+elif [[ "$vgaDevice" =~ (AMD|ATI) ]]; then
+
+	if [ ! -f /etc/modprobe.d/amdgpu.conf ]; then
+		echo
+		echo "${bold}${yellow}NOTE: ${white}Consider optimizing your AMD graphics card using the DevOpsBroker /etc/modprobe.d/amdgpu.conf file as a guide${reset}"
+		echoOnExit=true
+	fi
+
+	# Suggest using /etc/X11/xorg-amd.conf
+	if [ ! -f /etc/X11/xorg.conf ] || ! $EXEC_GREP -E 'Driver[[:space:]]+"amdgpu"' /etc/X11/xorg.conf; then
+		echo
+		echo "${bold}${yellow}NOTE: ${white}Consider optimizing your X11 configuration using the DevOpsBroker /etc/X11/xorg-amd.conf file as a guide${reset}"
 		echoOnExit=true
 	fi
 fi
