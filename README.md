@@ -15,7 +15,7 @@ A complete list of features and installation instructions can be found [here](Ub
 
 2. Install Ubuntu 16.04 Desktop
 
-3. Download the latest release of [desktop-configurator](https://github.com/macvelli/DevOpsBroker/releases/download/desktop-configurator-1.0.0/desktop-configurator_1.0.0_amd64.deb) and its [SHA256 Checksum](https://github.com/macvelli/DevOpsBroker/releases/download/desktop-configurator-1.0.0/SHA256SUM)
+3. Download the latest release of [desktop-configurator](https://github.com/macvelli/DevOpsBroker/releases/download/desktop-configurator-1.1.0/desktop-configurator_1.1.0_amd64.deb) and its [SHA256 Checksum](https://github.com/macvelli/DevOpsBroker/releases/download/desktop-configurator-1.1.0/SHA256SUM)
 
 4. Verify the **desktop-configurator** package against its SHA256 checksum
 
