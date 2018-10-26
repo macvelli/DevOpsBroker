@@ -267,7 +267,7 @@ elif [[ "$vgaDevice" =~ (AMD|ATI) ]]; then
 	fi
 
 	# Suggest using /etc/X11/xorg-amd.conf
-	if [ ! -f /etc/X11/xorg.conf ] || ! $EXEC_GREP -E 'Driver[[:space:]]+"amdgpu"' /etc/X11/xorg.conf; then
+	if [ ! -f /etc/X11/xorg.conf ] || ! $EXEC_GREP -Eq 'Driver[[:space:]]+"amdgpu"' /etc/X11/xorg.conf; then
 		echo
 		echo "${bold}${yellow}NOTE: ${white}Consider optimizing your X11 configuration using the DevOpsBroker /etc/X11/xorg-amd.conf file as a guide${reset}"
 		echoOnExit=true

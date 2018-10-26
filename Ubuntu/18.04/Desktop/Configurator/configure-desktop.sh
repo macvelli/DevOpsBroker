@@ -187,6 +187,21 @@ function uninstallPackage() {
 	fi
 }
 
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     uninstallSnap
+# Description:  Uninstalls the specified snap, if already installed
+#
+# Parameter $1: The file to check for existence; uninstall if present
+# Parameter $2: The name of the snap to uninstall
+# -----------------------------------------------------------------------------
+function uninstallSnap() {
+	if [ -f "$1" ]; then
+		printBanner "Uninstalling $2"
+		$EXEC_SNAP remove $2
+		echo
+	fi
+}
+
 ################################## Variables ##################################
 
 ## Bash exec variables
@@ -346,6 +361,12 @@ installPackage '/usr/bin/gimp' 'gimp'
 
 # Install git
 installPackage '/usr/bin/git' 'git'
+
+# Uninstall gnome-calculator snap
+uninstallSnap '/snap/gnome-calculator/current/usr/bin/gnome-calculator' 'gnome-calculator'
+
+# Install gnome-calculator apt package
+installPackage '/usr/bin/gnome-calculator' 'gnome-calculator'
 
 # Install gnome-shell-extensions
 installPackage '/usr/share/doc/gnome-shell-extensions/copyright' 'gnome-shell-extensions'
