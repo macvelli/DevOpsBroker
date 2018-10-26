@@ -413,7 +413,7 @@ printInfo 'Allow ICMPv6 parameter-problem output'
 $IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type parameter-problem -j do_not_track
 
 printInfo 'Allow ICMPv6 echo-request output'
-$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type echo-request -m limit --limit 2/s --limit-burst 1 -j do_not_track
+$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type echo-request -j do_not_track
 
 printInfo 'Allow ICMPv6 echo-reply output'
 $IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type echo-reply -j do_not_track

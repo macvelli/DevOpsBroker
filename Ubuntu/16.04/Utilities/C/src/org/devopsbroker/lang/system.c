@@ -79,34 +79,7 @@ StringBuilder *c16819a0_execute(const char *path, char *const argv[]) {
 		}
 		c31ab0c3_closeRead(&pipe);
 
-		int status;
-		pid_t pid = waitpid(child, &status, 0);
-
-		if (pid == SYSTEM_ERROR_CODE) {
-			register StringBuilder *errorMessage = c598a24c_createStringBuilder();
-
-			c598a24c_append_string(errorMessage, "Attempt to wait() on child process '");
-			c598a24c_append_int32(errorMessage, child);
-			c598a24c_append_string(errorMessage, "' failed");
-
-			c7c88e52_printError_string_int(errorMessage->buffer, errno);
-			c598a24c_destroyStringBuilder(errorMessage);
-
-			exit(EXIT_FAILURE);
-		}
-
-		if (!WIFEXITED(status) || WEXITSTATUS(status) != EXIT_SUCCESS) {
-			register StringBuilder *errorMessage = c598a24c_createStringBuilder();
-
-			c598a24c_append_string(errorMessage, "Invalid child process exit status '");
-			c598a24c_append_int32(errorMessage, status);
-			c598a24c_append_char(errorMessage, '\'');
-
-			c7c88e52_printError_string(errorMessage->buffer);
-			c598a24c_destroyStringBuilder(errorMessage);
-
-			exit(EXIT_FAILURE);
-		}
+		c16819a0_waitForChild(child);
 
 		// Program execution succeeded
 		return execOutput;
@@ -115,6 +88,7 @@ StringBuilder *c16819a0_execute(const char *path, char *const argv[]) {
 		// We are actually in the "child"
 		c31ab0c3_redirectToStdout(&pipe);
 		c31ab0c3_closeRead(&pipe);
+
 		if (execv(path, argv) == SYSTEM_ERROR_CODE) {
 			register StringBuilder *errorMessage = c598a24c_createStringBuilder_uint32(256);
 
@@ -132,4 +106,71 @@ StringBuilder *c16819a0_execute(const char *path, char *const argv[]) {
 	}
 
 	return NULL;
+}
+
+pid_t c16819a0_execute_pipe(const char *path, char *const argv[], Pipe *pipe) {
+	// First configure the pipe to caputre output from the process execution
+	c31ab0c3_createPipe(pipe);
+
+	pid_t child = fork();
+
+	if (child == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Attempt to fork() child process failed", errno);
+		exit(EXIT_FAILURE);
+	} else if (child > 0) {
+		// We are actually in the "parent"
+		c31ab0c3_closeWrite(pipe);
+
+		return child;
+	} else {
+		// We are actually in the "child"
+		c31ab0c3_redirectToStdout(pipe);
+		c31ab0c3_closeRead(pipe);
+
+		if (execv(path, argv) == SYSTEM_ERROR_CODE) {
+			StringBuilder errorMessage;
+			c598a24c_initStringBuilder_uint32(&errorMessage, 256);
+
+			c598a24c_append_string(&errorMessage, "Attempt to execute() child process '");
+			c598a24c_append_string(&errorMessage, path);
+			c598a24c_append_string(&errorMessage, "' with arguments '");
+			c598a24c_append_stringArray(&errorMessage, argv);
+			c598a24c_append_string(&errorMessage, "' failed");
+
+			c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		}
+	}
+
+	exit(EXIT_FAILURE);
+}
+
+void c16819a0_waitForChild(const pid_t child) {
+	int status;
+	pid_t pid = waitpid(child, &status, 0);
+
+	if (pid == SYSTEM_ERROR_CODE) {
+		StringBuilder errorMessage;
+		c598a24c_initStringBuilder(&errorMessage);
+
+		c598a24c_append_string(&errorMessage, "Attempt to wait() on child process '");
+		c598a24c_append_int32(&errorMessage, child);
+		c598a24c_append_string(&errorMessage, "' failed");
+
+		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+
+		exit(EXIT_FAILURE);
+	}
+
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != EXIT_SUCCESS) {
+		StringBuilder errorMessage;
+		c598a24c_initStringBuilder(&errorMessage);
+
+		c598a24c_append_string(&errorMessage, "Invalid child process exit status '");
+		c598a24c_append_int32(&errorMessage, status);
+		c598a24c_append_char(&errorMessage, '\'');
+
+		c7c88e52_printError_string(errorMessage.buffer);
+
+		exit(EXIT_FAILURE);
+	}
 }

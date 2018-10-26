@@ -2,7 +2,7 @@
 
 #
 # venture - DevOpsBroker utility for managing software projects including
-#	    project creation, compile, build, test, and deploy
+#           project creation, compile, build, test, and deploy
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -150,7 +150,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct }"
+	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct | timestamp }"
 	exit 1
 fi
 
@@ -158,7 +158,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'venture' "Invalid command: '$command'"
 	echo
-	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct }"
+	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct | timestamp }"
 
 	exit 1
 fi

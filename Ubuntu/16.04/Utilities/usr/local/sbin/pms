@@ -64,7 +64,11 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'autoremove' ]; then
+	if [ "$command" == 'add-repo' ]; then
+		printUsage 'pms add-repo ppa:<user>/<ppa-name>'
+		echo ${romantic}
+		echo 'Adds an external Personal  Package  Archive to the local APT repository'${reset}
+	elif [ "$command" == 'autoremove' ]; then
 		printUsage 'pms autoremove'
 		echo ${romantic}
 		echo 'Removes all packages that were automatically installed to satisfy dependencies for other packages and are now no longer needed'${reset}
@@ -130,6 +134,7 @@ function showHelp() {
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 EXEC_APT_CACHE=/usr/bin/apt-cache
 EXEC_APT_GET=/usr/bin/apt-get
 EXEC_APT_MARK=/usr/bin/apt-mark
@@ -145,7 +150,7 @@ command="$1"
 
 ## Variables
 showCommandHelp=false
-sudoCommands=('autoremove' 'full-upgrade' 'install' 'reconfigure' 'refresh' 'reinstall' 'remove' 'uninstall' 'upgrade')
+sudoCommands=('add-repo' 'autoremove' 'full-upgrade' 'install' 'reconfigure' 'refresh' 'reinstall' 'remove' 'uninstall' 'upgrade')
 validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,7 +163,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "pms ${gold}[help]${yellow} { autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
+	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
 	exit 1
 fi
 
@@ -166,7 +171,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'pms' "Invalid command: '$command'"
 	echo
-	printUsage "pms ${gold}[help]${yellow} { autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
+	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
 
 	exit 1
 fi
@@ -184,11 +189,33 @@ fi
 
 ################################### Actions ###################################
 
-if [ $command == 'autoremove' ]; then
+if [ "$command" == 'add-repo' ]; then
+
+	ppa="$2"
+
+	# Display usage if no PPA parameter given
+	if [ -z "$ppa" ]; then
+		printUsage 'pms add-repo ppa:<user>/<ppa-name>'
+		exit 1
+	fi
+
+	# Display error if parameter is not a valid PPA
+	if [[ ! "$ppa" =~ ^ppa:[a-zA-Z0-9\.-]+/[a-zA-Z0-9\.-]+$ ]]; then
+		printError 'pms' "Invalid PPA: '$ppa'"
+		echo
+		printUsage 'pms add-repo ppa:<user>/<ppa-name>'
+
+		exit 1
+	fi
+
+	printInfo "Adding '$ppa' PPA to local APT repository"
+	$EXEC_ADD_APT_REPO -y --update "$ppa"
+
+elif [ "$command" == 'autoremove' ]; then
 
 	$EXEC_APT autoremove
 
-elif [ $command == 'upgrade' ] || [ $command == 'full-upgrade' ]; then
+elif [ "$command" == 'upgrade' ] || [ "$command" == 'full-upgrade' ]; then
 
 	# Update apt packages
 	$EXEC_APT update
@@ -249,7 +276,13 @@ elif [ $command == 'install' ]; then
 	snapList=()
 
 	for name in "$@"; do
-		if [[ "$name" =~ \.deb$ ]]; then
+		if [ "$name" == '--install-recommends' ]; then
+
+			printInfo 'Considering recommended packages as a dependency for installation'
+			packageList+=( "$name" )
+			continue
+
+		elif [[ "$name" =~ \.deb$ ]]; then
 
 			fileName="$name"
 

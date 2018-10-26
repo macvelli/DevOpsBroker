@@ -38,7 +38,9 @@
 #include "org/devopsbroker/adt/listarray.h"
 #include "org/devopsbroker/firelog/logline.h"
 #include "org/devopsbroker/io/file.h"
+#include "org/devopsbroker/io/pipe.h"
 #include "org/devopsbroker/lang/error.h"
+#include "org/devopsbroker/lang/system.h"
 #include "org/devopsbroker/text/linebuffer.h"
 #include "org/devopsbroker/text/regex.h"
 
@@ -59,6 +61,10 @@ static void filterOutputLogLine(LogLine *logLine);
 ListArray *inputLogLineList;
 ListArray *outputLogLineList;
 
+// dmesg path and argument list
+const char *dmesg = "/bin/dmesg";
+char *const argList[] = { "/bin/dmesg", "-t", NULL };
+
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
@@ -68,38 +74,30 @@ int main(int argc, char *argv[]) {
 
 	programName = "firelog";
 
-	// Compile the BLOCK header regular expression
-	regex_t regExpr;
-	b395ed5f_compileRegExpr(&regExpr, "^\\[.* BLOCK\\] ", REG_EXTENDED);
-
-	// File-related variables
-	int fileDescriptor;
-	ssize_t numBytes;
-	char *pathName;
-
-	if (argc > 1) {
-		pathName = argv[1];
-		fileDescriptor = e2f74138_openFile(pathName, O_RDONLY);
-	} else {
-		pathName = "STDIN";
-		fileDescriptor = STDIN_FILENO;
-	}
-
-	// Initialize the LineBuffer and the file data buffer
-	String *line = NULL;
-	LineBuffer lineBuffer;
-	char buffer[PHYSICAL_BLOCK_SIZE];
-	c196bc72_initLineBuffer(&lineBuffer, buffer);
-
 	// Create the default LogLine and Input/Output LogLine ListArrays
 	LogLine logLine;
 	inputLogLineList = b196167f_createListArray();
 	outputLogLineList = b196167f_createListArray();
 
-	numBytes = e2f74138_readFile(fileDescriptor, buffer, PHYSICAL_BLOCK_SIZE, pathName);
-	while (numBytes != END_OF_FILE) {
+	// Compile the BLOCK header regular expression
+	regex_t regExpr;
+	b395ed5f_compileRegExpr(&regExpr, "^\\[.* BLOCK\\] ", REG_EXTENDED);
 
+	// Initialize the LineBuffer
+	String *line = NULL;
+	LineBuffer lineBuffer;
+	char buffer[PIPE_BUFFER_LENGTH];
+	c196bc72_initLineBuffer(&lineBuffer, buffer);
+
+	// Execute dmesg
+	Pipe pipe;
+	const pid_t child = c16819a0_execute_pipe("/bin/dmesg", argList, &pipe);
+
+	// Check for a firewall BLOCK header
+	register ssize_t numBytes = e2f74138_readFile(*pipe.read, buffer, PIPE_BUFFER_LENGTH, dmesg);
+	while (numBytes != END_OF_FILE) {
 		line = c196bc72_getLine(&lineBuffer, numBytes);
+
 		while (line != NULL) {
 			// Check for a firewall BLOCK header
 			if (b395ed5f_matchRegExpr(&regExpr, line->value, 0)) {
@@ -115,13 +113,12 @@ int main(int argc, char *argv[]) {
 			line = c196bc72_getLine(&lineBuffer, numBytes);
 		}
 
-		numBytes = e2f74138_readFile(fileDescriptor, buffer, PHYSICAL_BLOCK_SIZE, pathName);
+		numBytes = e2f74138_readFile(*pipe.read, buffer, PIPE_BUFFER_LENGTH, dmesg);
 	}
 
-	// Close the file if not STDIN
-	if (fileDescriptor != STDIN_FILENO) {
-		e2f74138_closeFile(fileDescriptor, pathName);
-	}
+	// Close the read side of the pipe and wait for child process to finish
+	c31ab0c3_closeRead(&pipe);
+	c16819a0_waitForChild(child);
 
 	// Free memory allocated for the regular expression
 	b395ed5f_freeRegExpr(&regExpr);

@@ -41,18 +41,6 @@
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-/*
- * The SOH character apparently is the Linux way of saying read() filled the
- * buffer and has more data to read.
- */
-static inline void processEndOfBuffer(LineBuffer *lineBuffer, const char *newline) {
-	// Append end of buffer to the StringBuilder buffer tail
-	register const uint32_t length = (newline - lineBuffer->line.value - 1);
-	c598a24c_append_string_uint32(&lineBuffer->bufferTail, lineBuffer->line.value, length);
-
-	// Reset LineBuffer
-	c196bc72_resetLineBuffer(lineBuffer);
-}
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -60,21 +48,17 @@ static inline void processEndOfBuffer(LineBuffer *lineBuffer, const char *newlin
 // ═════════════════════════ Function Implementations ═════════════════════════
 
 String *c196bc72_getLine(LineBuffer *lineBuffer, const ssize_t numBytes) {
-	// Return NULL if we reached the end of the buffer
-	if (lineBuffer->length == numBytes) {
-		return NULL;
-	}
-
 	register char* newline = lineBuffer->buffer + lineBuffer->length;
+	register uint32_t lineLength = lineBuffer->length;
 	register char ch = *newline;
 
 	lineBuffer->line.value = newline;
-	while (ch && ch != START_OF_HEADING) {
+	while (ch && lineLength < numBytes) {
 		if (ch == '\n') {
 			*newline = '\0';
 
-			lineBuffer->line.length = (newline - lineBuffer->line.value - 1);
-			lineBuffer->length += (lineBuffer->line.length + 2);
+			lineBuffer->line.length = lineLength - lineBuffer->length;
+			lineBuffer->length = (lineLength + 1);
 
 			if (lineBuffer->bufferTail.length > 0) {
 				c598a24c_append_string(&lineBuffer->bufferTail, lineBuffer->line.value);
@@ -85,12 +69,15 @@ String *c196bc72_getLine(LineBuffer *lineBuffer, const ssize_t numBytes) {
 			return &lineBuffer->line;
 		}
 
-		newline++;
-		ch = *newline;
+		ch = *(++newline);
+		lineLength++;
 	}
 
-	if ((ch == '\0' || ch == START_OF_HEADING) && newline != lineBuffer->line.value) {
-		processEndOfBuffer(lineBuffer, newline);
+	if (ch == '\0' || lineLength != lineBuffer->length) {
+		c598a24c_append_string_uint32(&lineBuffer->bufferTail, lineBuffer->line.value, lineLength - lineBuffer->length);
+
+		// Reset LineBuffer
+		c196bc72_resetLineBuffer(lineBuffer);
 	}
 
 	return NULL;

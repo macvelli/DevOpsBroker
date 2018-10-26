@@ -1,3 +1,8 @@
+2018-10-26: Version 1.1.1
+
+  * Multiple bug fixes
+  * Added sample xorg.conf for AMD dual monitor setup
+
 2018-10-14: Version 1.1.0
 
   * Complete solution for setting up a Samba server

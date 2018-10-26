@@ -130,7 +130,7 @@ void e88eda74_initLogLine(LogLine *logLine, String *line) {
 	// lineLength
 	logLine->lineLength = position - logLine->in;
 
-	if (f6215943_isEqual(logLine->protocol, "ICMP")) {
+	if (f6215943_startsWith("ICMP", logLine->protocol)) {
 		// ICMP Type
 		char *icmpType = f6215943_search("TYPE=", position);
 		position = terminateField(icmpType);

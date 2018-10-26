@@ -125,7 +125,7 @@ static inline void setSpeed(register uint64_t *attribute, register char *attrNam
 	*data = terminate(attrValue, ' ');
 	*attribute = db0acb04_parse_uint64(attrValue);
 
-	if (f6215943_startsWith("MHz", *data)) {
+	if (f6215943_startsWith("MHz", *data) || f6215943_startsWith("MT/s", *data)) {
 		*attribute *= UNITS_MHz;
 	}
 }
@@ -164,7 +164,6 @@ static inline void setVoltage(register float *attribute, register char *attrName
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 char *const argList[] = { "/usr/sbin/dmidecode", "--type", "memory", NULL };
-const char* errorCorrectionTypeNameList[] = { "None", "ECC" };
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 

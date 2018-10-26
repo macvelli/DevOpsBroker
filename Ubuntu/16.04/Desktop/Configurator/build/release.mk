@@ -29,7 +29,7 @@ include /etc/devops/globals.mk
 ################################## Variables ##################################
 
 PKG_NAME := desktop-configurator
-VERSION := 1.1.0
+VERSION := 1.1.1
 ARCH := amd64
 PKG_ARCHIVE := $(PKG_NAME)_$(VERSION)_$(ARCH)
 

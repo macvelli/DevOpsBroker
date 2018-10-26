@@ -92,7 +92,6 @@ function showHelp() {
 ################################## Variables ##################################
 
 ## Bash exec variables
-EXEC_DMESG=/bin/dmesg
 EXEC_FIRELOG=/usr/local/bin/firelog
 
 IPTABLES=/sbin/iptables
@@ -280,7 +279,7 @@ elif [ $command == 'list' ]; then
 	# END list Command
 elif [ $command == 'log' ]; then
 
-	$EXEC_DMESG -t | $EXEC_FIRELOG
+	$EXEC_FIRELOG
 
 fi
 

@@ -29,6 +29,8 @@
 
 #include "stringbuilder.h"
 
+#include "../io/pipe.h"
+
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 
@@ -52,5 +54,31 @@
  * ----------------------------------------------------------------------------
  */
 StringBuilder *c16819a0_execute(const char *path, char *const argv[]);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c16819a0_execute_pipe
+ * Description: Executes the specified file with the specified arguments
+ *        NOTE: Terminate the argv[] array with NULL as the last value
+ *
+ * Parameters:
+ *   path       The name of the file to execute
+ *   argv       The argument list available to the new program
+ *   pipe       The Pipe struct instance to utilize
+ * Returns:     The PID of the child process
+ * ----------------------------------------------------------------------------
+ */
+pid_t c16819a0_execute_pipe(const char *path, char *const argv[], Pipe *pipe);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c16819a0_waitForChild
+ * Description: Waits for the child process with PID to complete
+ *
+ * Parameters:
+ *   path       The name of the file to execute
+ *   argv       The argument list available to the new program
+ *   pipe       The Pipe struct instance to utilize
+ * ----------------------------------------------------------------------------
+ */
+void c16819a0_waitForChild(const pid_t child);
 
 #endif /* ORG_DEVOPSBROKER_LANG_SYSTEM_H */

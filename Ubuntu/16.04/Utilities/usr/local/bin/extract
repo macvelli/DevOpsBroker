@@ -105,19 +105,19 @@ for file in "${fileNameList[@]}"; do
 
 	case "$file" in
 		*.tar.gz | *.tgz)
-			tar xvzf "$file"
+			tar xvzf "$file" --directory="$extractDir"
 		;;
 		*.tar.xz | *.txz)
-			tar xvJf "$file"
+			tar xvJf "$file" --directory="$extractDir"
 		;;
 		*.tar.bz2 | *.tbz2)
-			tar xvjf "$file"
+			tar xvjf "$file" --directory="$extractDir"
 		;;
 		*.tar)
-			tar xvf "$file"
+			tar xvf "$file" --directory="$extractDir"
 		;;
 		*.zip)
-			unzip "$file"
+			unzip "$file" -d "$extractDir"
 		;;
 		*.gz)
 			gunzip -k "$file"
@@ -129,7 +129,7 @@ for file in "${fileNameList[@]}"; do
 			dpkg-deb -R "$file" "$extractDir/${file::-4}/"
 		;;
 		*.exe)
-			cabextract "$file"
+			cabextract -d "$extractDir" "$file"
 		;;
 		*.7z | *.arj | *.cab | *.chm | *.deb | *.dmg | *.iso | *.lzh | *.msi | *.rpm | *.udf | *.wim | *.xar)
 			7z x "$file"
@@ -138,7 +138,7 @@ for file in "${fileNameList[@]}"; do
 			unrar x -ad "$file"
 		;;
 		*.lzma)
-			unlzma "$file"
+			unlzma -k "$file"
 		;;
 		*.bz2)
 			bunzip2 "$file"

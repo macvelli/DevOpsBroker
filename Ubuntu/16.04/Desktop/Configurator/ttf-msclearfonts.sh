@@ -91,6 +91,11 @@ fi
 EXEC_FONT_CACHE=/usr/bin/fc-cache
 EXEC_YAD=/usr/bin/yad
 
+# Variables
+installedFont=false
+TTF_UID=${SUDO_UID:-"$PKEXEC_UID"}
+USER_HOME=$($EXEC_GETENT passwd $TTF_UID | $EXEC_CUT -d: -f6)
+
 ################################### Actions ###################################
 
 # Clear screen only if called from command line
@@ -100,77 +105,78 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Microsoft ClearType Fonts Installer" 'true'
 
-# Exit if Microsoft ClearType fonts have already been installed
-if [ -d /usr/share/fonts/truetype/mscleartype ]; then
-	printInfo 'Microsoft ClearType Fonts already installed'
-	exit 0
+if [ ! -d /usr/share/fonts/truetype/mscleartype ]; then
+	printInfo 'Creating /usr/share/fonts/truetype/mscleartype directory'
+
+	$EXEC_MKDIR --mode=0755 /usr/share/fonts/truetype/mscleartype
 fi
 
-# Install Microsoft ClearType Fonts
-printBanner 'Installing Microsoft ClearType Fonts'
-
-# Make the /usr/local/share/fonts/microsoft/cleartype directory
-$EXEC_MKDIR --mode=0755 /usr/share/fonts/truetype/mscleartype
-$EXEC_CHOWN -R root:root /usr/share/fonts/truetype/mscleartype
-
 printInfo 'Select directory containing the Microsoft ClearType Fonts to install'
-sourceDir=$($EXEC_YAD --file-selection --directory --title='Microsoft ClearType Fonts' --width=800 --height=600 --center --filename=$HOME/Desktop/)
+sourceDir=$($EXEC_YAD --file-selection --directory --title='Microsoft ClearType Fonts' --width=800 --height=600 --center --filename=$USER_HOME/)
 echo
 
 # Install Calibri
 if [ -f "$sourceDir"/calibri.ttf ]; then
-  printInfo 'Installing Calibri'
+	printInfo 'Installing Calibri'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/calibri*.ttf /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/calibri*.ttf /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
 # Install Cambria
 if [ -f "$sourceDir"/cambria.ttc ]; then
-  printInfo 'Installing Cambria'
+	printInfo 'Installing Cambria'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/cambria*.tt* /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/cambria*.tt* /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
 # Install Consolas
 if [ -f "$sourceDir"/consola.ttf ]; then
-  printInfo 'Installing Consolas'
+	printInfo 'Installing Consolas'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/consola*.ttf /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/consola*.ttf /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
 # Install Constantia
 if [ -f "$sourceDir"/constan.ttf ]; then
-  printInfo 'Installing Constantia'
+	printInfo 'Installing Constantia'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/constan*.ttf /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/constan*.ttf /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
 # Install Corbel
 if [ -f "$sourceDir"/corbel.ttf ]; then
-  printInfo 'Installing Corbel'
+	printInfo 'Installing Corbel'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/corbel*.ttf /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/corbel*.ttf /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
 # Install Segoe UI
 if [ -f "$sourceDir"/segoeui.ttf ]; then
-  printInfo 'Installing Segoe UI'
+	printInfo 'Installing Segoe UI'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/segoeui*.ttf /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/segoeui*.ttf /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
 # Install Tahoma
 if [ -f "$sourceDir"/tahoma.ttf ]; then
-  printInfo 'Installing Tahoma'
+	printInfo 'Installing Tahoma'
 
-  $EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/tahoma*.ttf /usr/share/fonts/truetype/mscleartype
+	$EXEC_INSTALL -o root -g root -m 644 "$sourceDir"/tahoma*.ttf /usr/share/fonts/truetype/mscleartype
+	installedFont=true
 fi
 
-echo
+if [ "$installedFont" == 'true' ]; then
+	echo
+	printInfo 'Updating the font cache'
 
-printInfo 'Updating the font cache'
-
-$EXEC_FONT_CACHE -f -v
+	$EXEC_FONT_CACHE -f -v
+fi
 
 echo 'Done!'
 
