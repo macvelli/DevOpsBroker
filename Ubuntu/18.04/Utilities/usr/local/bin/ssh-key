@@ -1,0 +1,419 @@
+#!/bin/bash
+
+#
+# ssh-key - DevOpsBroker utility for creating and managing SSH keys
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# Create and manage SSH keys.
+#
+# Some of the best practices for creating and using SSH keys include:
+#   o Use one key per realm and per workstation --> 4 servers accessed from 2
+#     workstations equals 8 private keys
+#   o Use one key for a group of related servers (i.e. web/application/database)
+#     and per workstation --> 3 servers accessed from 2 workstations equals 2
+#     private keys
+#
+# Regardless, the following rules should always be followed:
+#   o Use a long random passphrase when creating SSH keys to encrypt and
+#     protect the private key
+#   o Never copy a private key from one workstation to another, even if it is
+#     protected with a passphrase
+#   o If one workstation is compromised, revoke all those keys
+#
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+	source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+	source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+	source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
+
+# Display error if running as root
+if [ "$USER" == 'root' ]; then
+	printError 'ssh-key' 'Permission denied (you cannot be root)'
+	exit 1
+fi
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	findPrivateKey
+# Description:	Finds which private SSH key the user is interested in
+# -----------------------------------------------------------------------------
+function findPrivateKey() {
+  # BEGIN findPrivateKey function
+
+  echo "SSH directory: $sshDir"
+
+  privateKeyList=($($EXEC_GREP -Fl -d skip 'BEGIN OPENSSH PRIVATE KEY' "$sshDir"/*))
+
+  if [ ${#privateKeyList[@]} -gt 1 ]; then
+    echo ${bold}'Which private SSH key do you want to work with?'${reset}
+    select privateKey in "${privateKeyList[@]}"; do
+      break;
+    done
+
+  else
+    privateKey="${privateKeyList[0]}"
+  fi
+
+  # END findPrivateKey function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	findPublicKey
+# Description:	Finds which public SSH key the user is interested in
+# -----------------------------------------------------------------------------
+function findPublicKey() {
+  # BEGIN findPublicKey function
+
+  publicKeyList=()
+  while IFS=  read -r -d $'\0'; do
+    publicKeyList+=("$REPLY")
+  done < <($EXEC_FIND "$sshDir" -type f -name '*.pub' -print0)
+
+  if [ ${#publicKeyList[@]} -gt 1 ]; then
+    echo ${bold}'Which public SSH key do you want to work with?'${reset}
+    select publicKey in "${publicKeyList[@]}"; do
+      break;
+    done
+
+  else
+    publicKey="${publicKeyList[0]}"
+  fi
+
+  # END findPublicKey function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:	showHelp
+# Description:	Displays help message to the user
+# -----------------------------------------------------------------------------
+function showHelp() {
+  # BEGIN showHelp function
+
+  printUsage "ssh-key COMMAND ${gold}[OPTION]..."
+
+  echo ${bold}
+  echo "Valid Commands:${romantic}"
+  echo '  clip		Clips an SSH public key to the X11 clipboard'
+  echo '  copy		Copies an SSH public key to username@remote_server'
+  echo '  fingerprint	Shows fingerprint of all SSH public keys'
+  echo '  generate	Generates an SSH key pair in the $HOME/.ssh directory'
+  echo '  list		List all SSH public keys in the $HOME/.ssh directory'
+  echo '  passphrase	Change the passphrase of an existing SSH private key'
+  echo ${white}
+  echo "Valid Options:${romantic}"
+  echo '  -d DIRECTORY	The directory where to find the .ssh/ subdirectory'
+  echo '  -p PORT	The port to use when copying an SSH public key to a remote server'
+  echo '  -t KEYTYPE	The key type to create (ecdsa|ed25519|rsa|rsa1); default is "ed25519"'
+  echo '  -u USERNAME	The username who owns the SSH keys'
+  echo ${reset}
+
+  # END showHelp function
+}
+
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_HOSTNAME=/bin/hostname
+SSH_COPY_ID=/usr/bin/ssh-copy-id
+SSH_KEYGEN=/usr/bin/ssh-keygen
+XCLIP=/usr/bin/xclip
+
+validCommands=("clip" "copy" "fingerprint" "gen" "generate" "list" "pass" "passphrase")
+
+## Options
+command="$1"
+keyType='ed25519'
+sshDir="$HOME/.ssh"
+sshPort='22'
+username=$USER
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if incorrect parameters given
+if [ -z "$command" ]; then
+  showHelp
+
+  exit 1
+fi
+
+# Ensure the first parameter is a valid command
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+  printError 'ssh-key' "Invalid command: $command"
+  echo
+
+  showHelp
+
+  exit 1
+fi
+
+## Options
+
+# Process command-line options, if present
+while [[ "$2" =~ ^- ]]; do
+
+  if [ "$2" == '-d' ]; then
+
+    errorMessage=$(isValidDirectory 'ssh-key' "$3")
+
+    # Display error if directory parameter is missing or invalid
+    if [ "$errorMessage" != '0' ]; then
+      echo "$errorMessage"
+      echo
+      printUsage "ssh-key $command ${gold}-d DIRECTORY"
+
+      exit 1
+    fi
+
+    sshDir="$3/.ssh"
+
+    shift 2
+
+  elif [ "$2" == '-p' ]; then
+
+    # Display error and usage if incorrect parameters given
+    if [ $command != 'copy' ]; then
+      printError 'ssh-key' 'Invalid parameter: -p'
+      echo
+      printUsage "ssh-key copy ${gold}-p PORT ${yellow}username@remote_server"
+
+      exit 1
+    fi
+
+    # Display error if no port number parameter given
+    if [ -z "$3" ]; then
+      printError 'ssh-key' 'Missing port number parameter'
+      echo
+      printUsage "ssh-key copy ${gold}-p PORT ${yellow}username@remote_server"
+
+      exit 1
+    fi
+
+    # Display error if invalid port number parameter given
+    if [[ ! "$3" =~ ^[0-9]+$ ]] || [ "$3" -lt 1 ] || [ "$3" -gt 65535 ]; then
+      printError 'ssh-key' "Invalid port number: $3"
+      echo
+      printUsage "ssh-key copy ${gold}-p PORT ${yellow}username@remote_server"
+
+      exit 1
+    fi
+
+    sshPort="$3"
+    shift 2
+
+  elif [ "$2" == '-t' ]; then
+
+    # Display error and usage if incorrect parameters given
+    if [ $command != 'gen' ] && [ $command != 'generate' ]; then
+      printError 'ssh-key' 'Invalid parameter: -t'
+      echo
+      printUsage "ssh-key generate ${gold}-t ecdsa|ed25519|rsa|rsa1"
+
+      exit 1
+    fi
+
+    # Display error if key type parameter is missing or invalid
+    if [ -z "$3" ]; then
+      printError 'ssh-key' 'Missing key type parameter'
+      echo
+      printUsage "ssh-key $command ${gold}-t ecdsa|ed25519|rsa|rsa1"
+
+      exit 1
+    elif [[ ! "$3" =~ ^(ecdsa|ed25519|rsa|rsa1)$ ]]; then
+      printError 'ssh-key' "Invalid key type: $3"
+      echo
+      printUsage "ssh-key $command ${gold}-t ecdsa|ed25519|rsa|rsa1"
+
+      exit 1
+    fi
+
+    keyType="$3"
+    shift 2
+
+  elif [ "$2" == '-u' ]; then
+
+    # Display error and usage if incorrect parameters given
+    if [ $command != 'gen' ] && [ $command != 'generate' ]; then
+      printError 'ssh-key' 'Invalid parameter: -u'
+      echo
+      printUsage "ssh-key generate ${gold}-u USERNAME"
+
+      exit 1
+    fi
+
+    errorMessage=$(isValidUsername 'ssh-key' "$3")
+
+    # Display error if username parameter is missing or invalid
+    if [ "$errorMessage" != '0' ]; then
+      echo "$errorMessage"
+      echo
+      printUsage "ssh-key $command ${gold}-u USERNAME"
+
+      exit 1
+    fi
+
+    username="$3"
+    shift 2
+  fi
+done
+
+################################### Actions ###################################
+
+# Make SSH directory (if necessary)
+if [ ! -d "$sshDir" ]; then
+  $EXEC_MKDIR --mode=0700 "$sshDir"
+fi
+
+# Make directory to enable SSH multiplexing (if necessary)
+if [ ! -d "$sshDir/multiplex" ]; then
+  $EXEC_MKDIR --mode=0700 "$sshDir/multiplex"
+fi
+
+if [ $command == 'clip' ]; then
+  # BEGIN clip command
+
+  # Find the public key the user wants to clip
+  findPublicKey
+
+  printInfo "Copying $publicKey to the clipboard"
+  echo
+
+  $XCLIP -selection clipboard < "$publicKey"
+
+  # END clip command
+elif [ $command == 'copy' ]; then
+  # BEGIN copy command
+
+  # Display error and usage if incorrect parameters given
+  if [ -z "$2" ]; then
+    printError 'ssh-key' 'Missing username@remote_server parameter'
+    echo
+    printUsage 'ssh-key copy username@remote_server'
+
+    exit 1
+  fi
+
+  # userHost Parameter
+  userHost="$2"
+
+  # Find the public key the user wants to copy to the remote server
+  findPublicKey
+
+  printInfo "Copying $publicKey to $userHost"
+  echo
+
+  $SSH_COPY_ID -i "$publicKey" -p $sshPort $userHost
+
+  # END copy command
+elif [ $command == 'fingerprint' ]; then
+  # BEGIN fingerprint command
+
+  # Generate the publicKeyList
+  publicKeyList=()
+  while IFS=  read -r -d $'\0'; do
+    publicKeyList+=("$REPLY")
+  done < <($EXEC_FIND "$sshDir" -type f -name '*.pub' -print0)
+
+  for publicKey in "${publicKeyList[@]}"; do
+    $SSH_KEYGEN -l -v -f "$publicKey"
+  done
+
+  # END fingerprint command
+elif [ $command == 'gen' ] || [ $command == 'generate' ]; then
+  # BEGIN gen/generate command
+
+  printBanner 'Generating SSH Keys'
+  hostName=$($EXEC_HOSTNAME)
+
+  echo ${bold}${yellow}'NOTE: It is highly recommended to use a long random passphrase'
+  echo ${white}
+
+  # Question 1
+  echo -n 'What email address do you want to use for the SSH key? '
+  read emailAddress
+  echo
+
+  if [ -z "$emailAddress" ]; then
+    emailAddress="$username@$hostName"
+  fi
+
+  # Question 2
+  sshKeyName="$username-$hostName-id_$keyType"
+  echo -n "What filename do you want to use for the SSH key ($sshKeyName)? "
+  read filename
+  echo
+
+  if [ ! -z "$filename" ]; then
+    sshKeyName="$filename"
+  fi
+
+  # Generate SSH key
+  $SSH_KEYGEN -t $keyType -C "$emailAddress-$($EXEC_DATE -I)" -f "$sshDir/$sshKeyName"
+
+  # Change directory and file ownership to $username
+  $EXEC_CHOWN -R $username:$username "$sshDir"
+
+  # END gen/generate command
+elif [ $command == 'list' ]; then
+  # BEGIN list command
+
+  printBanner 'Listing SSH Public Keys'
+
+  $EXEC_FIND "$sshDir" -maxdepth 1 -type f -name "*.pub"
+
+  echo
+
+  # END list command
+elif [ $command == 'pass' ] || [ $command == 'passphrase' ]; then
+  # BEGIN pass/passphrase command
+
+  printBanner 'Changing SSH Private Key Passphrase'
+
+  # Find the private key the user wants to change the passphrase
+  findPrivateKey
+
+  # Change the private SSH key passphrase
+  $SSH_KEYGEN -f "$privateKey" -p
+
+  # END pass/passphrase command
+fi
+
+exit 0

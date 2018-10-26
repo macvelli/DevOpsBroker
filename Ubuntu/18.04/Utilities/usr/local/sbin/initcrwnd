@@ -1,0 +1,127 @@
+#!/bin/bash
+
+#
+# initcrwnd - DevOpsBroker script for optimizing initcwnd and initrwnd
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-33
+#
+# This utility is necessary because somebody won't wait for IPv6 to finish its
+# configuration before calling scripts in /etc/network/if-up.d/.
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+	source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+	source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+	source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
+
+# Display error if not running as root
+if [ "$USER" != 'root' ]; then
+	printError 'initcrwnd' 'Permission denied (you must be root)'
+	exit 1
+fi
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_SLEEP=/bin/sleep
+EXEC_SYSCTL=/sbin/sysctl
+
+## Options
+NIC="$1"
+NEED_SLEEP=${2:-'false'}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$NIC" ]; then
+	printUsage 'initcrwnd NIC'
+	exit 1
+fi
+
+# Display error if network interface parameter is invalid
+if [ ! -L /sys/class/net/$NIC ]; then
+	printError 'initcrwnd' "Cannot access '$NIC': No such network interface"
+	echo
+	printUsage 'initcrwnd NIC'
+
+	exit 1
+fi
+
+################################### Actions ###################################
+
+# Optimize IPv4 initcwnd and initrwnd values
+mapfile -t ipRouteList < <($EXEC_IP -4 route show dev $NIC)
+
+for ipv4Route in "${ipRouteList[@]}"; do
+	if [[ "$ipv4Route" =~ ^default ]]; then
+		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv4Route'" on dev "'$NIC'";
+		defaultRoute=( $ipv4Route )
+		$EXEC_IP -4 route change ${defaultRoute[@]::7} dev $NIC initcwnd 22 initrwnd 22
+	elif [[ "$ipv4Route" == *"proto kernel  scope link"* ]]; then
+		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv4Route'" on dev "'$NIC'";
+		subnetRoute=( $ipv4Route )
+		$EXEC_IP -4 route change ${subnetRoute[@]::9} dev $NIC initcwnd 44 initrwnd 44
+	fi
+done
+
+# Sleep for a while to ensure IPv6 is fully configured
+if [ "$NEED_SLEEP" == 'true' ]; then
+	$EXEC_SLEEP 30
+fi
+
+# Optimize IPv6 initcwnd and initrwnd values
+mapfile -t ipRouteList < <($EXEC_IP -6 route show dev $NIC)
+
+for ipv6Route in "${ipRouteList[@]}"; do
+	if [[ "$ipv6Route" =~ ^default ]]; then
+		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv6Route'" on dev "'$NIC'";
+		defaultRoute=( $ipv6Route )
+		$EXEC_IP -6 route change ${defaultRoute[@]::9} dev $NIC initcwnd 22 initrwnd 22
+
+	elif [[ "$ipv6Route" == *"proto kernel"* ]]; then
+		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv6Route'" on dev "'$NIC'";
+		kernelRoute=( $ipv6Route )
+		$EXEC_IP -6 route change ${kernelRoute[@]::7} dev $NIC initcwnd 44 initrwnd 44
+	elif [[ "$ipv6Route" == *"proto ra"* ]]; then
+		/usr/bin/logger -p syslog.notice -i initcrwnd: Changing initcwnd and initrwnd for "'$ipv6Route'" on dev "'$NIC'";
+		raRoute=( $ipv6Route )
+		$EXEC_IP -6 route change ${raRoute[@]::9} dev $NIC initcwnd 44 initrwnd 44
+	fi
+done
+
+exit 0

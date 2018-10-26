@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#
+# archive - DevOpsBroker utility for creating a compressed archive of a
+#	    specified directory
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
+#
+# A gzipped tar file is created with the name of the archive in the following
+# format:
+#
+# YYYY-MM-DD-DirName.tar.gz
+#
+# Parameters:
+#   $1: Name of directory to archive
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+	source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+	source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+	source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
+
+################################## Variables ##################################
+
+## Options
+directory="$1"
+archiveName=''
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+errorMessage=$(isValidDirectory 'archive' "$directory")
+
+# Display error if directory parameter is missing or invalid
+if [ "$errorMessage" != '0' ]; then
+  printUsage 'archive DIR'
+  echo
+
+  exit 1
+fi
+
+archiveName="$($EXEC_DATE '+%Y-%m-%d')-$($EXEC_BASENAME $directory).tar.gz"
+
+################################### Actions ###################################
+
+$EXEC_TAR -zcvf $archiveName $directory
+
+exit 0

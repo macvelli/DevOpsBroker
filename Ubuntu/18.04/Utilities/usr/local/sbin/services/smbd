@@ -1,0 +1,284 @@
+#!/bin/bash
+
+#
+# smbd - DevOpsBroker utility for managing the smbd firewall services
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+#
+# -----------------------------------------------------------------------------
+#
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
+if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
+	source /etc/devops/ansi.conf
+fi
+
+${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
+
+# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
+if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
+	source /etc/devops/exec.conf
+fi
+
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
+
+# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
+if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
+	source /etc/devops/functions.conf
+fi
+
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
+
+# Display error if not running as root
+if [ "$USER" != 'root' ]; then
+	printError 'smbd' 'Permission denied (you must be root)'
+	exit 1
+fi
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     processChain
+# Description:  Evaluates iptables chain for existing smbd rules
+#
+# Parameter $1: The iptables table name where the chain can be found
+# Parameter $2: The name of the chain to process
+# Parameter $3: The source port regular expression to use (optional)
+# Parameter $4: The destination port regular expression to use (optional)
+# -----------------------------------------------------------------------------
+function processChain() {
+
+	local table="$1"
+	local chain="$2"
+	local tableChain
+
+	mapfile -t tableChain < <($IPTABLES -t $table --line-numbers -n -L $chain 2>/dev/null)
+	numEntries="${#tableChain[@]}"
+
+	if [ "$numEntries" -eq 0 ]; then
+		printError 'smbd' "Cannot access '$chain': No such chain in ${table^^} table"
+		exit 1
+	else
+		unset tableChain[0]
+		unset tableChain[1]
+	fi
+
+	sportsRegExpr=${3:-'tcp spt:445$'}
+	dportsRegExpr=${4:-'tcp dpt:445$'}
+
+	destPortIndex=0
+	sourcePortIndex=0
+
+	# Find any existing entries for the smbd service
+	for chainEntry in "${tableChain[@]}"; do
+		local chainEntryInfo=( $chainEntry )
+
+		if [[ "$chainEntry" =~ $sportsRegExpr ]]; then
+			sourcePortIndex="${chainEntryInfo[0]}"
+		elif [[ "$chainEntry" =~ $dportsRegExpr ]]; then
+			destPortIndex="${chainEntryInfo[0]}"
+		fi
+
+	done
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     setSourcePortIndex
+# Description:  Sets the index of the source port iptables rule
+# -----------------------------------------------------------------------------
+function setSourcePortIndex() {
+
+	if [ "$destPortIndex" -eq 0 ]; then
+		sourcePortIndex=$numEntries
+	else
+		sourcePortIndex=$destPortIndex
+	fi
+
+}
+
+################################## Variables ##################################
+
+IPTABLES=/sbin/iptables
+IPTABLES_SAVE=/sbin/iptables-save
+
+## Options
+command="$1"
+
+## Variables
+persistRules=false
+validCommands=('enable')
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Display usage if no parameters given
+if [ -z "$command" ]; then
+	printUsage 'smbd enable'
+	exit 1
+fi
+
+# Display error if invalid command
+if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+	printError 'smbd' "Invalid command: '$command'"
+	echo
+	printUsage 'smbd enable'
+
+	exit 1
+fi
+
+################################### Actions ###################################
+
+# Find the IPv4 subnet
+IPv4_SUBNET=$($EXEC_IP -4 route show | $EXEC_AWK '/proto kernel/{ print $1 }')
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RAW PREROUTING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Process the raw-tcp-pre table
+processChain 'raw' 'raw-tcp-pre'
+
+# Insert PREROUTING source port entry if necessary
+if [ "$sourcePortIndex" -eq 0 ]; then
+	printInfo 'NOTRACK incoming SMB TCP response packets'
+	setSourcePortIndex
+
+	$IPTABLES -t raw -I raw-tcp-pre $sourcePortIndex -p tcp -m tcp --sport 445 -j do_not_track
+	persistRules=true
+fi
+
+# Insert PREROUTING destination port entry if necessary
+if [ "$destPortIndex" -eq 0 ]; then
+	printInfo 'NOTRACK incoming SMB TCP request packets'
+	destPortIndex=$[ $sourcePortIndex + 1 ]
+
+	$IPTABLES -t raw -I raw-tcp-pre $destPortIndex -p tcp -m tcp --dport 445 -j do_not_track
+	persistRules=true
+fi
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RAW OUTPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Process the raw-tcp-out table
+processChain 'raw' 'raw-tcp-out'
+
+# Insert OUTPUT source port entry if necessary
+if [ "$sourcePortIndex" -eq 0 ]; then
+	printInfo 'NOTRACK outgoing SMB TCP response packets'
+	setSourcePortIndex
+
+	$IPTABLES -t raw -I raw-tcp-out $sourcePortIndex -p tcp -m tcp --sport 445 -j do_not_track
+	persistRules=true
+fi
+
+# Insert OUTPUT destination port entry if necessary
+if [ "$destPortIndex" -eq 0 ]; then
+	printInfo 'NOTRACK outgoing SMB TCP request packets'
+	destPortIndex=$[ $sourcePortIndex + 1 ]
+
+	$IPTABLES -t raw -I raw-tcp-out $destPortIndex -p tcp -m tcp --dport 445 -j do_not_track
+	persistRules=true
+fi
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FILTER INPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Process the filter-tcp-in table
+processChain 'filter' 'filter-tcp-in'
+
+# Insert INPUT source port entry if necessary
+if [ "$sourcePortIndex" -eq 0 ]; then
+	printInfo 'Allow incoming SMB TCP response packets'
+	setSourcePortIndex
+
+	$IPTABLES -I filter-tcp-in $sourcePortIndex -s $IPv4_SUBNET -p tcp -m tcp --sport 445 -j ACCEPT
+	persistRules=true
+fi
+
+# Insert INPUT destination port entry if necessary
+if [ "$destPortIndex" -eq 0 ]; then
+	printInfo 'Allow incoming SMB TCP request packets'
+	destPortIndex=$[ $sourcePortIndex + 1 ]
+
+	$IPTABLES -I filter-tcp-in $destPortIndex -s $IPv4_SUBNET -p tcp -m tcp --dport 445 -j ACCEPT
+	persistRules=true
+fi
+
+# ~~~~~~~~~~~~~~~~~~~~~~~ FILTER OUTPUT (filter-tcp-out) ~~~~~~~~~~~~~~~~~~~~~~
+
+# Process the filter-tcp-out table
+processChain 'filter' 'filter-tcp-out' 'multiport sports 139,445$' 'multiport dports 139,445$'
+
+# Insert OUTPUT source port entry if necessary
+if [ "$sourcePortIndex" -eq 0 ]; then
+	printInfo "Deny outgoing SMB TCP response packets not on $IPv4_SUBNET"
+	setSourcePortIndex
+
+	$IPTABLES -I filter-tcp-out $sourcePortIndex -p tcp -m multiport --sports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
+	persistRules=true
+fi
+
+# Insert OUTPUT destination port entry if necessary
+if [ "$destPortIndex" -eq 0 ]; then
+	printInfo "Deny outgoing SMB/NetBIOS TCP request packets not on $IPv4_SUBNET"
+	destPortIndex=$[ $sourcePortIndex + 1 ]
+
+	$IPTABLES -I filter-tcp-out $destPortIndex -p tcp -m multiport --dports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
+	persistRules=true
+fi
+
+# ~~~~~~~~~~~~~~~~~~~~~~~ FILTER OUTPUT (filter-udp-out) ~~~~~~~~~~~~~~~~~~~~~~
+
+# Process the filter-udp-out table
+processChain 'filter' 'filter-udp-out' 'multiport sports 137,138$' 'multiport dports 137,138$'
+
+# Insert OUTPUT source port entry if necessary
+if [ "$sourcePortIndex" -eq 0 ]; then
+	printInfo "Deny outgoing NetBIOS UDP response packets not on $IPv4_SUBNET"
+	setSourcePortIndex
+
+	$IPTABLES -I filter-udp-out $sourcePortIndex -p udp -m multiport --sports 137,138 ! -d $IPv4_SUBNET -j out_deny
+	persistRules=true
+fi
+
+# Insert OUTPUT destination port entry if necessary
+if [ "$destPortIndex" -eq 0 ]; then
+	printInfo "Deny outgoing NetBIOS UDP request packets not on $IPv4_SUBNET"
+	destPortIndex=$[ $sourcePortIndex + 1 ]
+
+	$IPTABLES -I filter-udp-out $destPortIndex -p udp -m multiport --dports 137,138 ! -d $IPv4_SUBNET -j out_deny
+	persistRules=true
+fi
+
+################################ IPTABLES-SAVE ################################
+
+if [ "$persistRules" == 'true' ]; then
+	echo
+	printInfo 'Persisting iptables Rules'
+
+	# Backup existing /etc/network/iptables.rules
+	if [ -f /etc/network/iptables.rules ]; then
+		$EXEC_CP /etc/network/iptables.rules /etc/network/iptables.rules.bak
+	fi
+
+	# Save /etc/network/iptables.rules
+	$IPTABLES_SAVE > /etc/network/iptables.rules
+	echo
+else
+	printInfo "smbd service already $command"
+fi
+
+exit 0
