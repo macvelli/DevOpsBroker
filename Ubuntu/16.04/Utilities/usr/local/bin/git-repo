@@ -98,6 +98,10 @@ function showHelp() {
 		printUsage 'git-repo delete-branch BRANCH_NAME'
 		echo ${romantic}
 		echo 'Delete existing branch from the current Git repository'${reset}
+	elif [ "$command" == 'diff-commit' ]; then
+		printUsage 'git-repo diff-commit COMMIT_HISTORY_NUM FILE'
+		echo ${romantic}
+		echo 'Displays commit history differences for the given file'${reset}
 	elif [ "$command" == 'discard-changes' ]; then
 		printUsage 'git-repo discard-changes FILE'
 		echo ${romantic}
@@ -137,7 +141,7 @@ function showHelp() {
 EXEC_GIT=/usr/bin/git
 EXEC_SSH=/usr/bin/ssh
 
-repoCommands=('amend' 'config' 'create-branch' 'delete-branch' 'discard-changes' 'list-branches' 'list-config' 'list-tags' 'release' 'update')
+repoCommands=('amend' 'config' 'create-branch' 'delete-branch' 'diff-commit' 'discard-changes' 'list-branches' 'list-config' 'list-tags' 'release' 'update')
 validCommands=(${repoCommands[@]} 'test-ssh')
 
 ## Options
@@ -175,7 +179,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "git-repo ${gold}[help]${yellow} { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }"
+	printUsage "git-repo ${gold}[help]${yellow} { amend | config | create-branch | delete-branch | diff-commit | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }"
 	exit 1
 fi
 
@@ -183,7 +187,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'git-repo' "Invalid command: '$command'"
 	echo
-	printUsage "git-repo ${gold}[help]${yellow} { amend | config | create-branch | delete-branch | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }"
+	printUsage "git-repo ${gold}[help]${yellow} { amend | config | create-branch | delete-branch | diff-commit | discard-changes | list-branches | list-config | list-tags | release | test-ssh | update }"
 
 	exit 1
 fi
@@ -362,6 +366,39 @@ elif [ $command == 'amend' ]; then
 		fi
 	fi
 
+elif [ "$command" == 'diff-commit' ]; then
+
+	commitHistoryNum="$2"
+
+	if [ -z "$commitHistoryNum" ]; then
+		printError 'git-repo' "Missing COMMIT_HISTORY_NUM parameter"
+		echo
+		printUsage 'git-repo diff-commit COMMIT_HISTORY_NUM FILE'
+
+		exit 1
+	elif [[ ! "$commitHistoryNum" =~ ^[0-9]+$ ]]; then
+		printError 'git-repo' "Invalid commit history number '$commitHistoryNum': Must be an integer"
+		echo
+		printUsage 'git-repo diff-commit COMMIT_HISTORY_NUM FILE'
+
+		exit 1
+	else
+
+		fileName="$3"
+
+		errorMessage=$(isValidFile 'git-repo' "$fileName")
+
+		# Display error if file parameter is missing or invalid
+		if [ "$errorMessage" != '0' ]; then
+			echo "$errorMessage"
+			echo
+			printUsage "git-repo diff-commit $commitHistoryNum FILE"
+
+			exit 1
+		fi
+
+	fi
+
 elif [ $command == 'discard-changes' ]; then
 
 	fileName="$2"
@@ -449,6 +486,12 @@ elif [ $command == 'delete-branch' ]; then
 		fi
 		break;
 	done
+
+elif [ "$command" == 'diff-commit' ]; then
+
+	printBanner "Displaying commit history diff '$commitHistoryNum' for file '$fileName'"
+
+	$EXEC_GIT log -p --follow -$commitHistoryNum "$fileName"
 
 elif [ $command == 'discard-changes' ]; then
 

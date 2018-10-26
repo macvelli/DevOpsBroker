@@ -6,6 +6,8 @@ desktop-configurator (1.1.1) xenial; urgency=medium
 
  -- Edward Smith <edwardsmith@devopsbroker.org>  Fri, 26 Oct 2018 00:32:07 -0500
 
+desktop-configurator (1.1.0) xenial; urgency=medium
+
   [ Edward Smith ]
   * Complete solution for setting up a Samba server
     - smbshare utility for creating Samba shares
