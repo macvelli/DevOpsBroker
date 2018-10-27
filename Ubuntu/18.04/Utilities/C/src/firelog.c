@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 			if (b395ed5f_matchRegExpr(&regExpr, line->value, 0)) {
 				e88eda74_initLogLine(&logLine, line);
 
-				if (logLine.in) {
+				if (*logLine.in) {
 					filterInputLogLine(&logLine);
 				} else {
 					filterOutputLogLine(&logLine);

@@ -506,9 +506,14 @@ if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then
 fi
 
 # Install ttf-mscorefonts-installer
-installPackage '/usr/share/doc/ttf-mscorefonts-installer/copyright' 'ttf-mscorefonts-installer'
+if [ ! -f '/usr/share/doc/ttf-mscorefonts-installer/copyright' ]; then
+	printBanner 'Installing ttf-mscorefonts-installer'
 
-if [ "$PKG_INSTALLED" == 'true' ]; then
+	$EXEC_WGET -P /tmp http://ftp.debian.org/debian/pool/contrib/m/msttcorefonts/ttf-mscorefonts-installer_3.7_all.deb
+	$EXEC_APT -y install /tmp/ttf-mscorefonts-installer_3.7_all.deb
+	$EXEC_RM /tmp/ttf-mscorefonts-installer_3.7_all.deb
+	echo
+
 	printInfo 'Updating the font cache'
 	/usr/bin/fc-cache -f -v
 	echo

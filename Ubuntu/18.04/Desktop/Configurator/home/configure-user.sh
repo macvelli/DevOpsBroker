@@ -466,7 +466,7 @@ fi
 # Configure GPG
 #
 
-if [ ! -d "$userhome"/.gnupg ] || [ ! -f "$userhome"/.gnupg/pubring.gpg ]; then
+if [ ! -d "$userhome"/.gnupg ] || [ ! -f "$userhome"/.gnupg/pubring.kbx ]; then
 	# Generate GPG key
 	$EXEC_GPG --gen-key
 fi

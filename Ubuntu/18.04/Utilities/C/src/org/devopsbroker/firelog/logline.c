@@ -1,7 +1,7 @@
 /*
- * logline.c - Description goes here
+ * logline.c - DevOpsBroker C source file for the org.devopsbroker.firelog.LogLine struct
  *
- * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+ * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software

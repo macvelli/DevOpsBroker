@@ -59,7 +59,7 @@ Once Rufus completes the ISO image writing process, you can now install Ubuntu 1
 
 1. Insert USB drive
 2. Launch Starup Disk Creator
-   * Search for 'Startup Disk Creator' from either the **Dash** or **Show Applications**
+   * Search for 'Startup Disk Creator' from either **Activities** or **Show Applications**
 3. Select the Ubuntu 18.04 Desktop ISO file
 4. Select the USB drive
 5. Click **Make Startup Disk**

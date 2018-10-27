@@ -135,9 +135,8 @@ if [ $command == 'adduser' ]; then
 		exit 1
 	fi
 
-	if [ ! -z "$($EXEC_PDBEDIT -L --user $username)" ]; then
+	if [ ! -z "$($EXEC_PDBEDIT -u $username -d 0 2>/dev/null)" ]; then
 		printInfo "User '$username' already has a Samba password file entry"
-		printInfo "Exiting"
 		exit 0
 	fi
 fi
@@ -147,7 +146,7 @@ fi
 if [ "$command" == 'adduser' ]; then
 
 	printInfo "Adding '$username' to the Samba password file"
-	$EXEC_SMBPASSWD -a $username
+	$EXEC_SMBPASSWD -a $username -D 0
 
 elif [ "$command" == 'create' ]; then
 
@@ -267,9 +266,9 @@ elif [ "$command" == 'create' ]; then
 
 	elif [ "$shareType" == 'User' ]; then
 		# Add user to the Samba password file if necessary
-		if [ -z "$($EXEC_PDBEDIT -L --user $username)" ]; then
+		if [ -z "$($EXEC_PDBEDIT -u $username -d 0 2>/dev/null)" ]; then
 			printInfo "Adding '$username' to the Samba password file"
-			$EXEC_SMBPASSWD -a $username
+			$EXEC_SMBPASSWD -a $username -D 0
 		fi
 
 		# Create user share directory if necessary

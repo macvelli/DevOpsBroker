@@ -68,7 +68,4 @@ if [ -d /mnt/ramdisk ]; then
 
 	# Set TMPDIR to /mnt/ramdisk/tmp for gcc and other programs
 	export TMPDIR=/mnt/ramdisk/tmp
-
-	# Delete all compiz session files older than a day
-	/usr/bin/find $HOME/.compiz/session -type f -mmin +1440 -delete
 fi
