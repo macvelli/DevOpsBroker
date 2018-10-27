@@ -416,6 +416,18 @@ if [ "$command" == 'gnome' ] || [ "$command" == 'all' ]; then
 	fi
 
 	#
+	# org.gnome.system.location settings
+	#
+
+	# Set enabled
+	if [ "$($EXEC_GSETTINGS get org.gnome.system.location enabled)" == 'false' ]; then
+		printInfo "Enabling system location services"
+
+		$EXEC_GSETTINGS set org.gnome.system.location enabled true
+		echoOnExit=true
+	fi
+
+	#
 	# org.gnome.system.smb settings
 	#
 
@@ -483,8 +495,16 @@ if [ "$command" == 'nautilus' ] || [ "$command" == 'all' ]; then
 	fi
 
 	#
-	# org.gnome.nautilus.desktop settings
+	# org.gnome.nautilus.preferences settings
 	#
+
+	# Set show-create-link
+	if [ "$($EXEC_GSETTINGS get org.gnome.nautilus.preferences show-create-link)" == 'false' ]; then
+		printInfo 'Enabling context menu for creating links'
+
+		$EXEC_GSETTINGS set org.gnome.nautilus.preferences show-create-link true
+		echoOnExit=true
+	fi
 
 	# Set show-hidden-files
 	if [ "$($EXEC_GSETTINGS get org.gnome.nautilus.preferences show-hidden-files)" == 'true' ]; then
