@@ -76,7 +76,7 @@ EXEC_IFCONFIG=/sbin/ifconfig
 DEFAULT_NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
 
 ## Variables
-NIC_SUBNET=$($EXEC_IP -4 addr show dev $DEFAULT_NIC | $EXEC_AWK '/inet /{ print $2 }')
+NIC_SUBNET=$($EXEC_IP -4 -o addr show dev $DEFAULT_NIC | $EXEC_AWK '{ print $4 }' | $EXEC_GREP -Eo '^[0-9]+\.[0-9]+\.[0-9]+\.')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -149,8 +149,8 @@ NIC_SUBNET=$($EXEC_IP -4 addr show dev $DEFAULT_NIC | $EXEC_AWK '/inet /{ print 
 #### Debugging/Accounting ####
 
 # Use a separate log file for each machine that connects
-	logging = syslog@0 /var/log/samba/%I-%U.log@3
-	log level = passdb:5 auth:5
+	log file = /var/log/samba/%I-%U.log
+	log level = 2
 
 # Cap the size of the individual log files (in KiB)
 	max log size = 1000
@@ -161,11 +161,11 @@ NIC_SUBNET=$($EXEC_IP -4 addr show dev $DEFAULT_NIC | $EXEC_AWK '/inet /{ print 
 ####### Authentication #######
 
 # Require the Samba client and server to use SMB2 signing
-	client min protocol = SMB3
+	client min protocol = SMB2
 	client max protocol = SMB3
 	client signing = disabled
 
-	server min protocol = SMB3
+	server min protocol = SMB2
 	server max protocol = SMB3
 	server signing = disabled
 
