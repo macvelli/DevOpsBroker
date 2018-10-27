@@ -161,11 +161,11 @@ NIC_SUBNET=$($EXEC_IP -4 addr show dev $DEFAULT_NIC | $EXEC_AWK '/inet /{ print 
 ####### Authentication #######
 
 # Require the Samba client and server to use SMB2 signing
-	client min protocol = SMB2
+	client min protocol = SMB3
 	client max protocol = SMB3
 	client signing = disabled
 
-	server min protocol = SMB2
+	server min protocol = SMB3
 	server max protocol = SMB3
 	server signing = disabled
 
