@@ -33,6 +33,9 @@ umask 027
 # Set PATH so it includes user's private bin directories
 PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 
+# Set USER_UID environment variable
+export USER_UID=$(/usr/bin/id -u $USER)
+
 # Create /mnt/ramdisk user directories
 if [ -d /mnt/ramdisk ]; then
 	if [ ! -d /mnt/ramdisk/$USER ]; then
