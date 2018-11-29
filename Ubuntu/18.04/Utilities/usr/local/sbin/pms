@@ -506,7 +506,7 @@ elif [ $command == 'which' ]; then
 
 	# Display error if file does not exist
 	if [ ! -f "$filename" ]; then
-		printError 'pms' "Cannot access '$filename': No such file"
+		printError 'pms' "Cannot access '$2': No such file"
 		echo
 		printUsage 'pms which FILE'
 

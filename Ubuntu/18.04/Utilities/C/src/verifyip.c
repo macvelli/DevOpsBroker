@@ -40,6 +40,7 @@
 #include <stdbool.h>
 
 #include "org/devopsbroker/lang/error.h"
+#include "org/devopsbroker/net/ip-util.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -49,7 +50,6 @@
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static int detectIPType(const char *ipAddress);
 static void verifyIPv4(const char *ipAddress);
 static void verifyIPv6(const char *ipAddress);
 
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
 	// IP Address parameter
 	char *ip = argv[1];
-	int ipType = detectIPType(ip);
+	int ipType = a25c96b2_detectIPType(ip);
 
 	if (ipType == 4) {
 		verifyIPv4(ip);
@@ -81,27 +81,6 @@ int main(int argc, char *argv[]) {
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-
-static int detectIPType(register const char *ipAddress) {
-	register char ch = *ipAddress;
-
-	while (ch) {
-		// IPv4 Address Type
-		if (ch == '.') {
-			return 4;
-		}
-
-		// IPv6 Address Type
-		if ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || ch == ':') {
-			return 6;
-		}
-
-		ch = (*++ipAddress);
-	}
-
-	// Could not detect IP Address Type
-	exit(EXIT_FAILURE);
-}
 
 static void verifyIPv4(register const char *ipAddress) {
 	register char ch = *ipAddress;
@@ -190,7 +169,7 @@ static void verifyIPv6(register const char *ipAddress) {
 					exit(EXIT_FAILURE);
 				}
 
-				int ipType = detectIPType(ipAddress);
+				int ipType = a25c96b2_detectIPType(ipAddress);
 				if (ipType == 4) {
 					verifyIPv4(ipAddress);
 					return;

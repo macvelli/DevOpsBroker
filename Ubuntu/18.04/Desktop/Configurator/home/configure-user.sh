@@ -339,6 +339,9 @@ installTemplate 'New LibreOffice Writer.odt'
 # Install $userhome/Templates/New Systemd.service
 installTemplate 'New Systemd.service'
 
+# Install $userhome/Templates/New Text Document.txt
+installTemplate 'New Text Document.txt'
+
 # Create /etc/skel/.config/gtk-3.0 directory
 if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
 	$EXEC_MKDIR --mode=0755 /etc/skel/.config/gtk-3.0

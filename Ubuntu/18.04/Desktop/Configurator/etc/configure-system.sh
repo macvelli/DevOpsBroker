@@ -30,6 +30,7 @@
 # o /etc/profile
 # o /etc/tidy.conf
 # o /etc/apparmor.d/local/usr.bin.evince
+# o /etc/bash_completion.d/*
 # o /etc/default/resolvconf
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
@@ -134,6 +135,9 @@ installConfig 'tidy.conf' "$SCRIPT_DIR" /etc
 
 # Install /etc/apparmor.d/local/usr.bin.evince
 installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/local
+
+# Install /etc/bash_completion.d/*
+$EXEC_CP -uv "$SCRIPT_DIR"/bash_completion.d/* /etc/bash_completion.d
 
 # Install /etc/default/resolvconf
 installConfig 'resolvconf' "$SCRIPT_DIR"/default /etc/default

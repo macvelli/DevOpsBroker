@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 		if (ch >= 'A' && ch <= 'Z') {
 			do {
 				ch = *(++classname) | 0x20;
-			} while (ch >= 'a' && ch <= 'z');
+			} while ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'));
 
 			if (ch == ' ') {
 				// Exit with success

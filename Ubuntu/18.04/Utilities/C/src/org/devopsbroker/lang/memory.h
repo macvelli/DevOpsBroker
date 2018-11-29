@@ -55,6 +55,17 @@ static inline void f668c4bd_free(void *ptr) {
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f668c4bd_meminit
+ * Description: Initializes the block of memory to zeroes
+ *
+ * Parameters:
+ *   ptr        A pointer to the memory block to initialize
+ *   size       The size of the memory block to initialize
+ * ----------------------------------------------------------------------------
+ */
+void f668c4bd_meminit(register void *ptr, register const size_t size);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f668c4bd_malloc_size
  * Description: Performs the malloc() operation along with error-checking
  *

@@ -32,21 +32,21 @@
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 // Select Graphic Rendition (SGR) parameters
-#define BOLD "[1m"
-#define RESET "[0m"
+#define ANSI_BOLD "[1m"
+#define ANSI_RESET "[0m"
 
 // ANSI Color Codes
-#define AQUA "[96m"
-#define BLACK "[30m"
-#define BLUE "[94m"
-#define GOLD "[96m"
-#define GREEN "[92m"
-#define PURPLE "[95m"
-#define RED "[91m"
-#define YELLOW "[93m"
-#define WHITE "[97m"
+#define ANSI_AQUA "[96m"
+#define ANSI_BLACK "[30m"
+#define ANSI_BLUE "[94m"
+#define ANSI_GOLD "[96m"
+#define ANSI_GREEN "[92m"
+#define ANSI_PURPLE "[95m"
+#define ANSI_RED "[91m"
+#define ANSI_YELLOW "[93m"
+#define ANSI_WHITE "[97m"
 
-#define ROMANTIC "[0;33m"
+#define ANSI_ROMANTIC "[0;33m"
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 

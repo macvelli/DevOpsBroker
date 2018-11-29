@@ -75,7 +75,11 @@ function createDirectory() {
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'create' ]; then
+	if [ "$command" == 'bashcomplete' ]; then
+		printUsage "venture bashcomplete ${gold}[-d directory] ${yellow}${paramNameMap['bashcomplete']}"
+		echo ${romantic}
+		echo 'Creates a Bash complete script'${reset}
+	elif [ "$command" == 'create' ]; then
 		printUsage "venture create ${gold}[-d directory] ${yellow}${paramNameMap['create']}"
 		echo ${romantic}
 		echo 'Creates a brand new C project'${reset}
@@ -89,6 +93,7 @@ function showHelp() {
 		echo 'Creates a new file'${reset}
 		echo
 		echo ${bold}${white}'Valid File Types:'${reset}
+		echo -e ${bold}${yellow}'  source.asm\t'    ${romantic}'NASM Assembly language source file'
 		echo -e ${bold}${yellow}'  source.c\t'      ${romantic}'C language source file'
 		echo -e ${bold}${yellow}'  header.h\t'      ${romantic}'C language header file'
 		echo -e ${bold}${yellow}'  linux.conf\t'    ${romantic}'Linux configuration file'
@@ -123,17 +128,19 @@ function showHelp() {
 ## Bash exec variables
 EXEC_SHA256SUM=/usr/bin/sha256sum
 EXEC_VERIFYCLASS=/usr/local/bin/verifyclass
+EXEC_WHICH=/usr/bin/which
 
 ## Options
 command="$1"
 baseDir='.'
 
 ## Variables
-validCommands=('create' 'enum' 'fileinfo' 'new' 'struct' 'timestamp' )
+validCommands=( 'bashcomplete' 'create' 'enum' 'fileinfo' 'new' 'struct' 'timestamp' )
 showCommandHelp=false
 
 declare -A paramNameMap
 
+paramNameMap['bashcomplete']='COMMAND'
 paramNameMap['create']='PROJECT_NAME'
 paramNameMap['enum']='com.example.foo.Bar'
 paramNameMap['fileinfo']='FILE'
@@ -150,7 +157,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct | timestamp }"
+	printUsage "venture ${gold}[help]${yellow} { bashcomplete | create | enum | fileinfo | new | struct | timestamp }"
 	exit 1
 fi
 
@@ -158,7 +165,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'venture' "Invalid command: '$command'"
 	echo
-	printUsage "venture ${gold}[help]${yellow} { create | enum | fileinfo | new | struct | timestamp }"
+	printUsage "venture ${gold}[help]${yellow} { bashcomplete | create | enum | fileinfo | new | struct | timestamp }"
 
 	exit 1
 fi
@@ -198,7 +205,37 @@ while [[ "$2" == -* ]]; do
 	fi
 done
 
-if [ "$command" == 'create' ]; then
+if [ "$command" == 'bashcomplete' ]; then
+	commandName="$2"
+
+	# Display error if no command parameter given
+	if [ -z "$commandName" ]; then
+		printError 'venture' 'Missing command name'
+		echo
+		printUsage "venture bashcomplete ${paramNameMap['bashcomplete']}"
+
+		exit 1
+	fi
+
+	# Display error if command does not exist or is not executable
+	if ! $EXEC_WHICH $commandName 1>/dev/null; then
+		printError 'venture' "Command not found: '$commandName'"
+		echo
+		printUsage "venture bashcomplete ${paramNameMap['bashcomplete']}"
+
+		exit 1
+	fi
+
+	# Display error if file already exists
+	if [ -f "${baseDir}/${commandName}" ]; then
+		printError 'venture' "File already exists: '${baseDir}/${commandName}'"
+		echo
+		printUsage "venture bashcomplete ${paramNameMap['bashcomplete']}"
+
+		exit 1
+	fi
+
+elif [ "$command" == 'create' ]; then
 	projectName="$2"
 
 	# Display error and usage if no project name parameter given
@@ -247,7 +284,7 @@ elif [ "$command" != 'timestamp' ]; then
 
 	if [ "$command" == 'new' ]; then
 		# Display error and usage if unsupported file parameter given
-		if [[ ! "$fileName" =~ ^.+\.(c|h|conf|html|sh|tpl)$ ]] && [ "$fileName" != 'makefile' ]; then
+		if [[ ! "$fileName" =~ ^.+\.(asm|c|h|conf|html|sh|tpl)$ ]] && [ "$fileName" != 'makefile' ]; then
 			printError 'venture' "Unsupported file name '$fileName'"
 			echo
 			showHelp
@@ -270,7 +307,18 @@ if [ ! -d "$baseDir" ]; then
 	$EXEC_MKDIR --mode=0750 "$baseDir"
 fi
 
-if [ "$command" == 'create' ]; then
+if [ "$command" == 'bashcomplete' ]; then
+	# Create a new Bash completion script
+
+	printInfo "Creating new Bash completion script '$commandName'"
+
+	# Set bash-complete.tpl location and make it executable
+	bashCompleteTpl=$(isExecutable "$SCRIPT_DIR/template/bash-complete.tpl")
+
+	# Execute template script
+	"$bashCompleteTpl" "$commandName" > "$baseDir/$commandName"
+
+elif [ "$command" == 'create' ]; then
 	# BEGIN Create new project
 
 	printBanner "Creating new project '$projectName'"
@@ -327,13 +375,23 @@ elif [ "$command" == 'fileinfo' ]; then
 elif [ "$command" == 'new' ]; then
 	# BEGIN Create new file
 
+	# Create a new NASM Assembly source file
+	if [[ "$fileName" == *.asm ]]; then
+		printInfo "Creating new NASM Assembly source file '$fileName'"
+
+		# Set source-file-asm.tpl location and make it executable
+		sourceFileASMTpl=$(isExecutable "$SCRIPT_DIR/template/source-file-asm.tpl")
+
+		# Execute template script
+		"$sourceFileASMTpl" "$fileName" > "$baseDir/$fileName"
+
 	# Create a new C source file
-	if [[ "$fileName" == *.c ]]; then
+	elif [[ "$fileName" == *.c ]]; then
 		fileName="${fileName,,}"
 		printInfo "Creating new C source file '$fileName'"
 
 		# Set source-file-c.tpl location and make it executable
-		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
+		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR/template/source-file-c.tpl")
 
 		# Execute template script
 		"$sourceFileCTpl" "$fileName" > "$baseDir/$fileName"

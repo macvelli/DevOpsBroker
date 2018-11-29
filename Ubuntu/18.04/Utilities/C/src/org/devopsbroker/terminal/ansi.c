@@ -64,8 +64,8 @@ void d99c60f5_printBox(const char *message, const bool useDoubleLine) {
 	}
 	boxLine[i] = L'\0';
 
-	printf(BOLD PURPLE "\n");
+	printf(ANSI_BOLD ANSI_PURPLE "\n");
 	printf("%lc%ls%lc\n", lineList[0], boxLine, lineList[2]);
-	printf("%lc " WHITE "%s" PURPLE " %lc\n", lineList[3], message, lineList[3]);
-	printf("%lc%ls%lc\n" RESET "\n", lineList[4], boxLine, lineList[5]);
+	printf("%lc " ANSI_WHITE "%s" ANSI_PURPLE " %lc\n", lineList[3], message, lineList[3]);
+	printf("%lc%ls%lc\n" ANSI_RESET "\n", lineList[4], boxLine, lineList[5]);
 }

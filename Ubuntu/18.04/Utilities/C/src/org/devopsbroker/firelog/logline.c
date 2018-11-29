@@ -56,6 +56,7 @@ static inline char *terminateField(char *field) {
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
+static char *IGMP = "IGMP";
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
@@ -79,17 +80,24 @@ LogLine *e88eda74_cloneLogLine(LogLine *logLine) {
 	// destIPAddr
 	clone->destIPAddr = (clone->in + (logLine->destIPAddr - logLine->in));
 
-	// protocol
-	clone->protocol = (clone->in + (logLine->protocol - logLine->in));
+	// IGMP Type
+	if (f6215943_isEqual(IGMP, logLine->protocol)) {
+		clone->protocol = IGMP;
+		clone->sourcePort = 0;
+		clone->destPort = 0;
+	} else {
+		// protocol
+		clone->protocol = (clone->in + (logLine->protocol - logLine->in));
+
+		// sourcePort
+		clone->sourcePort = logLine->sourcePort;
+
+		// destPort
+		clone->destPort = logLine->destPort;
+	}
 
 	// lineLength
 	clone->lineLength = logLine->lineLength;
-
-	// sourcePort
-	clone->sourcePort = logLine->sourcePort;
-
-	// destPort
-	clone->destPort = logLine->destPort;
 
 	// count
 	clone->count = logLine->count;
@@ -135,6 +143,11 @@ void e88eda74_initLogLine(LogLine *logLine, String *line) {
 		char *icmpType = f6215943_search("TYPE=", position);
 		position = terminateField(icmpType);
 		logLine->sourcePort = f45efac2_parse_uint32(icmpType);
+		logLine->destPort = 0;
+	} else if (f6215943_isEqual("2", logLine->protocol)) {
+		// IGMP Type
+		logLine->protocol = IGMP;
+		logLine->sourcePort = 0;
 		logLine->destPort = 0;
 	} else {
 		// sourcePort

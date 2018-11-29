@@ -276,6 +276,14 @@ createSymlink /usr/local/bin/decimal /usr/local/bin/convert-number
 createSymlink /usr/local/bin/hex /usr/local/bin/convert-number
 createSymlink /usr/local/bin/octal /usr/local/bin/convert-number
 
+# Install convert-temp user utility
+installUserUtility convert-temp
+
+# Create symbolic links to the convert-temp user utility
+createSymlink /usr/local/bin/celsius    /usr/local/bin/convert-temp
+createSymlink /usr/local/bin/fahrenheit /usr/local/bin/convert-temp
+createSymlink /usr/local/bin/kelvin     /usr/local/bin/convert-temp
+
 # Install deb-control user utility
 installUserUtility deb-control
 
@@ -392,6 +400,7 @@ if [ ! -d /usr/local/bin/template ]; then
 	echoOnExit=true
 fi
 
+installTemplate 'bash-complete.tpl'
 installTemplate 'bash-script.tpl'
 installTemplate 'bash-template.tpl'
 installTemplate 'c-enum-source.tpl'
@@ -401,6 +410,7 @@ installTemplate 'header-file-c.tpl'
 installTemplate 'html5.tpl'
 installTemplate 'linux-conf.tpl'
 installTemplate 'makefile.tpl'
+installTemplate 'source-file-asm.tpl'
 installTemplate 'source-file-c.tpl'
 
 if [ $echoOnExit == 'true' ]; then

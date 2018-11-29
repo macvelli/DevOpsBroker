@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <assert.h>
+
 #include "memory.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
@@ -44,6 +46,8 @@ typedef struct StringBuilder {
 	uint32_t length;
 	uint32_t size;
 } StringBuilder;
+
+static_assert(sizeof(StringBuilder) == 16, "Check your assumptions");
 
 // ════════════════════════════════ Structures ════════════════════════════════
 
@@ -240,10 +244,10 @@ static inline void c598a24c_initStringBuilder(register StringBuilder *strBuilder
  * ----------------------------------------------------------------------------
  */
 static inline void c598a24c_initStringBuilder_uint32(register StringBuilder *strBuilder, register const uint32_t bufSize) {
-	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), STRINGBUILDER_DEFAULT_SIZE);
+	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), bufSize);
 	strBuilder->buffer[0] = '\0';
 	strBuilder->length = 0;
-	strBuilder->size = STRINGBUILDER_DEFAULT_SIZE;
+	strBuilder->size = bufSize;
 }
 
 #endif /* ORG_DEVOPSBROKER_LANG_STRINGBUILDER_H */

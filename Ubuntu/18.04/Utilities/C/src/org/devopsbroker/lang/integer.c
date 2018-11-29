@@ -30,9 +30,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "error.h"
 #include "integer.h"
 #include "memory.h"
 #include "string.h"
+#include "stringbuilder.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -99,9 +101,18 @@ uint32_t f45efac2_parse_uint32(register const char *source) {
 	while (ch) {
 		digit = ch - '0';
 
-		// Bomb out if digit is not a number
+		// Display error if digit is not a number
 		if (digit < 0 || digit > 9) {
-			abort();
+			StringBuilder errorMessage;
+			c598a24c_initStringBuilder(&errorMessage);
+
+			c598a24c_append_string(&errorMessage, "Invalid unsigned integer: '");
+			c598a24c_append_string(&errorMessage, source);
+			c598a24c_append_char(&errorMessage, '\'');
+
+			c7c88e52_printError_string(errorMessage.buffer);
+			free(errorMessage.buffer);
+			exit(EXIT_FAILURE);
 		}
 
 		value *= 10;
@@ -214,6 +225,7 @@ char *f45efac2_toStringHex_uint32(register uint32_t value, const uint32_t precis
 	while (value >= 256) {
 		remainder = value % 16;
 		value >>= 4;
+
 		(*--target) = f6215943_digitHex[remainder];
 
 		remainder = value % 16;

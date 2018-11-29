@@ -1,0 +1,70 @@
+#!/bin/bash
+
+#
+# convert-temp - DevOpsBroker Bash completion script for the convert-temp utility
+#
+# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# -----------------------------------------------------------------------------
+# Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-39
+#
+# -----------------------------------------------------------------------------
+#
+
+function _convert-temp() {
+
+	# Exit if we have already completed the first word
+	if [ $COMP_CWORD -eq 2 ]; then
+		return
+	fi
+
+	local programName=${COMP_WORDS[0]}
+	local firstWord=${COMP_WORDS[1]}
+
+	COMPREPLY=()
+
+	if [ "$programName" == 'celsius' ]; then
+		if [ -z "$firstWord" ]; then
+			COMPREPLY+=('fahrenheit' 'kelvin')
+		elif /bin/grep -q "$firstWord" <<<"fahrenheit"; then
+			COMPREPLY+=('fahrenheit')
+		elif /bin/grep -q "$firstWord" <<<"kelvin"; then
+			COMPREPLY+=('kelvin')
+		fi
+	elif [ "$programName" == 'fahrenheit' ]; then
+		if [ -z "$firstWord" ]; then
+			COMPREPLY+=('celsius' 'kelvin')
+		elif /bin/grep -q "$firstWord" <<<"celsius"; then
+			COMPREPLY+=('celsius')
+		elif /bin/grep -q "$firstWord" <<<"kelvin"; then
+			COMPREPLY+=('kelvin')
+		fi
+	elif [ "$programName" == 'kelvin' ]; then
+		if [ -z "$firstWord" ]; then
+			COMPREPLY+=('celsius' 'fahrenheit')
+		elif /bin/grep -q "$firstWord" <<<"celsius"; then
+			COMPREPLY+=('celsius')
+		elif /bin/grep -q "$firstWord" <<<"fahrenheit"; then
+			COMPREPLY+=('fahrenheit')
+		fi
+	fi
+
+
+}
+
+complete -F _convert-temp celsius
+complete -F _convert-temp fahrenheit
+complete -F _convert-temp kelvin

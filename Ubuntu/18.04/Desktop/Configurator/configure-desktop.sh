@@ -365,7 +365,13 @@ installPackage '/usr/bin/git' 'git'
 # Uninstall gnome-calculator snap
 uninstallSnap '/snap/gnome-calculator/current/usr/bin/gnome-calculator' 'gnome-calculator'
 
-# Install gnome-calculator apt package
+# Install gnome-calculator package
+installPackage '/usr/bin/gnome-calculator' 'gnome-calculator'
+
+# Uninstall gnome-characters
+uninstallSnap '/snap/gnome-characters/current/usr/bin/gnome-characters' 'gnome-characters'
+
+# Install gnome-calculator package
 installPackage '/usr/bin/gnome-calculator' 'gnome-calculator'
 
 # Install gnome-shell-extensions
@@ -427,6 +433,9 @@ uninstallPackage '/usr/share/doc/mtr-tiny/copyright' 'mtr-tiny'
 
 # Install mtr
 installPackage '/usr/share/doc/mtr/copyright' 'mtr'
+
+# Install nasm
+installPackage '/usr/bin/nasm' 'nasm'
 
 # Install net-tools
 installPackage '/bin/netstat' 'net-tools'
