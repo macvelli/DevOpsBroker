@@ -89,6 +89,7 @@ function showHelp() {
 		echo 'Creates a new file'${reset}
 		echo
 		echo ${bold}${white}'Valid File Types:'${reset}
+		echo -e ${bold}${yellow}'  source.asm\t'    ${romantic}'NASM Assembly language source file'
 		echo -e ${bold}${yellow}'  source.c\t'      ${romantic}'C language source file'
 		echo -e ${bold}${yellow}'  header.h\t'      ${romantic}'C language header file'
 		echo -e ${bold}${yellow}'  linux.conf\t'    ${romantic}'Linux configuration file'
@@ -247,7 +248,7 @@ elif [ "$command" != 'timestamp' ]; then
 
 	if [ "$command" == 'new' ]; then
 		# Display error and usage if unsupported file parameter given
-		if [[ ! "$fileName" =~ ^.+\.(c|h|conf|html|sh|tpl)$ ]] && [ "$fileName" != 'makefile' ]; then
+		if [[ ! "$fileName" =~ ^.+\.(asm|c|h|conf|html|sh|tpl)$ ]] && [ "$fileName" != 'makefile' ]; then
 			printError 'venture' "Unsupported file name '$fileName'"
 			echo
 			showHelp
@@ -327,13 +328,23 @@ elif [ "$command" == 'fileinfo' ]; then
 elif [ "$command" == 'new' ]; then
 	# BEGIN Create new file
 
+	# Create a new NASM Assembly source file
+	if [[ "$fileName" == *.asm ]]; then
+		printInfo "Creating new NASM Assembly source file '$fileName'"
+
+		# Set source-file-asm.tpl location and make it executable
+		sourceFileASMTpl=$(isExecutable "$SCRIPT_DIR/template/source-file-asm.tpl")
+
+		# Execute template script
+		"$sourceFileASMTpl" "$fileName" > "$baseDir/$fileName"
+
 	# Create a new C source file
-	if [[ "$fileName" == *.c ]]; then
+	elif [[ "$fileName" == *.c ]]; then
 		fileName="${fileName,,}"
 		printInfo "Creating new C source file '$fileName'"
 
 		# Set source-file-c.tpl location and make it executable
-		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
+		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR/template/source-file-c.tpl")
 
 		# Execute template script
 		"$sourceFileCTpl" "$fileName" > "$baseDir/$fileName"

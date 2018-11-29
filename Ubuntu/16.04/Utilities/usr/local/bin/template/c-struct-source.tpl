@@ -87,7 +87,7 @@ includeGuard="${structName//./_}"
 includeGuard="${includeGuard^^}"
 
 # Set the typedef name
-typedefName="$(echo $structName | $EXEC_GREP -Eo '([A-Z][a-zA-Z]+){1}$')"
+typedefName="$(echo $structName | $EXEC_GREP -Eo '([A-Z][a-zA-Z0-9]+){1}$')"
 
 # Set the md5hash of the include guard
 md5Hash=$(echo $includeGuard | $EXEC_MD5SUM | $EXEC_CUT -c 25-32)
@@ -135,6 +135,8 @@ kernelVersion=${3:-"$(getKernelVersion)"}
 
 #include <stdlib.h>
 
+#include <assert.h>
+
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 
@@ -145,6 +147,8 @@ typedef struct $typedefName {
 	// TODO: Fill in with the attributes for the struct
 
 } $typedefName;
+
+static_assert(sizeof($typedefName) == 64, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
