@@ -20,6 +20,9 @@
 # Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-43
 #
 # The ~/.bash_logout file is executed by bash(1) when login shell exits.
+#
+# Turns out .bash_logout only works when logging out from an interactive shell
+# (aka, tty 1 through 6).
 # -----------------------------------------------------------------------------
 #
 
@@ -30,16 +33,19 @@
 # Gzip and copy Firefox cache from /mnt/ramdisk
 if [ -d /cache/$USER ] && [ -L $HOME/.cache/mozilla/firefox ]; then
 
+	# Delete the existing Firefox cache backup
+	/bin/rm -f /cache/$USER/$profileDir.tar.gz
+
 	profileDir=$(/bin/ls -A /mnt/ramdisk/$USER/mozilla/firefox/)
-	/bin/tar czvf /tmp/$profileDir.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox/ $profileDir/
-	/bin/mv /tmp/$profileDir.tar.gz /cache/$USER/
+	/bin/tar czvf /cache/$USER/$profileDir.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox/ $profileDir/
 
 fi
 
 #
 # When leaving the console clear the screen to increase privacy
 #
-if [ $SHLVL -eq 1 ]; then
-	[ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q
-fi
+#if [ $SHLVL -eq 1 ]; then
+#	[ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q
+#fi
 
+exit 0

@@ -1,5 +1,5 @@
 #
-# ssh-agent.service - DevOpsBroker systemd user service for ssh-agent
+# logout.service - DevOpsBroker systemd user service for simply calling freaking ~/.bash_logout
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -17,10 +17,10 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.4 LTS running kernel.osrelease = 4.13.0-45
+# Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-42
 #
-# This service starts ssh-agent on user login and binds it to the user-specific
-# XDG_RUNTIME_DIR directory.
+# This service exists because Gnome does not call ~/.bash_logout on shutdown
+# or restart.
 #
 # When executing the configure-user.sh script, DevOpsBroker places this file
 # in the ~/.config/systemd/user directory and enables it as a user service.
@@ -28,13 +28,19 @@
 #
 
 [Unit]
-Description=SSH Authentication Agent Service
-Documentation=http://manpages.ubuntu.com/manpages/bionic/man1/ssh-agent.1.html
+Description=Bash Logout Service
+DefaultDependencies=no
+PartOf=graphical-session.target
+Conflicts=shutdown.target
+Before=shutdown.target
 
+# %s - the shell of the user running the service manager instance
+# %h - the home directory of the user running the service manager instance
 [Service]
-Type=forking
-Environment=SSH_AUTH_SOCK=%t/ssh-agent.socket
-ExecStart=/usr/bin/ssh-agent -a $SSH_AUTH_SOCK
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=%s %h/.bash_logout
+RemainAfterExit=yes
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target shutdown.target

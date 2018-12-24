@@ -70,6 +70,7 @@
 #
 # Configure GPG
 #
+# Installs systemd user service logout.service
 # Installs systemd user service ssh-agent.service
 #
 # Applies stricter file and directory settings to the user's home directory
@@ -463,6 +464,24 @@ if [ ! -f "$userhome"/.config/systemd/user/ssh-agent.service ]; then
 
 	printInfo 'Start systemd user service ssh-agent.service'
 	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user start ssh-agent.service
+fi
+
+#
+# Install logout.service
+#
+
+if [ ! -f "$userhome"/.config/systemd/user/logout.service ]; then
+	printInfo 'Installing systemd user service logout.service'
+
+	# Install as $username:$username with rw-r--r-- privileges
+	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/systemd/logout.service "$userhome"/.config/systemd/user
+
+	# Need XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS
+	printInfo 'Enable systemd user service logout.service'
+	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user enable logout.service
+
+	printInfo 'Start systemd user service logout.service'
+	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user start logout.service
 fi
 
 #

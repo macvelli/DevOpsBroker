@@ -290,14 +290,6 @@ installPackage '/usr/bin/aspell' 'aspell aspell-en'
 # Install avahi-daemon
 installPackage '/usr/sbin/avahi-daemon' 'avahi-daemon'
 
-# Install clang
-installPackage '/usr/bin/clang-5.0' 'clang-5.0 clang-5.0-doc'
-
-if [ ! -L /usr/bin/clang ]; then
-	printInfo "Creating symbolic link /usr/lib/llvm-5.0/bin/clang"
-	$EXEC_LN -s /usr/lib/llvm-5.0/bin/clang /usr/bin/clang
-fi
-
 # Install dconf-editor
 installPackage '/usr/bin/dconf-editor' 'dconf-editor'
 
@@ -312,6 +304,9 @@ installPackage '/usr/bin/dig' 'dnsutils'
 
 # Install dos2unix
 installPackage '/usr/bin/dos2unix' 'dos2unix'
+
+# Install ethtool
+installPackage '/sbin/ethtool' 'ethtool'
 
 # Install exfat
 installPackage '/sbin/mkfs.exfat' 'exfat-fuse exfat-utils'
@@ -513,6 +508,9 @@ if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then
 	/usr/bin/apt-get -f install
 	echo
 fi
+
+# Install tree
+installPackage '/usr/bin/tree' 'tree'
 
 # Install ttf-mscorefonts-installer
 if [ ! -f '/usr/share/doc/ttf-mscorefonts-installer/copyright' ]; then
