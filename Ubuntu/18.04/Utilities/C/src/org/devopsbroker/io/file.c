@@ -96,6 +96,26 @@ void e2f74138_closeFile(const int fd, const char *pathName) {
 	}
 }
 
+bool e2f74138_fileExists(const char *pathName) {
+	return access(pathName, F_OK) == 0;
+}
+
+bool e2f74138_isReadable(const char *pathName) {
+	return access(pathName, R_OK) == 0;
+}
+
+bool e2f74138_isWritable(const char *pathName) {
+	return access(pathName, W_OK) == 0;
+}
+
+bool e2f74138_isExecutable(const char *pathName) {
+	return access(pathName, X_OK) == 0;
+}
+
+bool e2f74138_isAccessible(const char *pathName, int mode) {
+	return access(pathName, mode) == 0;
+}
+
 void e2f74138_getFileStatus(const char *pathName, FileStatus* fileStatus) {
 	if (stat(pathName, fileStatus) == SYSTEM_ERROR_CODE) {
 		StringBuilder *errorMessage = c598a24c_createStringBuilder();

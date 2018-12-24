@@ -1,5 +1,5 @@
 #
-# lang.mk - DevOpsBroker makefile for compiling the org.devopsbroker.lang package
+# socket.mk - DevOpsBroker makefile for compiling the org.devopsbroker.socket package
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -17,7 +17,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+# Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-42
 #
 # -----------------------------------------------------------------------------
 #
@@ -40,8 +40,8 @@ else
 	BASEDIR := $(CURDIR)
 endif
 
-SRC_DIR := $(BASEDIR)/src/org/devopsbroker/lang
-OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/lang
+SRC_DIR := $(BASEDIR)/src/org/devopsbroker/socket
+OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/socket
 
 C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
 C_OBJECTS := $(subst /src/,/obj/,$(C_SOURCES:.c=.o))

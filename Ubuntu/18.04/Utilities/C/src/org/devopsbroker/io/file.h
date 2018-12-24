@@ -27,6 +27,8 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
+#include <stdbool.h>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -44,7 +46,7 @@
 // sys/stat.h
 typedef struct stat FileStatus;
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
+// ════════════════════════════ Function Prototypes ═══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e2f74138_openFile
@@ -68,6 +70,62 @@ int e2f74138_openFile(const char *pathName, const int flags);
  * ----------------------------------------------------------------------------
  */
 void e2f74138_closeFile(const int fd, const char *pathName);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_fileExists
+ * Description: Returns true if file exists, false otherwise
+ *
+ * Parameters:
+ *   pathName   The name of the file to check for existence
+ * Returns:     true if file exists, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool e2f74138_fileExists(const char *pathName);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_isReadable
+ * Description: Returns true if file exists and is readable, false otherwise
+ *
+ * Parameters:
+ *   pathName   The name of the file to check for readability
+ * Returns:     true if file exists and is readable, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool e2f74138_isReadable(const char *pathName);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_isWritable
+ * Description: Returns true if file exists and is writable, false otherwise
+ *
+ * Parameters:
+ *   pathName   The name of the file to check for writability
+ * Returns:     true if file exists and is writable, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool e2f74138_isWritable(const char *pathName);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_isExecutable
+ * Description: Returns true if file exists and is executable, false otherwise
+ *
+ * Parameters:
+ *   pathName   The name of the file to check for executability
+ * Returns:     true if file exists and is executable, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool e2f74138_isExecutable(const char *pathName);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_isAccessible
+ * Description: Returns true if file exists and all requested permissions granted, false otherwise
+ *
+ * Parameters:
+ *   pathName   The name of the file to check for accessibility
+ *   mode       The bitwise OR of one or more of R_OK, W_OK, and X_OK
+ * Returns:     true if file exists and all requested permissions granted, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool e2f74138_isAccessible(const char *pathName, int mode);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e2f74138_getFileStatus

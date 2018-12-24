@@ -110,12 +110,26 @@ static inline String *f6215943_createString(const size_t length) {
  * Description: Copies the char* contents up to the length value
  *
  * Parameters:
- *   string     The char* instance to copy
+ *   source     The char* instance to copy
  *   length     The number of characters to copy
  * Returns:     A copied instance of the char* and of the specified length
  * ----------------------------------------------------------------------------
  */
 char *f6215943_copy(const char *source, const uint32_t length);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f6215943_copy_to_buffer
+ * Description: Copies the char* source contents into the buffer
+ *
+ * Parameters:
+ *   source     The char* instance to copy
+ *   buffer     The buffer to copy into
+ *   bufSize    The size of the buffer
+ * Returns:     On success, the actual length copied into the buffer. If the
+ *              source string is longer than the buffer size, -1 is returned
+ * ----------------------------------------------------------------------------
+ */
+uint32_t f6215943_copy_to_buffer(const char *source, char *buffer, const uint32_t bufSize);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f6215943_destroyString

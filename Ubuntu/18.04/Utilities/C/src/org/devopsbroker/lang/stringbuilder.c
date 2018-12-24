@@ -102,6 +102,14 @@ void c598a24c_append_int64(register StringBuilder *strBuilder, register const in
 	f668c4bd_free(signedLongStr);
 }
 
+void c598a24c_append_uint32(register StringBuilder *strBuilder, register const uint32_t unsignedInt) {
+	register char* unsignedIntStr = f45efac2_toString_uint32(unsignedInt);
+
+	c598a24c_append_string(strBuilder, unsignedIntStr);
+
+	free(unsignedIntStr);
+}
+
 void c598a24c_append_uint64(register StringBuilder *strBuilder, register const uint64_t unsignedLong) {
 	register char* unsignedLongStr = db0acb04_toString_uint64(unsignedLong);
 

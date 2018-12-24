@@ -1,5 +1,5 @@
 /*
- * memory.h - DevOpsBroker C header file for providing memory management functionality
+ * ipv4address.h - DevOpsBroker C header file for the org.devopsbroker.net.IPv4Address struct
  *
  * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
  *
@@ -16,109 +16,120 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
+ * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-39
  *
- * echo ORG_DEVOPSBROKER_LANG_MEMORY | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_NET_IPV4ADDRESS | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_LANG_MEMORY_H
-#define ORG_DEVOPSBROKER_LANG_MEMORY_H
+#ifndef ORG_DEVOPSBROKER_NET_IPV4ADDRESS_H
+#define ORG_DEVOPSBROKER_NET_IPV4ADDRESS_H
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <malloc.h>
+#include <stdint.h>
+
+#include <assert.h>
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define IPV4_STR_BUF_LEN   20
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
+typedef enum IPv4StringType {
+	IPV4_ADDR = 0,
+	IVP4_CIDR_SUFFIX = 256,
+	IPV4_SUBNET = 2,
+	IPV4_ROUTE = 259
+} IPv4StringType;
+
+typedef struct IPv4Address {
+	uint32_t address;               // 192.168.1.102
+	uint32_t cidrSuffix;            // 24
+	uint32_t subnetMask;            // 255.255.255.0
+	uint32_t routingPrefix;         // 192.168.1.0
+} IPv4Address;
+
+static_assert(sizeof(IPv4Address) == 16, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
+// ════════════════════════════ Function Prototypes ═══════════════════════════
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_free
- * Description: Performs the free() operation *only* on pointers with space to free
+ * Function:    e1e7e8f5_createIPv4Address
+ * Description: Creates a IPv4Address struct instance
  *
  * Parameters:
- *   ptr        A pointer to the memory block to free
+ *   ipAddress  A string representation of an IPv4 address
+ * Returns:     A IPv4Address struct instance
  * ----------------------------------------------------------------------------
  */
-void f668c4bd_free(void *ptr);
+IPv4Address *e1e7e8f5_createIPv4Address(char *ipAddress);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_meminit
- * Description: Initializes the block of memory to zeroes
+ * Function:    e1e7e8f5_destroyIPv4Address
+ * Description: Frees the memory allocated to the IPv4Address struct pointer
  *
  * Parameters:
- *   ptr        A pointer to the memory block to initialize
- *   size       The size of the memory block to initialize
+ *   ipv4Address    A pointer to the IPv4Address instance to destroy
  * ----------------------------------------------------------------------------
  */
-void f668c4bd_meminit(void *ptr, size_t size);
+void e1e7e8f5_destroyIPv4Address(IPv4Address *ipv4Address);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_memcopy
- * Description: Copies numBytes from source to destination
+ * Function:    e1e7e8f5_initIPv4Address
+ * Description: Initializes an existing IPv4Address struct
  *
  * Parameters:
- *   source     A pointer to the source memory block
- *   dest       A pointer to the destination memory block
- *   numBytes   The number of bytes to copy from source to destination
+ *   ipv4Address	A pointer to the IPv4Address instance to initalize
+ *   ipAddress      A string representation of an IPv4 address
  * ----------------------------------------------------------------------------
  */
-void f668c4bd_memcopy(void *source, void *dest, size_t numBytes);
+void e1e7e8f5_initIPv4Address(IPv4Address *ipv4Address, char *ipAddress);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_malloc_size
- * Description: Performs the malloc() operation along with error-checking
+ * Function:    e1e7e8f5_deriveSubnetMask
+ * Description: Takes the IPv4 address and CIDR suffix and derives both the
+ *              subnet mask and the routing prefix
  *
  * Parameters:
- *   size       The size of the memory block to allocate
- * Returns:     A pointer to the allocated memory block
+ *   ipv4Address    A pointer to the IPv4Address instance
  * ----------------------------------------------------------------------------
  */
-void *f668c4bd_malloc_size(const size_t size);
+void e1e7e8f5_deriveSubnetMask(IPv4Address *ipv4Address);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_malloc_size_size
- * Description: Performs the malloc() operation with error-checking and memory block calculation
+ * Function:    e1e7e8f5_toString
+ * Description: Returns the string representation of the IPv4 address
  *
  * Parameters:
- *   typeSize       The size of the type being allocated (using sizeof())
- *   numBlocks      The number of blocks of type to allocate
- * Returns:         A pointer to the allocated memory block
+ *   ipv4Address    A pointer to the IPv4Address instance to reference
+ *   strType        The IPv4 string type to generate
+ * Returns:         The string representation of the IPv4 address
  * ----------------------------------------------------------------------------
  */
-void *f668c4bd_malloc_size_size(const size_t typeSize, const size_t numBlocks);
+char *e1e7e8f5_toString(IPv4Address *ipv4Address, IPv4StringType strType);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_realloc_void_size
- * Description: Performs the realloc() operation with error-checking
+ * Function:    e1e7e8f5_extractString
+ * Description: Populates the char *buffer with the string representation of
+ *              the IPv4 address
  *
  * Parameters:
- *   ptr            The pointer to the memory block to reallocate
- *   newSize        The new size of the memory block
- * Returns:         A pointer to the re-allocated memory block
+ *   ipv4Address    A pointer to the IPv4Address instance to reference
+ *   strType        The IPv4 string type to generate
+ *   buffer         The char *buffer to populate
  * ----------------------------------------------------------------------------
  */
-void *f668c4bd_realloc_void_size(void *ptr, const size_t newSize);
+void e1e7e8f5_extractString(IPv4Address *ipv4Address, IPv4StringType strType, char *buffer);
 
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_realloc_void_size_size
- * Description: Performs the realloc() operation with error-checking and memory block calculation
- *
- * Parameters:
- *   ptr            The pointer to the memory block to reallocate
- *   typeSize       The size of the type being allocated (using sizeof())
- *   numBlocks      The number of blocks of type to allocate
- * Returns:         A pointer to the re-allocated memory block
- * ----------------------------------------------------------------------------
- */
-void *f668c4bd_realloc_void_size_size(void *ptr, const size_t typeSize, const size_t numBlocks);
-
-#endif /* ORG_DEVOPSBROKER_LANG_MEMORY_H */
+#endif /* ORG_DEVOPSBROKER_NET_IPV4ADDRESS_H */

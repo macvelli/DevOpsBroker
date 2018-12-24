@@ -19,7 +19,7 @@
 ; -----------------------------------------------------------------------------
 ; Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-39
 ;
-; This file defines the following x86-64 assembly language functions for the
+; This file implements the following x86-64 assembly language functions for the
 ; convert-temp utility:
 ;
 ;   o float b9ac2bf7_convertTemperature(char *inputTemp, TemperatureType fromTempType, TemperatureType toTempType);

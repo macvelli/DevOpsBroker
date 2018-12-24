@@ -71,6 +71,7 @@ clean:
 	$(MAKE) -f src/org/devopsbroker/io/io.mk clean
 	$(MAKE) -f src/org/devopsbroker/lang/lang.mk clean
 	$(MAKE) -f src/org/devopsbroker/net/net.mk clean
+	$(MAKE) -f src/org/devopsbroker/socket/socket.mk clean
 	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk clean
 	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk clean
 	$(MAKE) -f src/org/devopsbroker/text/text.mk clean
@@ -102,6 +103,11 @@ lib-net:
 	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/net/net.mk $(filter-out $@ library,$(MAKECMDGOALS))
 
+lib-socket:
+	@umask $(UMASK) && \
+	source /etc/devops/ansi.conf && \
+	$(MAKE) -f src/org/devopsbroker/socket/socket.mk $(filter-out $@ library,$(MAKECMDGOALS))
+
 lib-sysfs:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
@@ -117,7 +123,7 @@ lib-text:
 	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/text/text.mk $(filter-out $@ library,$(MAKECMDGOALS))
 
-library: lib-adt lib-io lib-lang lib-net lib-sysfs lib-terminal lib-text
+library: lib-adt lib-io lib-lang lib-net lib-socket lib-sysfs lib-terminal lib-text
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
 	$(MAKE) -f lib/libdevopsbroker.mk $(filter-out $@ library,$(MAKECMDGOALS))

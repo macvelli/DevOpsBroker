@@ -33,6 +33,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "error.h"
 #include "memory.h"
 #include "string.h"
 #include "stringbuilder.h"
@@ -122,6 +123,26 @@ char *f6215943_copy(register const char *source, register const uint32_t length)
 	*ptr = '\0';
 
 	return copy;
+}
+
+uint32_t f6215943_copy_to_buffer(register const char *source, register char *buffer, register const uint32_t bufSize) {
+	register uint32_t i = 0;
+	register char ch = *source;
+
+	do {
+		if (i == bufSize) {
+			return SYSTEM_ERROR_CODE;
+		}
+
+		if (ch == '\0') {
+			*buffer = '\0';
+			return i;
+		}
+
+		*(buffer++) = ch;
+		ch = *(++source);
+		i++;
+	} while (true);
 }
 
 bool f6215943_isEqual(register const char *foo, register const char *bar) {

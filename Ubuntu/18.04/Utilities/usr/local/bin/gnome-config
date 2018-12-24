@@ -572,8 +572,8 @@ if [ "$command" == 'terminal' ] || [ "$command" == 'all' ]; then
 		printInfo "Setting Gnome Terminal 'Default Columns Size' to '160'"
 		$EXEC_GSETTINGS set "${terminalSchema}/${keyPath}/:$defaultProfileID/" default-size-columns 160
 
-		printInfo "Setting Gnome Terminal 'Default Rows Size' to '40'"
-		$EXEC_GSETTINGS set "${terminalSchema}/${keyPath}/:$defaultProfileID/" default-size-rows 40
+		printInfo "Setting Gnome Terminal 'Default Rows Size' to '35'"
+		$EXEC_GSETTINGS set "${terminalSchema}/${keyPath}/:$defaultProfileID/" default-size-rows 35
 
 		printInfo "Setting Gnome Terminal 'Scrollback Lines' to '16384'"
 		$EXEC_GSETTINGS set "${terminalSchema}/${keyPath}/:$defaultProfileID/" scrollback-lines 16384

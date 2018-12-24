@@ -88,6 +88,16 @@ void c598a24c_append_int32(StringBuilder *strBuilder, const int32_t signedInt);
 void c598a24c_append_int64(StringBuilder *strBuilder, const int64_t signedLong);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_append_uint32
+ * Description: Appends an unsigned int to the StringBuilder instance
+ *
+ * Parameters:
+ *   unsignedInt    The unsigned int to append
+ * ----------------------------------------------------------------------------
+ */
+void c598a24c_append_uint32(StringBuilder *strBuilder, const uint32_t unsignedInt);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c598a24c_append_uint64
  * Description: Appends an unsigned long int to the StringBuilder instance
  *

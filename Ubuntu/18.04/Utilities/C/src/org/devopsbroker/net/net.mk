@@ -1,5 +1,5 @@
 #
-# lang.mk - DevOpsBroker makefile for compiling the org.devopsbroker.lang package
+# net.mk - DevOpsBroker makefile for compiling the org.devopsbroker.net package
 #
 # Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -40,8 +40,8 @@ else
 	BASEDIR := $(CURDIR)
 endif
 
-SRC_DIR := $(BASEDIR)/src/org/devopsbroker/lang
-OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/lang
+SRC_DIR := $(BASEDIR)/src/org/devopsbroker/net
+OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/net
 
 C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
 C_OBJECTS := $(subst /src/,/obj/,$(C_SOURCES:.c=.o))
