@@ -114,6 +114,10 @@ function showHelp() {
 		printUsage 'pms remove { package-name | snap-name }'
 		echo ${romantic}
 		echo 'Removes an installed package or snap from the system'${reset}
+	elif [ "$command" == 'test' ]; then
+		printUsage 'pms test package-name'
+		echo ${romantic}
+		echo 'Performs a dry run installation of an Apt package'${reset}
 	elif [ "$command" == 'uninstall' ]; then
 		printUsage 'pms uninstall package-name'
 		echo ${romantic}
@@ -150,7 +154,7 @@ command="$1"
 
 ## Variables
 showCommandHelp=false
-sudoCommands=('add-repo' 'autoremove' 'full-upgrade' 'install' 'reconfigure' 'refresh' 'reinstall' 'remove' 'uninstall' 'upgrade')
+sudoCommands=('add-repo' 'autoremove' 'full-upgrade' 'install' 'reconfigure' 'refresh' 'reinstall' 'remove' 'test' 'uninstall' 'upgrade')
 validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,7 +167,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
+	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | test | uninstall | upgrade | which }"
 	exit 1
 fi
 
@@ -171,7 +175,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'pms' "Invalid command: '$command'"
 	echo
-	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | uninstall | upgrade | which }"
+	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | test | uninstall | upgrade | which }"
 
 	exit 1
 fi
@@ -473,6 +477,17 @@ elif [ $command == 'remove' ]; then
 			$EXEC_SNAP remove "$name"
 		fi
 	fi
+
+elif [ $command == 'test' ]; then
+
+	if [ -z "$2" ]; then
+		printUsage 'pms test package-name'
+		exit 1
+	fi
+
+	name="$2"
+
+	$EXEC_APT_GET install --dry-run "$2"
 
 elif [ $command == 'uninstall' ]; then
 

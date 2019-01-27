@@ -202,7 +202,8 @@ if [ "$isWireless" == 'false' ] && [ ! -f /etc/NetworkManager/system-connections
 		ipv4.dns-search "" \
 		ipv4.ignore-auto-dns yes \
 		ipv4.may-fail no \
-		ipv4.method auto
+		ipv4.method auto \
+		ipv4.route-metric 100
 
 	$EXEC_NMCLI connection modify uuid ${connProfile[0]} \
 		ipv6.addr-gen-mode stable-privacy \
@@ -211,7 +212,8 @@ if [ "$isWireless" == 'false' ] && [ ! -f /etc/NetworkManager/system-connections
 		ipv6.ignore-auto-dns yes \
 		ipv6.ip6-privacy 0 \
 		ipv6.may-fail yes \
-		ipv6.method auto
+		ipv6.method auto \
+		ipv6.route-metric 100
 
 	restartNetworkManager=true
 	echoOnExit=true

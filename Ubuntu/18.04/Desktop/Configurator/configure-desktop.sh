@@ -417,6 +417,9 @@ installPackage '/etc/security/access.conf' 'libpam-modules'
 # Install linux-generic
 installPackage '/usr/share/doc/linux-generic/copyright' 'linux-generic'
 
+# Install lm-sensors
+installPackage '/usr/bin/sensors' 'lm-sensors'
+
 # Install materia-gtk-theme
 installPackage '/usr/share/doc/materia-gtk-theme/copyright' 'materia-gtk-theme'
 
