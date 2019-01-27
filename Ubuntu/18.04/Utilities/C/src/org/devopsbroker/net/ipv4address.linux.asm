@@ -1,5 +1,5 @@
 ;
-; ipv4address.amd64.asm - DevOpsBroker NASM file for the IPv4Address struct
+; ipv4address.linux.asm - DevOpsBroker NASM file for the IPv4Address struct
 ;
 ; Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
 ;
@@ -24,7 +24,7 @@
 ;
 ;   o IPv4Address *e1e7e8f5_createIPv4Address(char *ipAddress);
 ;   o void e1e7e8f5_destroyIPv4Address(IPv4Address *ipv4Address);
-;   o void e1e7e8f5_initIPv4Address(IPv4Address *ipv4Address, char *ipAddress);
+;   o int e1e7e8f5_initIPv4Address(IPv4Address *ipv4Address, char *ipAddress);
 ;   o void e1e7e8f5_deriveSubnetMask(IPv4Address *ipv4Address);
 ;   o char *e1e7e8f5_toString(IPv4Address *ipv4Address, IPv4StringType strType);
 ;   o void e1e7e8f5_extractString(IPv4Address *ipv4Address, IPv4StringType strType, char *buffer);
@@ -36,8 +36,11 @@
 
 ; ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-%define ZERO        0x30
-%define ERROR_CODE  -1
+%define ZERO         0x30
+%define NINE         0x39
+
+%define ERROR_CODE   -1
+%define STRBUF_LEN   20
 
 ; ═════════════════════════════ Initialized Data ═════════════════════════════
 
@@ -57,28 +60,31 @@
 	extern  malloc
 	extern  abort
 e1e7e8f5_createIPv4Address:
-;	rdi -> r15 : char *ipAddress
+; Parameters:
+;	rdi : char *ipAddress
 
 .prologue:                            ; functions typically have a prologue
-	push       r15                    ; save r15 onto the stack
-	mov        r15, rdi               ; save char *ipAddress into r15
+	push       rdi                    ; save rdi onto the stack
 
 .malloc:                              ; malloc(sizeof(IPv4Address))
-	mov        edi, 0x10
+	mov        rdi, 0x10              ; sizeof(IPv4Address) is 16 bytes
 	call       malloc WRT ..plt
 	test       rax, rax               ; if (ptr == NULL)
 	jne        .initIPv4Address
-	call       abort WRT ..plt        ; TODO: Need to call the printErrorMessage function
+	call       abort WRT ..plt
 
 .initIPv4Address:                     ; e1e7e8f5_initIPv4Address(IPv4Address *ipv4Address, char *ipAddress)
+	pop        rdi                    ; retrieve rdi from the stack
+	mov        rsi, rdi
 	mov        rdi, rax
-	mov        rsi, r15
-	mov        r15, rax               ; save IPv4Address *ipv4Address into r15
 	call       e1e7e8f5_initIPv4Address
 
+	test       eax, eax
+	jnz        .epilogue
+
+	mov        rax, rdi               ; return IPv4Address *ipv4Address
+
 .epilogue:                            ; functions typically have an epilogue
-	mov        rax, r15               ; return IPv4Address *ipv4Address
-	pop        r15                    ; restore r15 from the stack
 	ret                               ; pop return address from stack and jump there
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~ e1e7e8f5_destroyIPv4Address ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,106 +106,122 @@ e1e7e8f5_destroyIPv4Address:
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~ e1e7e8f5_initIPv4Address ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	global  e1e7e8f5_initIPv4Address:function
-	extern  a25c96b2_getCIDRSuffix
-	extern  a25c96b2_getOctetValue
-	extern  a25c96b2_invalidIPv4Address
 e1e7e8f5_initIPv4Address:
-;	rdi -> r15 : IPv4Address *ipv4Address
+; Parameters:
+;	rdi : IPv4Address *ipv4Address
 ;	rsi : char *ipAddress
+; Local Variables:
+;	rdx : char *source
+;	cl  : multiplication constant
+;	r8b : numChars
+;	r9d : ipv4 address accumulator
+;	r10 : return instruction pointer
 
 .prologue:                            ; functions typically have a prologue
-	push       r15                    ; save r14 and r15 onto the stack
-	push       r14
-	push       rsi                    ; save ipAddress for possible invalidIPAddress call
-	mov        r15, rdi               ; save IPv4Address *ipv4Address into r15
+	mov        rdx, [rsi]             ; put first eight characters into rdx
+	mov        cl, 10                 ; set multiplication constant
+	xor        r8, r8                 ; numChars = 0
+	xor        r9, r9                 ; accumulator = 0
 
-.localVariables:
-;	r14 : uint32_t ipv4AddressValue
-	push       rsi                    ; char *source = ipAddress
-	xor        r14, r14               ; ipv4AddressValue = 0
+.firstOctet:
+	lea        r10, [rel $+12]
+	jmp        convertStringToOctet
 
-.convertOctetValues:                  ; a25c96b2_getOctetValue(char **ipAddress)
-	lea        rdi, [rsp]             ; parameter &source
-	call       a25c96b2_getOctetValue
-	cmp        eax, ERROR_CODE
-	je         .invalidIPAddress
-	mov        r14d, eax
-	shl        r14d, 24               ; ipv4AddressValue <<= 24
+	cmp        dl, 0x2E               ; '.'
+	jne        .invalidIPv4Address    ; Error if current character not decimal
 
-	call       a25c96b2_getOctetValue
-	cmp        eax, ERROR_CODE
-	je         .invalidIPAddress
-	shl        eax, 16                ; octetValue <<= 16
-	or         r14d, eax              ; ipv4AddressValue |= octetValue
+	mov        r9b, al                ; accumulate octet
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
 
-	call       a25c96b2_getOctetValue
-	cmp        eax, ERROR_CODE
-	je         .invalidIPAddress
-	shl        eax, 8                 ; octetValue <<= 8
-	or         r14d, eax              ; ipv4AddressValue |= octetValue
+.secondOctet:
+	lea        r10, [rel $+12]
+	jmp        convertStringToOctet
 
-	call       a25c96b2_getOctetValue
-	cmp        eax, ERROR_CODE
-	je         .invalidIPAddress
-	or         r14d, eax              ; ipv4AddressValue |= octetValue
+	cmp        dl, 0x2E               ; '.'
+	jne        .invalidIPv4Address    ; Error if current character not decimal
 
-.initIPv4Address:
-	mov        rdi, [rsp]             ; parameter source
+	shl        r9d, 8                 ; accumulate octet
+	mov        r9b, al
 
-	movzx      esi, byte [rdi]        ; esi = *source
-	cmp        esi, 0x2F              ; '/'
-	je        .setCIDRSuffix
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
 
-	mov        [r15], r14             ; ipv4Address->address = ipv4AddressValue
-	xor        r14, r14               ; r14 = 0
-	mov        [r15+8], r14           ; ipv4Address->subnetMask and ipv4Address->routingPrefix = 0
+	add        rsi, r8                ; put next eight characters into rdx
+	mov        rdx, [rsi]
+	xor        r8b, r8b               ; numChars = 0
 
-	add        rsp, 16                ; Discard local variables before popping registers from stack
-	pop        r14                    ; restore r14 and r15 from the stack
-	pop        r15
-	ret                               ; pop return address from stack and jump there
+.thirdOctet:
+	lea        r10, [rel $+12]
+	jmp        convertStringToOctet
 
-.invalidIPAddress:                    ; a25c96b2_invalidIPv4Address(const char *ipAddress)
-	add        rsp, 8                 ; Discard local variables
-	pop        rdi                    ; parameter char *ipAddress
-	add        rsp, 8                 ; Re-align stack frame before making call
-	call       a25c96b2_invalidIPv4Address
+	cmp        dl, 0x2E               ; '.'
+	jne        .invalidIPv4Address    ; Error if current character not decimal
 
-.setCIDRSuffix:                       ; a25c96b2_getCIDRSuffix(const char *ipAddress, const int maxValue)
-	inc        rdi                    ; source++
-	mov        esi, 32                ; parameter maxValue
-	call       a25c96b2_getCIDRSuffix
-	cmp        eax, ERROR_CODE
-	je         .invalidIPAddress
+	shl        r9d, 8                 ; accumulate octet
+	mov        r9b, al
+
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
+
+.fourthOctet:
+	lea        r10, [rel $+12]
+	jmp        convertStringToOctet
+
+	shl        r9d, 8                 ; accumulate octet
+	mov        r9b, al
+	bswap      r9d                    ; change address to network byte order (big endian)
+
+	test       dl, dl                 ; '\0'
+	je         .epilogue
+	cmp        dl, 0x2F               ; '/'
+	jne        .invalidIPv4Address    ; Error if current character not null or '/'
+
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
+
+	cmp        r8b, 6                 ; if (numChars > 6)
+	jbe        .getCIDRSuffix
+
+	mov        edx, [rsi + r8]        ; put next four characters into edx
+
+.getCIDRSuffix:
+	xor        eax, eax               ; return value = 0
+	lea        r10, [rel $+12]
+	jmp        convertStringToOctet
+
+	test       dl, dl                 ; '\0'
+	jne        .invalidIPv4Address    ; Error if current character not null
+
+	cmp        al, 0x20               ; if (cidrSuffix > 32)
+	ja         .invalidIPv4Address    ; Error if cidrSuffix is greater than 32
+
+	test       al, al                 ; if (cidrSuffix == 0)
+	jz         .epilogue
 
 	shl        rax, 32                ; cidrSuffix <<= 32
-	or         r14, rax               ; ipv4AddressValue |= cidrSuffix
-	mov        [r15], r14             ; ipv4Address->address and ipv4Address->cidrSuffix
-	shr        rax, 32
+	or         r9, rax                ; address |= cidrSuffix
+	mov        [rdi], r9              ; ipv4Address->address = [r9]
+;	                                    ipv4Address->cidrSuffix = [r9 + 4]
 
-.subnetMask:
-	sub        esi, eax               ; if (cidrSuffixValue == 32)
-	jne        .LELSE0
-	mov        eax, 0xffffffff        ; subnetMask = 0xffffffff
-	jmp        .routingPrefix
+	mov        esi, r9d               ; uint32_t ipv4Address = r9d
+	shr        rax, 32                ; uint32_t cidrSuffix = eax
+	mov        ecx, 0x20              ; ecx = 32
 
-.LELSE0:
-	mov        eax, 0x01              ; subnetMask = ((1 << (32 - cidrSuffixValue)) - 1) ^ 0xffffffffu
-	mov        cl, sil
-	shl        eax, cl
-	sub        eax, 1
-	xor        eax, 0xffffffff
+	call       e1e7e8f5_deriveSubnetMask.subnetMask
 
-.routingPrefix:
-	and        r14d, eax              ; routingPrefix = ipv4AddressValue & subnetMask
-	shl        rax, 32                ; subnetMask <<= 32
-	or         r14, rax               ; routingPrefix |= subnetMask
-	mov        [r15+8], r14           ; ipv4Address->subnetMask and ipv4Address->routingPrefix
+	xor        eax, eax               ; Set return value to zero
+	ret                               ; pop return address from stack and jump there
+
+.invalidIPv4Address:
+	mov        eax, ERROR_CODE        ; Set return value to error_code
+	ret                               ; pop return address from stack and jump there
 
 .epilogue:                            ; functions typically have an epilogue
-	add        rsp, 16                ; Discard local variables before popping registers from stack
-	pop        r14                    ; restore r14 and r15 from the stack
-	pop        r15
+	mov        [rdi], r9              ; ipv4Address->address = [r9]
+;	                                    ipv4Address->cidrSuffix = [r9 + 4]
+
+	xor        eax, eax               ; Set return value to zero
 	ret                               ; pop return address from stack and jump there
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~ e1e7e8f5_deriveSubnetMask ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,69 +268,31 @@ e1e7e8f5_deriveSubnetMask:
 	extern  abort
 e1e7e8f5_toString:
 ; Parameters:
-;	rdi -> r15 : IPv4Address *ipv4Address
-;	rsi -> r14 : IPv4StringType strType
+;	rdi : IPv4Address *ipv4Address
+;	rsi : IPv4StringType strType
 
 .prologue:                            ; functions typically have a prologue
-	push       r15                    ; save r14 and r15 onto the stack
-	push       r14
-	mov        r15, rdi               ; save IPv4Address *ipv4Address into r15
-	mov        r14d, esi              ; save IPv4StringType strType into r14d
+	push       rdi                    ; save rdi and rsi onto the stack
+	push       rsi
 
 .malloc:                              ; char *ipAddress = malloc(sizeof(char) * 20);
-	mov        rdi, 0x14
+	mov        rdi, STRBUF_LEN
 	sub        rsp, 8                 ; Re-align stack frame before making call
 	call       malloc WRT ..plt
 	test       rax, rax               ; if (ptr == NULL)
-	jne        .firstOctet
+	jnz        .extractString
 	call       abort WRT ..plt        ; TODO: Need to call the printErrorMessage function
 
-.firstOctet:
-	add        rsp, 8                 ; save char *ipAddress onto the stack
-	push       rax
+.extractString:
+	add        rsp, 8                 ; retrieve rdi and rsi from the stack
+	pop        rsi
+	pop        rdi
 
-	mov        r8, rax                ; char *target = ipAddress
-	mov        r10b, 0x0a             ; r10b = 10
-	movsxd     rsi, r14d              ; put strType back into rsi
-	and        si, 0xff
-
-	mov        edx, [r15 + (rsi * 4)] ; uint32_t address = ipv4Address->[r15 + (rsi * 4)]
-	mov        eax, edx               ; value = (address >> 24)
-	shr        eax, 24
-	mov        dil, 0x2E              ; '.'
-	call       convertOctetToString
-
-.secondOctet:
-	mov        eax, edx               ; value = (address >> 16) & 0xFF
-	shr        eax, 16
-	xor        ah, ah
-	call       convertOctetToString
-
-.thirdOctet:
-	mov        eax, edx               ; value = (address >> 8) & 0xFF
-	shr        eax, 8
-	xor        ah, ah
-	call       convertOctetToString
-
-.fourthOctet:
-	mov        eax, edx               ; value = address & 0xFF
-	xor        ah, ah
-	mov        dil, r11b              ; '\0'
-	call       convertOctetToString
-
-.cidrSuffix:
-	xor        r14b, r14b             ; set lower eight bits on r14 to zero
-	test       r14w, r14w             ; if (strType != 0)
-	jz         .epilogue
-
-	mov        ax, [r15+12]           ; value = ipv4Address->cidrSuffix
-	mov        [r8-1], byte 0x2F      ; *(target-1) = '/'
-	call       convertOctetToString
+	mov        rdx, rax               ; pass char *ipAddress to extractString()
+	call       e1e7e8f5_extractString
 
 .epilogue:                            ; functions typically have an epilogue
-	pop        rax                    ; return char *ipAddress
-	pop        r14                    ; restore r14 and r15 from the stack
-	pop        r15
+	mov        rax, rdx               ; return char *ipAddress
 	ret                               ; pop return address from stack and jump there
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~ e1e7e8f5_extractString ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -325,29 +309,33 @@ e1e7e8f5_extractString:
 	mov        eax, [rdi + (rcx * 4)] ; uint32_t address = ipv4Address->[rdi + (rsi * 4)]
 	xor        sil, sil               ; clear the lower rsi byte
 
-;	bswap      eax                    ; change the endian order of the bytes
 	mov        r11d, eax              ; save address value in r11d
 
 	mov        r10b, 0x0a             ; r10b = 10 (constant)
 	xor        ecx, ecx               ; clear rcx to use as register buffer
 	xor        r8, r8                 ; numBytes = 0
 
+	push       r12                    ; preserve r12 caller state
+
 .firstOctet:
 	mov        r9b, 0x2e              ; '.'
 	and        eax, 0xff
-	call       convertOctetToString
+	lea        r12, [rel $+9]
+	jmp        convertOctetToString
 
 .secondOctet:
 	shr        r11d, 8
 	mov        eax, r11d
 	and        eax, 0xff
-	call       convertOctetToString
+	lea        r12, [rel $+9]
+	jmp        convertOctetToString
 
 .thirdOctet:
 	shr        r11d, 8
 	mov        eax, r11d
 	and        eax, 0xff
-	call       convertOctetToString
+	lea        r12, [rel $+9]
+	jmp        convertOctetToString
 
 .LIF0:
 	shr        r11d, 8
@@ -357,21 +345,27 @@ e1e7e8f5_extractString:
 
 .fourthOctet:
 	xor        r9b, r9b               ; '\0'
-	call       convertOctetToString
+	lea        r12, [rel $+9]
+	jmp        convertOctetToString
 	jmp        .epilogue
 
 .cidrSuffix:
 	mov        r9b, 0x2F              ; '/'
-	call       convertOctetToString
+	lea        r12, [rel $+9]
+	jmp        convertOctetToString
 
 	mov        eax, [rdi + 4]         ; uint32_t cidrSuffix = ipv4Address->[rdi + 4]
 	xor        r9b, r9b               ; '\0'
-	call       convertOctetToString
+	lea        r12, [rel $+9]
+	jmp        convertOctetToString
 
 .epilogue:                            ; functions typically have an epilogue
+	pop        r12                    ; preserve r12 caller state
 	ret                               ; pop return address from stack and jump there
 
 ; ════════════════════════════ Private Functions ═════════════════════════════
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~ convertOctetToString ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 convertOctetToString:
 ; Parameters:
@@ -402,13 +396,13 @@ convertOctetToString:
 .greaterThanEqualTo10:
 	div        r10b                   ; value % 10 (AH), value /= 10 (AL)
 	add        ah, ZERO               ; remainder += '0'
-	shl        rcx, 8                 ; cl register buffer = ah
+	shl        ecx, 8                 ; cl register buffer = ah
 	mov        cl, ah
 	inc        r8b
 
 .lessThan10:
 	add        al, ZERO               ; quotient += '0'
-	shl        rcx, 8                 ; cl register buffer = al
+	shl        ecx, 8                 ; cl register buffer = al
 	mov        cl, al
 	inc        r8b
 
@@ -416,4 +410,50 @@ convertOctetToString:
 	add        rdx, r8
 	xor        r8b, r8b
 
-	ret                               ; pop return address from stack and jump there
+.epilogue:                            ; functions typically have an epilogue
+	jmp        r12                    ; jump to the return address
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~ convertStringToOctet ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+convertStringToOctet:
+; Parameters:
+;	rdx : string to convert
+;	cl  : multiplication constant
+;	r8b : numChars
+
+.firstChar:                           ; if (ch < '0' || ch > '9')
+	cmp        dl, NINE               ; Error if character greater than nine
+	jg         e1e7e8f5_initIPv4Address.invalidIPv4Address
+	sub        dl, ZERO               ; Error if character less than zero
+	jl         e1e7e8f5_initIPv4Address.invalidIPv4Address
+
+	mov        al, dl                 ; value = digit
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
+
+.secondChar:
+	cmp        dl, NINE               ; Error if character greater than nine
+	jg         e1e7e8f5_initIPv4Address.invalidIPv4Address
+	cmp        dl, ZERO
+	jl         .epilogue              ; Let e1e7e8f5_initIPv4Address catch the error
+
+	sub        dl, ZERO
+	mul        cl                     ; value = (value * 10) + digit
+	add        al, dl
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
+
+.thirdChar:
+	cmp        dl, NINE               ; Error if character greater than nine
+	jg         e1e7e8f5_initIPv4Address.invalidIPv4Address
+	cmp        dl, ZERO
+	jl         .epilogue              ; Let e1e7e8f5_initIPv4Address catch the error
+
+	sub        dl, ZERO
+	mul        cl                     ; value = (value * 10) + digit
+	add        al, dl
+	shr        rdx, 8                 ; shift to the next character
+	inc        r8b
+
+.epilogue:                            ; functions typically have an epilogue
+	jmp        r10                    ; jump to the return address

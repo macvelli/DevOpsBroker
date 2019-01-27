@@ -48,7 +48,7 @@ uint16_t b7808f25_getHextetValue(register char **ipAddress);
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-
+/*
 IPv6Address *b7808f25_createIPv6Address(char *ipAddress) {
 	IPv6Address *ipv6Address = malloc(sizeof(IPv6Address));
 
@@ -60,8 +60,8 @@ IPv6Address *b7808f25_createIPv6Address(char *ipAddress) {
 void b7808f25_destroyIPv6Address(IPv6Address *iPv6Address) {
 	free(iPv6Address);
 }
-
-void b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
+*/
+int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
 /*
 	char *source = ipAddress;
 	register int ch = *source;
@@ -148,4 +148,5 @@ void b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
 
 	// TODO: Process IPv6 data
 */
+	return 0;
 }

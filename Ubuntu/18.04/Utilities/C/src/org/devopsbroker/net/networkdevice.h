@@ -67,10 +67,12 @@ typedef struct ifreq NetworkDeviceRequest;   // Request struct for making ioctl 
 static_assert(sizeof(NetworkDeviceRequest) == 40, "Check your assumptions");
 
 typedef struct NetworkDevice {
-	IPv6Address ipv6Address;
+	IPv6Address ipv6Global;
+	IPv6Address ipv6Local;
 	IPv4Address ipv4Address;
 	char *name;                     // enp7s0f3
 	uint32_t index;                 // e.g. 2
+	char _padding[4];
 } NetworkDevice;
 
 static_assert(sizeof(NetworkDevice) == 72, "Check your assumptions");

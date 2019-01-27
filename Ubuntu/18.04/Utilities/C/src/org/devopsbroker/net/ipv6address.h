@@ -33,16 +33,16 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define IPV6_STRBUF_LEN   48
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 typedef struct IPv6Address {
-	uint16_t global[8];        // 1234:5678:9abc:def0:0fed:cba9:8765:4321
-	uint16_t local[8];         // fe80::1234:5678:9abc:def0
-	int cidrSuffix;            // e.g. 48
+	uint8_t address[16];   // 2001:db8:1234:5678:9abc:def0:fed:cba9
+	uint32_t cidrSuffix;   // e.g. 48
 } IPv6Address;
 
-static_assert(sizeof(IPv6Address) == 36, "Check your assumptions");
+static_assert(sizeof(IPv6Address) == 20, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -67,10 +67,10 @@ IPv6Address *b7808f25_createIPv6Address(char *ipAddress);
  * Description: Frees the memory allocated to the IPv6Address struct pointer
  *
  * Parameters:
- *   iPv6Address	A pointer to the IPv6Address instance to destroy
+ *   ipv6Address	A pointer to the IPv6Address instance to destroy
  * ----------------------------------------------------------------------------
  */
-void b7808f25_destroyIPv6Address(IPv6Address *iPv6Address);
+void b7808f25_destroyIPv6Address(IPv6Address *ipv6Address);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -81,8 +81,35 @@ void b7808f25_destroyIPv6Address(IPv6Address *iPv6Address);
  * Parameters:
  *   iPv6Address	A pointer to the IPv6Address instance to initalize
  *   ipAddress      A string representation of an IPv6 address
+ * Returns:         Zero if no errors occurred, -1 otherwise
  * ----------------------------------------------------------------------------
  */
-void b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
+int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b7808f25_deriveSubnetPrefix
+ * Description: Takes the IPv6 address and derives the subnet prefix which is
+ *              always the highest 64 bits of the IPv6 address
+ *
+ * Parameters:
+ *   ipv6Address    A pointer to the IPv6Address instance
+ *   subnetPrefix   A pointer to the IPv6Address to populate with the subnet prefix
+ * ----------------------------------------------------------------------------
+ */
+void b7808f25_deriveSubnetPrefix(IPv6Address *ipv6Address, IPv6Address *subnetPrefix);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b7808f25_extractString
+ * Description: Populates the char *buffer with the string representation of
+ *              the IPv6 address
+ *
+ * Parameters:
+ *   ipv4Address    A pointer to the IPv4Address instance to reference
+ *   buffer         The char *buffer to populate
+ * ----------------------------------------------------------------------------
+ */
+void b7808f25_extractString(IPv6Address *ipv6Address, char *buffer);
 
 #endif /* ORG_DEVOPSBROKER_NET_IPV6ADDRESS_H */

@@ -164,11 +164,12 @@ void f0185083_getIPv6Addresses(NetworkDevice *networkDevice, NetlinkSocket *netl
 				for(; RTA_OK(nlAttribute, nlAddressMsgLen); nlAttribute = RTA_NEXT(nlAttribute, nlAddressMsgLen)) {
 					if (nlAttribute->rta_type == IFA_ADDRESS) {
 						if (nlAddressMsg->ifa_scope == RT_SCOPE_UNIVERSE) {
-							f668c4bd_memcopy(RTA_DATA(nlAttribute), networkDevice->ipv6Address.global, RTA_PAYLOAD(nlAttribute));
-							networkDevice->ipv6Address.cidrSuffix = nlAddressMsg->ifa_prefixlen;
+							f668c4bd_memcopy(RTA_DATA(nlAttribute), networkDevice->ipv6Global.address, RTA_PAYLOAD(nlAttribute));
+							networkDevice->ipv6Global.cidrSuffix = nlAddressMsg->ifa_prefixlen;
 							break;
 						} else if (nlAddressMsg->ifa_scope == RT_SCOPE_LINK) {
-							f668c4bd_memcopy(RTA_DATA(nlAttribute), networkDevice->ipv6Address.local, RTA_PAYLOAD(nlAttribute));
+							f668c4bd_memcopy(RTA_DATA(nlAttribute), networkDevice->ipv6Local.address, RTA_PAYLOAD(nlAttribute));
+							networkDevice->ipv6Local.cidrSuffix = nlAddressMsg->ifa_prefixlen;
 							break;
 						}
 					}

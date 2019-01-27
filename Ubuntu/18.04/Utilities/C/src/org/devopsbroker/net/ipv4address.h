@@ -33,7 +33,7 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-#define IPV4_STR_BUF_LEN   20
+#define IPV4_STRBUF_LEN   20
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -90,9 +90,10 @@ void e1e7e8f5_destroyIPv4Address(IPv4Address *ipv4Address);
  * Parameters:
  *   ipv4Address	A pointer to the IPv4Address instance to initalize
  *   ipAddress      A string representation of an IPv4 address
+ * Returns:         Zero if no errors occurred, -1 otherwise
  * ----------------------------------------------------------------------------
  */
-void e1e7e8f5_initIPv4Address(IPv4Address *ipv4Address, char *ipAddress);
+int e1e7e8f5_initIPv4Address(IPv4Address *ipv4Address, char *ipAddress);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
