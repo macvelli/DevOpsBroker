@@ -3,7 +3,7 @@
 #
 # configure-system.sh - DevOpsBroker script for systemwide configurations
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -43,6 +43,7 @@
 # o /etc/ssl/req.conf
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
+# o /etc/sysctl.d/40-ipv6-enable.conf
 # o /etc/vim/vimrc.local
 #
 # Other configuration tasks include:
@@ -207,6 +208,9 @@ if [ ! -f /etc/sudoers.d/20-env_keep ] || \
 	$EXEC_INSTALL -o root -g root -m 440 "$SCRIPT_DIR"/sudoers.d/20-env_keep /etc/sudoers.d
 	echoOnExit=true
 fi
+
+# Install /etc/sysctl.d/40-ipv6-enable.conf
+installConfig '40-ipv6-enable.conf' "$SCRIPT_DIR"/sysctl.d /etc/sysctl.d
 
 # Install /etc/vim/vimrc.local
 installConfig 'vimrc.local' "$SCRIPT_DIR"/vim /etc/vim

@@ -1,7 +1,7 @@
 /*
- * ipv4.c - DevOpsBroker C source file for the org.devopsbroker.socket.IPv4Socket struct
+ * time.c - C source file for the org.devopsbroker.time.Time struct
  *
- * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -27,12 +27,10 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <unistd.h>
-#include <netinet/in.h>
-
-#include "ipv4.h"
+#include "time.h"
 
 #include "../lang/error.h"
+#include "../lang/stringbuilder.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -48,24 +46,27 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Socket Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void a66923ff_initTime(Time *time, time_t seconds) {
+	void *retVal = gmtime_r(&seconds, time);
 
-void a34d4619_open(IPv4Socket *ipv4Socket, IPv4SocketType socketType) {
-	ipv4Socket->fd = socket(AF_INET, socketType, IPPROTO_IP);
+	if (retVal == NULL) {
+		StringBuilder errorMessage;
+		c598a24c_initStringBuilder_uint32(&errorMessage, 128);
 
-	if (ipv4Socket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printLibError("Cannot open IPv4 socket", errno);
+		c598a24c_append_string(&errorMessage, "Error converting time_t '");
+		c598a24c_append_int32(&errorMessage, seconds);
+		c598a24c_append_char(&errorMessage, '\'');
+
+		c7c88e52_printLibError(errorMessage.buffer, errno);
+		free(errorMessage.buffer);
 		exit(EXIT_FAILURE);
 	}
-
-	ipv4Socket->type = socketType;
 }
 
-void a34d4619_close(IPv4Socket *ipv4Socket) {
+time_t a66923ff_getTime() {
+	return time(NULL);
+}
 
-	if (close(ipv4Socket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printLibError("Cannot close IPv4 socket", errno);
-		exit(EXIT_FAILURE);
-	}
-
+int a66923ff_getYear(Time *time) {
+	return time->tm_year + 1900;
 }

@@ -45,58 +45,7 @@
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-/*
-int a25c96b2_detectIPType(register const char *ipAddress) {
-	register char ch = *ipAddress | 0x20;
-	register uint32_t charPos = 0;
 
-	while (ch && charPos < 5) {
-		// IPv4 Address Type
-		if (ch == '.') {
-			return 4;
-		}
-
-		// IPv6 Address Type
-		if (ch == ':' || (ch >= 'a' && ch <= 'f')) {
-			return 6;
-		}
-
-		ch = *(++ipAddress) | 0x20;
-		charPos++;
-	}
-
-	// Could not detect IP Address Type
-	return SYSTEM_ERROR_CODE;
-}
-
-uint32_t a25c96b2_getByteValue(register char **ipAddress) {
-	register char *source = *ipAddress;
-	register char ch = *source;
-	register uint32_t value = 0;
-	register int digit;
-
-	do {
-		digit = ch - '0';
-
-		// Display error if digit is not a number
-		if (digit < 0 || digit > 9) {
-			a25c96b2_invalidIPv4Address(*ipAddress);
-		}
-
-		value *= 10;
-		value += digit;
-
-		// Display error if invalid decimal value
-		if (value > 255) {
-			a25c96b2_invalidIPv4Address(*ipAddress);
-		}
-
-		ch = *(++source);
-	} while (ch && ch != '.' && ch != '/');
-
-	return value;
-}
-*/
 void a25c96b2_invalidIPv4Address(register const char *ipAddress) {
 	StringBuilder errorMessage;
 	c598a24c_initStringBuilder_uint32(&errorMessage, 128);

@@ -1,10 +1,9 @@
 #!/bin/bash
 
 #
-# update-utils.sh - DevOpsBroker script for installing and updating utility
-#		    scripts and executables
+# update-utils.sh - DevOpsBroker script for installing and updating utility scripts and executables
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -328,6 +327,9 @@ installUserUtility macaddr
 
 # Install md5sums user utility
 installUserUtility md5sums
+
+# Install nettuner user utility
+installUserUtility nettuner
 
 # Install printAnsi16 user utility
 installUserUtility printAnsi16

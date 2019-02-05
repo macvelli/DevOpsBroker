@@ -55,7 +55,7 @@ void bfdb2c2a_open(UnixSocket *unixSocket, UnixSocketType socketType) {
 	unixSocket->fd = socket(AF_UNIX, socketType | SOCK_CLOEXEC, 0);
 
 	if (unixSocket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot open Unix socket", errno);
+		c7c88e52_printLibError("Cannot open Unix socket", errno);
 		exit(EXIT_FAILURE);
 	}
 
@@ -65,7 +65,7 @@ void bfdb2c2a_open(UnixSocket *unixSocket, UnixSocketType socketType) {
 void bfdb2c2a_close(UnixSocket *unixSocket) {
 
 	if (close(unixSocket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot close Unix socket", errno);
+		c7c88e52_printLibError("Cannot close Unix socket", errno);
 		exit(EXIT_FAILURE);
 	}
 

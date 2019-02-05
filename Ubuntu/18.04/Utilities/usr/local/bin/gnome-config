@@ -3,7 +3,7 @@
 #
 # gnome-config - DevOpsBroker script for configuring GNOME GSettings
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -523,6 +523,14 @@ if [ "$command" == 'nautilus' ] || [ "$command" == 'all' ]; then
 		printInfo 'Disabling GTK File Chooser show hidden files'
 
 		$EXEC_GSETTINGS set org.gtk.Settings.FileChooser show-hidden false
+		echoOnExit=true
+	fi
+
+	# Set sort-directories-first
+	if [ "$($EXEC_GSETTINGS get org.gtk.Settings.FileChooser sort-directories-first)" != 'true' ]; then
+		printInfo 'Enabling GTK File Chooser sort directories first'
+
+		$EXEC_GSETTINGS set org.gtk.Settings.FileChooser sort-directories-first true
 		echoOnExit=true
 	fi
 fi

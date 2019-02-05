@@ -1,7 +1,7 @@
 /*
  * between.c - DevOpsBroker utility for extracting the string in between the START and END parameters
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -70,19 +70,19 @@ int main(int argc, char *argv[]) {
 	programName = "between";
 
 	if (argc == 1) {
-		c7c88e52_printUsage("between START END " AQUA "[input-file]");
+		c7c88e52_printUsage("between START END " ANSI_AQUA "[input-file]");
 		exit(EXIT_FAILURE);
 	}
 
 	if (argv[1][0] == '\0') {
 		c7c88e52_printError_string("START parameter is missing\n\n");
-		c7c88e52_printUsage("between START END " AQUA "[input-file]");
+		c7c88e52_printUsage("between START END " ANSI_AQUA "[input-file]");
 		exit(EXIT_FAILURE);
 	}
 
 	if (argc == 2 || argv[2][0] == '\0') {
 		c7c88e52_printError_string("END parameter is missing\n\n");
-		char *usageMessage = f6215943_concatenate("between ", argv[1], " END " AQUA "[input-file]", NULL);
+		char *usageMessage = f6215943_concatenate("between ", argv[1], " END " ANSI_AQUA "[input-file]", NULL);
 		c7c88e52_printUsage(usageMessage);
 		free(usageMessage);
 		exit(EXIT_FAILURE);

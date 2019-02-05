@@ -1,7 +1,7 @@
 /*
  * socket.c - DevOpsBroker C source file for socket-related functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -77,7 +77,7 @@ void a36b5966_setMaxSendBufferSize(int sockfd, uint32_t bufSize) {
 		c598a24c_append_uint32(&errorMessage, bufSize);
 		c598a24c_append_char(&errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		c7c88e52_printLibError(errorMessage.buffer, errno);
 		free(errorMessage.buffer);
 		exit(EXIT_FAILURE);
 	}
@@ -94,7 +94,7 @@ void a36b5966_setMaxRecvBufferSize(int sockfd, uint32_t bufSize) {
 		c598a24c_append_uint32(&errorMessage, bufSize);
 		c598a24c_append_char(&errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		c7c88e52_printLibError(errorMessage.buffer, errno);
 		free(errorMessage.buffer);
 		exit(EXIT_FAILURE);
 	}
@@ -106,7 +106,7 @@ ssize_t a36b5966_receiveMessage(int sockfd, ReceiveMessageHeader *msg, int flags
 	ssize_t msgLen = recvmsg(sockfd, msg, 0);
 
 	if (msgLen == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot receive socket message", errno);
+		c7c88e52_printLibError("Cannot receive socket message", errno);
 		exit(EXIT_FAILURE);
 	}
 
@@ -117,7 +117,7 @@ ssize_t a36b5966_sendMessage(int sockfd, const void *buf, size_t bufSize, int fl
 	ssize_t msgLen = sendto(sockfd, buf, bufSize, flags, NULL, 0);
 
 	if (msgLen == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot send socket message", errno);
+		c7c88e52_printLibError("Cannot send socket message", errno);
 		exit(EXIT_FAILURE);
 	}
 

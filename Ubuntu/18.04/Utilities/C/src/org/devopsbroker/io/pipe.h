@@ -1,7 +1,7 @@
 /*
  * pipe.h - DevOpsBroker C header file for providing a unidirectional data channel used for interprocess communication
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -65,13 +65,13 @@ typedef struct Pipe {
 static inline void c31ab0c3_closePipe(register Pipe *pipe) {
 	// Close the read end of the pipe
 	if (close(*pipe->read) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to close read end of pipe() failed", errno);
+		c7c88e52_printLibError("Attempt to close read end of pipe() failed", errno);
 		exit(EXIT_FAILURE);
 	}
 
 	// Close the write end of the pipe
 	if (close(*pipe->write) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to close write end of pipe() failed", errno);
+		c7c88e52_printLibError("Attempt to close write end of pipe() failed", errno);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -87,7 +87,7 @@ static inline void c31ab0c3_closePipe(register Pipe *pipe) {
 static inline void c31ab0c3_closeRead(register Pipe *pipe) {
 	// Close the read end of the pipe
 	if (close(*pipe->read) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to close read end of pipe() failed", errno);
+		c7c88e52_printLibError("Attempt to close read end of pipe() failed", errno);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -103,7 +103,7 @@ static inline void c31ab0c3_closeRead(register Pipe *pipe) {
 static inline void c31ab0c3_closeWrite(register Pipe *pipe) {
 	// Close the write end of the pipe
 	if (close(*pipe->write) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to close write end of pipe() failed", errno);
+		c7c88e52_printLibError("Attempt to close write end of pipe() failed", errno);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -119,7 +119,7 @@ static inline void c31ab0c3_closeWrite(register Pipe *pipe) {
 static inline void c31ab0c3_createPipe(register Pipe *pipeObj) {
 	// Create the pipe
 	if (pipe(pipeObj->io) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to create pipe() failed", errno);
+		c7c88e52_printLibError("Attempt to create pipe() failed", errno);
 		exit(EXIT_FAILURE);
 	}
 
@@ -140,7 +140,7 @@ static inline void c31ab0c3_createPipe(register Pipe *pipeObj) {
 static inline void c31ab0c3_redirectToStdout(register Pipe *pipe) {
 	// Redirect the pipe to STDOUT
 	if (dup2(*pipe->write, STDOUT_FILENO) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to redirect pipe() to STDOUT failed", errno);
+		c7c88e52_printLibError("Attempt to redirect pipe() to STDOUT failed", errno);
 		exit(EXIT_FAILURE);
 	}
 }

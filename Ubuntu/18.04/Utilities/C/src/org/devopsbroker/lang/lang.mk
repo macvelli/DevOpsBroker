@@ -1,7 +1,7 @@
 #
 # lang.mk - DevOpsBroker makefile for compiling the org.devopsbroker.lang package
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -66,7 +66,7 @@ prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
 # Obtain object files for the C utilities
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | prepare
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h | prepare
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $< -o $@
 

@@ -1,7 +1,7 @@
 /*
- * ipv4.c - DevOpsBroker C source file for the org.devopsbroker.socket.IPv4Socket struct
+ * systeminfo.c - C source file for the org.devopsbroker.info.SystemInfo struct
  *
- * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-44
+ * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-45
  *
  * -----------------------------------------------------------------------------
  */
@@ -27,10 +27,7 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <unistd.h>
-#include <netinet/in.h>
-
-#include "ipv4.h"
+#include "systeminfo.h"
 
 #include "../lang/error.h"
 
@@ -48,24 +45,11 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Socket Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void c6059903_initSystemInfo(SystemInfo *systemInfo) {
+	int status = sysinfo(systemInfo);
 
-void a34d4619_open(IPv4Socket *ipv4Socket, IPv4SocketType socketType) {
-	ipv4Socket->fd = socket(AF_INET, socketType, IPPROTO_IP);
-
-	if (ipv4Socket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printLibError("Cannot open IPv4 socket", errno);
+	if (status == SYSTEM_ERROR_CODE) {
+		c7c88e52_printLibError("c6059903_initSystemInfo error: ", errno);
 		exit(EXIT_FAILURE);
 	}
-
-	ipv4Socket->type = socketType;
-}
-
-void a34d4619_close(IPv4Socket *ipv4Socket) {
-
-	if (close(ipv4Socket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printLibError("Cannot close IPv4 socket", errno);
-		exit(EXIT_FAILURE);
-	}
-
 }

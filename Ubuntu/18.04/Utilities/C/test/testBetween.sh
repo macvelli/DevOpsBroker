@@ -3,7 +3,7 @@
 #
 # testBetween.sh - DevOpsBroker Bash test script for the between utility
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -52,7 +52,7 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 
 ## Script information
 SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
-EXEC_DIR="$SCRIPT_DIR/.."
+EXEC_DIR="$SCRIPT_DIR/../bin"
 DATA_DIR="$SCRIPT_DIR"/between
 
 ################################## Functions ##################################

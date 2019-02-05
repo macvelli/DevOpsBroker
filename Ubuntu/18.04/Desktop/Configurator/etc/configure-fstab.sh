@@ -3,7 +3,7 @@
 #
 # configure-fstab.sh - DevOpsBroker script for configuring /etc/fstab
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -62,7 +62,7 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
-# Ensure the sysctl.conf.tpl script is executable
+# Ensure the fstab.tpl script is executable
 fstabTpl=$(isExecutable "$SCRIPT_DIR"/fstab.tpl)
 
 ################################## Functions ##################################

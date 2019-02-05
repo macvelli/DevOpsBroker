@@ -84,7 +84,7 @@ void d3843373_getEthernetMTU(Ethernet *ethernet, EthernetRequest *request, IPv4S
 		c598a24c_append_string(&errorMessage, request->ifr_name);
 		c598a24c_append_char(&errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		c7c88e52_printLibError(errorMessage.buffer, errno);
 		free(errorMessage.buffer);
 		exit(EXIT_FAILURE);
 	}
@@ -107,7 +107,7 @@ void d3843373_getEthernetStatus(Ethernet *ethernet, EthernetRequest *request, IP
 		c598a24c_append_string(&errorMessage, request->ifr_name);
 		c598a24c_append_char(&errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		c7c88e52_printLibError(errorMessage.buffer, errno);
 		free(errorMessage.buffer);
 		exit(EXIT_FAILURE);
 	}

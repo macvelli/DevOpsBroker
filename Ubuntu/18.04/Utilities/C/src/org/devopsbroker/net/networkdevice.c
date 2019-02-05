@@ -1,7 +1,7 @@
 /*
  * networkdevice.c - DevOpsBroker C source file for the org.devopsbroker.net.NetworkDevice struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -193,7 +193,7 @@ void f0185083_getNetworkDeviceIndex(NetworkDevice *networkDevice, NetworkDeviceR
 		c598a24c_append_string(&errorMessage, networkDevice->name);
 		c598a24c_append_char(&errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		c7c88e52_printLibError(errorMessage.buffer, errno);
 		free(errorMessage.buffer);
 		exit(EXIT_FAILURE);
 	}

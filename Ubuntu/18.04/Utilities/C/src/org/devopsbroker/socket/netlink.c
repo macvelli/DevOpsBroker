@@ -1,7 +1,7 @@
 /*
  * netlink.c - DevOpsBroker C source file for the org.devopsbroker.socket.Netlink struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -95,14 +95,14 @@ void e7173ad4_bind(NetlinkSocket *netlinkSocket) {
 	int status = bind(netlinkSocket->fd, (struct sockaddr *) &netlinkSocket->addr, sizeof(NetlinkAddress));
 
 	if (status == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot bind Netlink socket", errno);
+		c7c88e52_printLibError("Cannot bind Netlink socket", errno);
 		exit(EXIT_FAILURE);
 	}
 
 	status = getsockname(netlinkSocket->fd, (struct sockaddr *) &netlinkSocket->addr, &addrLen);
 
 	if (status == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot get Netlink socket name", errno);
+		c7c88e52_printLibError("Cannot get Netlink socket name", errno);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -110,7 +110,7 @@ void e7173ad4_bind(NetlinkSocket *netlinkSocket) {
 void e7173ad4_close(NetlinkSocket *netlinkSocket) {
 
 	if (close(netlinkSocket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot close Netlink socket", errno);
+		c7c88e52_printLibError("Cannot close Netlink socket", errno);
 		exit(EXIT_FAILURE);
 	}
 
@@ -120,7 +120,7 @@ void e7173ad4_open(NetlinkSocket *netlinkSocket) {
 	netlinkSocket->fd = socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, netlinkSocket->family);
 
 	if (netlinkSocket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot open Netlink socket", errno);
+		c7c88e52_printLibError("Cannot open Netlink socket", errno);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -129,7 +129,7 @@ void e7173ad4_setExtendedACKReporting(NetlinkSocket *netlinkSocket, bool extAckF
 	int status = setsockopt(netlinkSocket->fd, SOL_NETLINK, NETLINK_EXT_ACK, &extAckFlag, 4);
 
 	if (status == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot set Netlink extended ACK reporting flag", errno);
+		c7c88e52_printLibError("Cannot set Netlink extended ACK reporting flag", errno);
 		exit(EXIT_FAILURE);
 	}
 }

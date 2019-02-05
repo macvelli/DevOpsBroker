@@ -1,7 +1,7 @@
 #
 # makefile - DevOpsBroker configuration for the GNU make utility
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -35,12 +35,6 @@ CC := /usr/bin/gcc
 CFLAGS := -Wall -gdwarf -m64 -fdiagnostics-color=always
 LDFLAGS := -m64
 
-LIB_DIR := src/org/devopsbroker
-OBJ_DIR := obj/org/devopsbroker
-
-INC :=	-I$(LIB_DIR)/adt -I$(LIB_DIR)/firelog -I$(LIB_DIR)/io -I$(LIB_DIR)/lang \
-	-I$(LIB_DIR)/net -I$(LIB_DIR)/sysfs -I$(LIB_DIR)/terminal -I$(LIB_DIR)/text
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Exports ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export ASM
@@ -51,82 +45,82 @@ export CFLAGS
 ################################### Targets ###################################
 
 .ONESHELL:
-.PHONY: default all clean install lib-adt lib-firelog lib-io lib-lang lib-net \
-	lib-sysfs lib-terminal lib-text library ls
+.PHONY: default all clean library install ls \
+	lib-adt lib-firelog lib-info lib-io lib-lang lib-net lib-socket \
+	lib-sysfs lib-terminal lib-text lib-time
 
 default: all
 
-all: between firelog schedtuner scriptinfo verifyclass verifyip
+all:	bin/between bin/convert-temp bin/derivesubnet bin/firelog bin/nettuner \
+	bin/schedtuner bin/scriptinfo bin/verifyclass bin/verifyip
 
 clean:
-	/bin/rm -f between obj/between.o
-	/bin/rm -f firelog obj/firelog.o
-	/bin/rm -f schedtuner obj/schedtuner.o
-	/bin/rm -f scriptinfo obj/scriptinfo.o
-	/bin/rm -f verifyclass obj/verifyclass.o
-	/bin/rm -f verifyip obj/verifyip.o
-	$(MAKE) -f lib/libdevopsbroker.mk clean
-	$(MAKE) -f src/org/devopsbroker/adt/adt.mk clean
-	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk clean
-	$(MAKE) -f src/org/devopsbroker/io/io.mk clean
-	$(MAKE) -f src/org/devopsbroker/lang/lang.mk clean
-	$(MAKE) -f src/org/devopsbroker/net/net.mk clean
-	$(MAKE) -f src/org/devopsbroker/socket/socket.mk clean
-	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk clean
-	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk clean
-	$(MAKE) -f src/org/devopsbroker/text/text.mk clean
+	/bin/rm -rfv bin/*
+	/bin/rm -rfv obj/*
+	/bin/rm -fv lib/*.a
+	echo
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 lib-adt:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/adt/adt.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/adt/adt.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-firelog:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ install firelog,$(MAKECMDGOALS))
 
+lib-info:
+	@umask $(UMASK) && \
+	source /etc/devops/ansi.conf && \
+	$(MAKE) -f src/org/devopsbroker/info/info.mk $(filter-out $@ install library,$(MAKECMDGOALS))
+
 lib-io:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/io/io.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/io/io.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-lang:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/lang/lang.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/lang/lang.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-net:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/net/net.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/net/net.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-socket:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/socket/socket.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/socket/socket.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-sysfs:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-terminal:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-text:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f src/org/devopsbroker/text/text.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/text/text.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
-library: lib-adt lib-io lib-lang lib-net lib-socket lib-sysfs lib-terminal lib-text
+lib-time:
 	@umask $(UMASK) && \
 	source /etc/devops/ansi.conf && \
-	$(MAKE) -f lib/libdevopsbroker.mk $(filter-out $@ library,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/time/time.mk $(filter-out $@ install library,$(MAKECMDGOALS))
+
+library: lib-adt lib-info lib-io lib-lang lib-net lib-socket lib-sysfs lib-terminal lib-text lib-time
+	@umask $(UMASK) && \
+	source /etc/devops/ansi.conf && \
+	$(MAKE) -f lib/libdevopsbroker.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -135,63 +129,70 @@ obj/%.o: src/%.c
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Obtain object files for the ASM libraries
 obj/%.o: src/%.asm
 	$(call printInfo,Compiling $(@F))
 	$(ASM) $(ASMFLAGS) $< -o $@
 
 # Have to put the library at the end else the linker blows chunks
-between: obj/between.o
+bin/between: obj/between.o | library
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 	$(call printInfo,Testing $(@) executable)
 	test/testBetween.sh
 
 # Have to put the library at the end else the linker blows chunks
-convert-temp: obj/convert-temp.o obj/convert-temp.linux.o
+bin/convert-temp: obj/convert-temp.o obj/convert-temp.linux.o | library
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
 	/usr/bin/strip -s $@
 
 # Have to put the library at the end else the linker blows chunks
-derivesubnet: obj/derivesubnet.o
+bin/derivesubnet: obj/derivesubnet.o | library
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-firelog: obj/firelog.o | lib-firelog
+bin/firelog: obj/firelog.o obj/org/devopsbroker/firelog/logline.o | library lib-firelog
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< $(OBJ_DIR)/firelog/logline.o lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-schedtuner: obj/schedtuner.o
-	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
-
-# Have to put the library at the end else the linker blows chunks
-scriptinfo: obj/scriptinfo.o
+bin/nettuner: obj/nettuner.o | library
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-verifyclass: obj/verifyclass.o
+bin/schedtuner: obj/schedtuner.o | library
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< -o $@
+	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-verifyip: obj/verifyip.o
+bin/scriptinfo: obj/scriptinfo.o | library
+	$(call printInfo,Creating $(@) executable)
+	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+
+# Have to put the library at the end else the linker blows chunks
+bin/verifyclass: obj/verifyclass.o | library
+	$(call printInfo,Creating $(@) executable)
+	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+
+# Have to put the library at the end else the linker blows chunks
+bin/verifyip: obj/verifyip.o | library
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 	$(call printInfo,Testing $(@) executable)
 	test/testVerifyIP.sh
 
 install: all
-	/bin/cp between ../usr/local/bin
-	/bin/cp convert-temp ../usr/local/bin
-	/bin/cp firelog ../usr/local/bin
-	/bin/cp schedtuner ../usr/local/sbin
-	/bin/cp scriptinfo ../usr/local/bin
-	/bin/cp verifyclass ../usr/local/bin
-	/bin/cp verifyip ../usr/local/bin
+	/bin/cp -v bin/between ../usr/local/bin
+	/bin/cp -v bin/convert-temp ../usr/local/bin
+	/bin/cp -v bin/firelog ../usr/local/bin
+	/bin/cp -v bin/nettuner ../usr/local/bin
+	/bin/cp -v bin/schedtuner ../usr/local/sbin
+	/bin/cp -v bin/scriptinfo ../usr/local/bin
+	/bin/cp -v bin/verifyclass ../usr/local/bin
+	/bin/cp -v bin/verifyip ../usr/local/bin
 
 ls:
 	echo "Phony Targets:"
@@ -201,18 +202,22 @@ ls:
 	echo "  install"
 	echo "  lib-adt"
 	echo "  lib-firelog"
+	echo "  lib-info"
 	echo "  lib-io"
 	echo "  lib-lang"
 	echo "  lib-net"
 	echo "  lib-sysfs"
 	echo "  lib-terminal"
 	echo "  lib-text"
+	echo "  lib-time"
 	echo "  library"
 	echo
 	echo "Executable Targets:"
 	echo "  between"
 	echo "  convert-temp"
+	echo "  derivesubnet"
 	echo "  firelog"
+	echo "  nettuner"
 	echo "  schedtuner"
 	echo "  scriptinfo"
 	echo "  verifyclass"
@@ -223,8 +228,9 @@ printenv:
 	echo "  MAKEFILE_LIST: $(MAKEFILE_LIST)"
 	echo "         TMPDIR: $(TMPDIR)"
 	echo "         CURDIR: $(CURDIR)"
+	echo "            ASM: $(ASM)"
+	echo "       ASMFLAGS: $(ASMFLAGS)"
 	echo "             CC: $(CC)"
 	echo "         CFLAGS: $(CFLAGS)"
 	echo "        LDFLAGS: $(LDFLAGS)"
-	echo "            INC: $(INC)"
 	echo

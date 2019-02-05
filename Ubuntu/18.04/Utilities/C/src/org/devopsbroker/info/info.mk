@@ -1,7 +1,7 @@
 #
-# socket.mk - DevOpsBroker makefile for compiling the org.devopsbroker.socket package
+# info.mk - DevOpsBroker makefile for compiling the org.devopsbroker.info package
 #
-# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -17,7 +17,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-42
+# Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-45
 #
 # -----------------------------------------------------------------------------
 #
@@ -40,8 +40,8 @@ else
 	BASEDIR := $(CURDIR)
 endif
 
-SRC_DIR := $(BASEDIR)/src/org/devopsbroker/socket
-OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/socket
+SRC_DIR := $(BASEDIR)/src/org/devopsbroker/info
+OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/info
 
 C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
 C_OBJECTS := $(subst /src/,/obj/,$(C_SOURCES:.c=.o))

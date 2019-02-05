@@ -1,7 +1,7 @@
 /*
  * file.c - DevOpsBroker C source file for providing file-handling functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -64,7 +64,7 @@ int e2f74138_openFile(const char *pathName, const int flags) {
 
 	if (fd == SYSTEM_ERROR_CODE) {
 		if (errno == EISDIR) {
-			c7c88e52_printError_string_int(pathName, errno);
+			c7c88e52_printLibError(pathName, errno);
 		} else {
 			StringBuilder *errorMessage = c598a24c_createStringBuilder();
 
@@ -72,7 +72,7 @@ int e2f74138_openFile(const char *pathName, const int flags) {
 			c598a24c_append_string(errorMessage, pathName);
 			c598a24c_append_char(errorMessage, '\'');
 
-			c7c88e52_printError_string_int(errorMessage->buffer, errno);
+			c7c88e52_printLibError(errorMessage->buffer, errno);
 			c598a24c_destroyStringBuilder(errorMessage);
 		}
 
@@ -90,7 +90,7 @@ void e2f74138_closeFile(const int fd, const char *pathName) {
 		c598a24c_append_string(errorMessage, pathName);
 		c598a24c_append_char(errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage->buffer, errno);
+		c7c88e52_printLibError(errorMessage->buffer, errno);
 		c598a24c_destroyStringBuilder(errorMessage);
 		exit(EXIT_FAILURE);
 	}
@@ -124,7 +124,7 @@ void e2f74138_getFileStatus(const char *pathName, FileStatus* fileStatus) {
 		c598a24c_append_string(errorMessage, pathName);
 		c598a24c_append_char(errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage->buffer, errno);
+		c7c88e52_printLibError(errorMessage->buffer, errno);
 		c598a24c_destroyStringBuilder(errorMessage);
 		exit(EXIT_FAILURE);
 	}
@@ -138,7 +138,7 @@ void e2f74138_getLinkStatus(const char *pathName, FileStatus* fileStatus) {
 		c598a24c_append_string(errorMessage, pathName);
 		c598a24c_append_char(errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage->buffer, errno);
+		c7c88e52_printLibError(errorMessage->buffer, errno);
 		c598a24c_destroyStringBuilder(errorMessage);
 		exit(EXIT_FAILURE);
 	}
@@ -154,7 +154,7 @@ ssize_t e2f74138_readFile(const int fd, void *buffer, size_t count, const char *
 		c598a24c_append_string(errorMessage, pathName);
 		c598a24c_append_char(errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage->buffer, errno);
+		c7c88e52_printLibError(errorMessage->buffer, errno);
 		c598a24c_destroyStringBuilder(errorMessage);
 
 		exit(EXIT_FAILURE);
@@ -175,7 +175,7 @@ char *e2f74138_readlink(const char *pathName, const ssize_t fileSize) {
 		c598a24c_append_string(errorMessage, pathName);
 		c598a24c_append_char(errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage->buffer, errno);
+		c7c88e52_printLibError(errorMessage->buffer, errno);
 		c598a24c_destroyStringBuilder(errorMessage);
 		exit(EXIT_FAILURE);
 	}
@@ -212,7 +212,7 @@ char *e2f74138_realpath(const char *pathName) {
 		c598a24c_append_string(errorMessage, pathName);
 		c598a24c_append_char(errorMessage, '\'');
 
-		c7c88e52_printError_string_int(errorMessage->buffer, errno);
+		c7c88e52_printLibError(errorMessage->buffer, errno);
 		c598a24c_destroyStringBuilder(errorMessage);
 		exit(EXIT_FAILURE);
 	}

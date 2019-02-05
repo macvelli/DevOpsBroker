@@ -58,6 +58,11 @@ void c7c88e52_missingParam(const char *paramName) {
 	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "Missing %s\n\n" ANSI_RESET, programName, paramName);
 }
 
+void c7c88e52_printLibError(const char* errorMessage, int errorNumber) {
+	const char *errorStr = strerror(errorNumber);
+	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "%s: %s\n" ANSI_RESET, programName, errorMessage, errorStr);
+}
+
 void c7c88e52_printUsage(const char* message) {
 	fprintf(stderr, ANSI_BOLD "Usage: " ANSI_YELLOW "%s\n" ANSI_RESET, message);
 }

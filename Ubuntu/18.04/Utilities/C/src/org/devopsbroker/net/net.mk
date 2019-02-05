@@ -66,7 +66,7 @@ prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
 # Obtain object files for the C utilities
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | prepare
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h | prepare
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $< -o $@
 

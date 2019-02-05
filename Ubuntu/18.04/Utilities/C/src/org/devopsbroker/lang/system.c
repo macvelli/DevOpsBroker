@@ -1,7 +1,7 @@
 /*
  * system.c - DevOpsBroker C source file for providing system-level functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -62,7 +62,7 @@ StringBuilder *c16819a0_execute(const char *path, char *const argv[]) {
 	pid_t child = fork();
 
 	if (child == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to fork() child process failed", errno);
+		c7c88e52_printLibError("Attempt to fork() child process failed", errno);
 		exit(EXIT_FAILURE);
 	} else if (child > 0) {
 		// We are actually in the "parent"
@@ -98,7 +98,7 @@ StringBuilder *c16819a0_execute(const char *path, char *const argv[]) {
 			c598a24c_append_stringArray(errorMessage, argv);
 			c598a24c_append_string(errorMessage, "' failed");
 
-			c7c88e52_printError_string_int(errorMessage->buffer, errno);
+			c7c88e52_printLibError(errorMessage->buffer, errno);
 			c598a24c_destroyStringBuilder(errorMessage);
 
 			exit(EXIT_FAILURE);
@@ -115,7 +115,7 @@ pid_t c16819a0_execute_pipe(const char *path, char *const argv[], Pipe *pipe) {
 	pid_t child = fork();
 
 	if (child == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Attempt to fork() child process failed", errno);
+		c7c88e52_printLibError("Attempt to fork() child process failed", errno);
 		exit(EXIT_FAILURE);
 	} else if (child > 0) {
 		// We are actually in the "parent"
@@ -137,7 +137,7 @@ pid_t c16819a0_execute_pipe(const char *path, char *const argv[], Pipe *pipe) {
 			c598a24c_append_stringArray(&errorMessage, argv);
 			c598a24c_append_string(&errorMessage, "' failed");
 
-			c7c88e52_printError_string_int(errorMessage.buffer, errno);
+			c7c88e52_printLibError(errorMessage.buffer, errno);
 		}
 	}
 
@@ -156,7 +156,7 @@ void c16819a0_waitForChild(const pid_t child) {
 		c598a24c_append_int32(&errorMessage, child);
 		c598a24c_append_string(&errorMessage, "' failed");
 
-		c7c88e52_printError_string_int(errorMessage.buffer, errno);
+		c7c88e52_printLibError(errorMessage.buffer, errno);
 
 		exit(EXIT_FAILURE);
 	}
