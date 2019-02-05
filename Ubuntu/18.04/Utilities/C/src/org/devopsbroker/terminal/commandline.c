@@ -1,7 +1,7 @@
 /*
- * unix.c - DevOpsBroker C source file for the org.devopsbroker.socket.UnixSocket struct
+ * commandline.c - DevOpsBroker C source file for providing command line-related functionality
  *
- * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -15,8 +15,9 @@
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-42
+ * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-44
  *
  * -----------------------------------------------------------------------------
  */
@@ -27,13 +28,10 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <unistd.h>
-
-#include <sys/socket.h>
-
-#include "unix.h"
+#include "commandline.h"
 
 #include "../lang/error.h"
+#include "../lang/float.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -41,32 +39,16 @@
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
-
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
+
+
+// ════════════════════════════ Function Prototypes ═══════════════════════════
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Socket Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-void bfdb2c2a_open(UnixSocket *unixSocket, UnixSocketType socketType) {
-	unixSocket->fd = socket(AF_UNIX, socketType | SOCK_CLOEXEC, 0);
-
-	if (unixSocket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot open Unix socket", errno);
-		exit(EXIT_FAILURE);
-	}
-
-	unixSocket->type = socketType;
-}
-
-void bfdb2c2a_close(UnixSocket *unixSocket) {
-
-	if (close(unixSocket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot close Unix socket", errno);
-		exit(EXIT_FAILURE);
-	}
-
+void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParm, int argc, char **argv, char *usageMsg) {
+	cmdLineParm->usageMsg = usageMsg;
+	cmdLineParm->argv = argv;
+	cmdLineParm->argc = argc;
 }

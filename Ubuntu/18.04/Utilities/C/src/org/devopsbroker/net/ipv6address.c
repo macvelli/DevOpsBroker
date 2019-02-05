@@ -1,7 +1,7 @@
 /*
- * ipv6address.c - C source file for the org.devopsbroker.net.IPv6Address struct
+ * ipv6address.c - DevOpsBroker C source file for the org.devopsbroker.net.IPv6Address struct
  *
- * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -42,7 +42,6 @@
 
 // ════════════════════════════ Function Prototypes ═══════════════════════════
 
-uint16_t b7808f25_getHextetValue(register char **ipAddress);
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 

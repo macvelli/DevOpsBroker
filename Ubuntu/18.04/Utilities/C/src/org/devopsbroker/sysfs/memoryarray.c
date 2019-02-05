@@ -1,7 +1,7 @@
 /*
  * memoryarray.c - DevOpsBroker C source file for the org.devopsbroker.sysfs.MemoryArray struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -73,7 +73,7 @@ static inline ErrorCorrectionType getErrorCorrectionType(register char *attrName
 static inline void setFloat(register float *attribute, register char *attrName, register char **data, register const char endChar) {
 	char *attrValue = f6215943_search(attrName, *data);
 	*data = terminate(attrValue, endChar);
-	*attribute = b08dcfcc_parse_float(attrValue);
+	*attribute = b08dcfcc_parseFloat(attrValue);
 }
 
 static inline void setFormFactor(register FormFactor *attribute, register char *attrName, register char **data) {

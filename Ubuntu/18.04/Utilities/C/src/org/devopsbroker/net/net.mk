@@ -1,7 +1,7 @@
 #
 # net.mk - DevOpsBroker makefile for compiling the org.devopsbroker.net package
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -70,6 +70,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | prepare
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Obtain object files for the ASM libraries
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm | prepare
 	$(call printInfo,Compiling $(@F))
 	$(ASM) $(ASMFLAGS) $< -o $@

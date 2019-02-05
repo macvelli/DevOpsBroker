@@ -1,7 +1,7 @@
 #
 # terminal.mk - DevOpsBroker makefile for compiling the org.devopsbroker.terminal package
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -28,10 +28,26 @@ include /etc/devops/globals.mk
 
 ################################## Variables ##################################
 
-SRC_DIR := $(CURDIR)/src/org/devopsbroker/terminal
-OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/terminal
+ifndef ASM
+	ASM := /usr/bin/nasm
+	ASMFLAGS := -felf64 -gdwarf
 
-LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
+	CC := /usr/bin/gcc
+	CFLAGS := -Wall -gdwarf -m64 -fdiagnostics-color=always
+
+	BASEDIR := $(shell /usr/bin/realpath $(CURDIR)/../../../..)
+else
+	BASEDIR := $(CURDIR)
+endif
+
+SRC_DIR := $(BASEDIR)/src/org/devopsbroker/terminal
+OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/terminal
+
+C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
+C_OBJECTS := $(subst /src/,/obj/,$(C_SOURCES:.c=.o))
+
+ASM_SOURCES := $(wildcard $(SRC_DIR)/*.asm)
+ASM_OBJECTS := $(subst /src/,/obj/,$(ASM_SOURCES:.asm=.o))
 
 ################################### Targets ###################################
 
@@ -40,7 +56,7 @@ LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
 
 default: all
 
-all: $(OBJ_DIR)/ansi.o
+all:	$(C_OBJECTS) $(ASM_OBJECTS)
 
 clean:
 	$(call printInfo,Cleaning $(OBJ_DIR) directory)
@@ -49,15 +65,23 @@ clean:
 prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
-# For some reason I have to put "| prepare" else this target is rebuilt all the time
-$(OBJ_DIR)/ansi.o: $(SRC_DIR)/ansi.c $(SRC_DIR)/ansi.h $(LANG_DIR)/string.h | prepare
+# Obtain object files for the C utilities
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | prepare
 	$(call printInfo,Compiling $(@F))
-	$(CC) $(CFLAGS) -c $(SRC_DIR)/ansi.c -o $(OBJ_DIR)/ansi.o
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Obtain object files for the ASM libraries
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm | prepare
+	$(call printInfo,Compiling $(@F))
+	$(ASM) $(ASMFLAGS) $< -o $@
 
 printenv:
 	echo "  MAKEFILE_LIST: $(MAKEFILE_LIST)"
 	echo "         TMPDIR: $(TMPDIR)"
+	echo "        BASEDIR: $(BASEDIR)"
 	echo "         CURDIR: $(CURDIR)"
+	echo "            ASM: $(ASM)"
+	echo "       ASMFLAGS: $(ASMFLAGS)"
 	echo "             CC: $(CC)"
 	echo "         CFLAGS: $(CFLAGS)"
 	echo "        SRC_DIR: $(SRC_DIR)"

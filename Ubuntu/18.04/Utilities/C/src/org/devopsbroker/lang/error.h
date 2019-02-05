@@ -1,7 +1,7 @@
 /*
  * error.h - DevOpsBroker C header file for providing error-handling functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -68,6 +68,37 @@ static inline void c7c88e52_ensureUserIsRoot() {
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c7c88e52_invalidOption
+ * Description: Prints invalid option error message
+ *
+ * Parameters:
+ *   option     The invalid command-line option
+ * ----------------------------------------------------------------------------
+ */
+void c7c88e52_invalidOption(const char *option);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c7c88e52_invalidValue
+ * Description: Prints invalid value error message
+ *
+ * Parameters:
+ *   paramName      The name of the parameter with the invalid value
+ *   paramValue     The invalid value of the parameter
+ * ----------------------------------------------------------------------------
+ */
+void c7c88e52_invalidValue(const char *paramName, const char *paramValue);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c7c88e52_missingParam
+ * Description: Prints missing parameter error message
+ *
+ * Parameters:
+ *   paramName      The name of the missing parameter
+ * ----------------------------------------------------------------------------
+ */
+void c7c88e52_missingParam(const char *paramName);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c7c88e52_printError_string
  * Description: Prints error message for the given executable
  *
@@ -98,11 +129,9 @@ static inline void c7c88e52_printError_string_int(const char* errorMessage, int 
  * Description: Prints usage information message
  *
  * Parameters:
- *   message        The usage message to print
+ *   message    The usage message to print
  * ----------------------------------------------------------------------------
  */
-static inline void c7c88e52_printUsage(const char* message) {
-	fprintf(stderr, ANSI_BOLD "Usage: " ANSI_YELLOW "%s\n" ANSI_RESET, message);
-}
+void c7c88e52_printUsage(const char* message);
 
 #endif /* ORG_DEVOPSBROKER_LANG_ERROR_H */

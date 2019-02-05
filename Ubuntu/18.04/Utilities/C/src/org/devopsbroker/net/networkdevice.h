@@ -1,7 +1,7 @@
 /*
  * networkdevice.h - DevOpsBroker C header file for the org.devopsbroker.net.NetworkDevice struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -67,9 +67,9 @@ typedef struct ifreq NetworkDeviceRequest;   // Request struct for making ioctl 
 static_assert(sizeof(NetworkDeviceRequest) == 40, "Check your assumptions");
 
 typedef struct NetworkDevice {
+	IPv4Address ipv4Address;
 	IPv6Address ipv6Global;
 	IPv6Address ipv6Local;
-	IPv4Address ipv4Address;
 	char *name;                     // enp7s0f3
 	uint32_t index;                 // e.g. 2
 	char _padding[4];
@@ -91,7 +91,7 @@ static_assert(sizeof(NetworkDevice) == 72, "Check your assumptions");
  * Parameters:
  *   deviceName     The name of the network device
  * Returns:         A NetworkDevice struct instance
- * ----------------------------------------------------------------------------
+ * ---------------------------------------------------------------------NetworkDeviceRequest-------
  */
 NetworkDevice *f0185083_createNetworkDevice(char* deviceName);
 

@@ -1,7 +1,7 @@
 ;
-; detectIPType.asm - DevOpsBroker NASM file for the detectIPType function
+; ip-util.linux.asm - DevOpsBroker NASM file for the IP-related utility functions
 ;
-; Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+; Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 ;
 ; This program is free software: you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -19,7 +19,10 @@
 ; -----------------------------------------------------------------------------
 ; Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-39
 ;
-; int a25c96b2_detectIPType(const char *ipAddress);
+; This file implements the following x86-64 assembly language functions for the
+; org.devopsbroker.net.ip-util.h header file:
+;
+;   o int a25c96b2_detectIPType(const char *ipAddress);
 ; -----------------------------------------------------------------------------
 ;
 
@@ -28,6 +31,9 @@
 
 ; ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+; character values
+%define DECIMAL   0x2E
+%define COLON     0x3A
 %define LOWER_A   0x61
 %define LOWER_F   0x66
 
@@ -46,50 +52,50 @@
 	global  a25c96b2_detectIPType:function
 	section .text
 a25c96b2_detectIPType:
+; Parameters:
 ;	rdi : char *ipAddress
 
 .prologue:                            ; functions typically have a prologue
-	movzx      esi, byte [rdi]        ; int ch = *ipAddress
-	xor        edx, edx               ; numChars = 0
+	mov        rcx, [rdi]             ; put first eight characters into rcx
+	mov        ah, 5                  ; loop counter = 5
+	mov        al, DECIMAL            ; al = '.'
+	mov        dl, COLON              ; dl = ':'
 
-	test       esi, esi               ; '\0'
+	test       cl, cl                 ; if (ch == '\0')
 	jz short   .invalidIPAddress
 
 .LWHILE0:                             ; while (ch)
-	cmp        esi, 0x2E              ; '.'
-	jne        .LIF0
+	cmp        cl, al                 ; if (ch == '.')
+	jne short  .isIPv6Address
 	mov        eax, 4
 	ret                               ; Detected an IPv4 Address
 
-.LIF0:
-	cmp        esi, 0x3A              ; ':'
+.isIPv6Address:
+	cmp        cl, dl                 ; if (ch == ':')
 	jne        .LIF1
 	mov        eax, 6
 	ret                               ; Detected an IPv6 Address
 
 .LIF1:
-	or         esi, 0x20              ; ch |= 0x20
-	cmp        esi, LOWER_A
+	or         cl, 0x20              ; ch |= 0x20
+	cmp        cl, LOWER_F           ; if (ch > 'f')
+	jg short   .invalidIPAddress
+	cmp        cl, LOWER_A           ; if (ch < 'a')
 	jl         .nextChar
-	cmp        esi, LOWER_F
-	jg         .nextChar
 	mov        eax, 6
 	ret                               ; Detected an IPv6 Address
 
 .nextChar:
-	inc        rdi                    ; ipAddress++
-	movzx      esi, byte [rdi]        ; ch = *ipAddress
-	inc        edx                    ; numChars++
+	shr        rcx, 8                 ; shift to the next character
+	dec        ah                     ; loopCounter--
 
-	; while (ch && numChars < 5)
-	test       esi, esi               ; '\0'
-	jz         .invalidIPAddress
-	cmp        edx, 5
-	jne short  .LWHILE0
+	; while (ch && loopCounter > 0)
+	test       ah, ah
+	jz short   .invalidIPAddress
+	test       cl, cl                 ; if (ch == '\0')
+	jnz        .LWHILE0
 	; Error if we already processed five characters
 
 .invalidIPAddress:
 	mov        eax, ERROR_CODE        ; Set return value to ERROR_CODE
-
-.epilogue:                            ; functions typically have an epilogue
 	ret                               ; pop return address from stack and jump there

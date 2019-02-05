@@ -1,7 +1,7 @@
 /*
  * ip-util.h - DevOpsBroker C header file for IP-related utility functions
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -50,29 +50,6 @@
  * ----------------------------------------------------------------------------
  */
 int a25c96b2_detectIPType(const char *ipAddress);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    a25c96b2_getOctetValue
- * Description: Returns the value of a single IPv4 octet [0-255]
- *
- * Parameters:
- *   ipAddress      A string representation of an IPv4 address
- * Returns:         An octet value between 0 and 255
- * ----------------------------------------------------------------------------
- */
-int a25c96b2_getOctetValue(char **ipAddress);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    a25c96b2_getCIDRSuffix
- * Description: Returns the CIDR suffix of an IPv4 or IPv6 address
- *
- * Parameters:
- *   ipAddress      A string representation of an IPv4 or IPv6 address
- *   maxValue       The maximum CIDR suffix value allowed
- * Returns:         The CIDR suffix value, or -1 if invalid
- * ----------------------------------------------------------------------------
- */
-int a25c96b2_getCIDRSuffix(const char *ipAddress, const int maxValue);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    a25c96b2_invalidIPv4Address

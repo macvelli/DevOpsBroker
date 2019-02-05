@@ -1,7 +1,7 @@
 /*
- * unix.c - DevOpsBroker C source file for the org.devopsbroker.socket.UnixSocket struct
+ * ipv4.c - DevOpsBroker C source file for the org.devopsbroker.socket.IPv4Socket struct
  *
- * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-42
+ * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-44
  *
  * -----------------------------------------------------------------------------
  */
@@ -28,10 +28,9 @@
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <unistd.h>
+#include <netinet/in.h>
 
-#include <sys/socket.h>
-
-#include "unix.h"
+#include "ipv4.h"
 
 #include "../lang/error.h"
 
@@ -51,21 +50,21 @@
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Socket Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void bfdb2c2a_open(UnixSocket *unixSocket, UnixSocketType socketType) {
-	unixSocket->fd = socket(AF_UNIX, socketType | SOCK_CLOEXEC, 0);
+void a34d4619_open(IPv4Socket *ipv4Socket, IPv4SocketType socketType) {
+	ipv4Socket->fd = socket(AF_INET, socketType, IPPROTO_IP);
 
-	if (unixSocket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot open Unix socket", errno);
+	if (ipv4Socket->fd == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Cannot open IPv4 socket", errno);
 		exit(EXIT_FAILURE);
 	}
 
-	unixSocket->type = socketType;
+	ipv4Socket->type = socketType;
 }
 
-void bfdb2c2a_close(UnixSocket *unixSocket) {
+void a34d4619_close(IPv4Socket *ipv4Socket) {
 
-	if (close(unixSocket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot close Unix socket", errno);
+	if (close(ipv4Socket->fd) == SYSTEM_ERROR_CODE) {
+		c7c88e52_printError_string_int("Cannot close IPv4 socket", errno);
 		exit(EXIT_FAILURE);
 	}
 

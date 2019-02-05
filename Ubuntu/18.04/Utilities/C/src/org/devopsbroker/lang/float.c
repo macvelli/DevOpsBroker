@@ -1,7 +1,7 @@
 /*
  * float.c - DevOpsBroker C source file for providing float-related functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -57,6 +57,7 @@ char *b08dcfcc_toString_float(float value) {
 	return NULL;
 }
 
+/*
 float b08dcfcc_parse_float(register const char *source) {
 	register char ch = *source;
 	register float value = 0.0f;
@@ -101,3 +102,4 @@ float b08dcfcc_parse_float(register const char *source) {
 
 	return value;
 }
+*/

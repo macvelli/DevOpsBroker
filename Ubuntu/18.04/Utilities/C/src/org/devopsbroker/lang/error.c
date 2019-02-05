@@ -1,7 +1,7 @@
 /*
- * unix.c - DevOpsBroker C source file for the org.devopsbroker.socket.UnixSocket struct
+ * error.c - DevOpsBroker C source file for providing error-handling functionality
  *
- * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -15,8 +15,9 @@
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-42
+ * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-44
  *
  * -----------------------------------------------------------------------------
  */
@@ -27,13 +28,9 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <unistd.h>
+#include <stdio.h>
 
-#include <sys/socket.h>
-
-#include "unix.h"
-
-#include "../lang/error.h"
+#include "error.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -41,32 +38,26 @@
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
-
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
+
+
+// ════════════════════════════ Function Prototypes ═══════════════════════════
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Socket Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-void bfdb2c2a_open(UnixSocket *unixSocket, UnixSocketType socketType) {
-	unixSocket->fd = socket(AF_UNIX, socketType | SOCK_CLOEXEC, 0);
-
-	if (unixSocket->fd == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot open Unix socket", errno);
-		exit(EXIT_FAILURE);
-	}
-
-	unixSocket->type = socketType;
+void c7c88e52_invalidOption(const char *option) {
+	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "Invalid option: '%s'\n\n" ANSI_RESET, programName, option);
 }
 
-void bfdb2c2a_close(UnixSocket *unixSocket) {
+void c7c88e52_invalidValue(const char *paramName, const char *paramValue) {
+	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "Invalid %s: '%s'\n\n" ANSI_RESET, programName, paramName, paramValue);
+}
 
-	if (close(unixSocket->fd) == SYSTEM_ERROR_CODE) {
-		c7c88e52_printError_string_int("Cannot close Unix socket", errno);
-		exit(EXIT_FAILURE);
-	}
+void c7c88e52_missingParam(const char *paramName) {
+	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "Missing %s\n\n" ANSI_RESET, programName, paramName);
+}
 
+void c7c88e52_printUsage(const char* message) {
+	fprintf(stderr, ANSI_BOLD "Usage: " ANSI_YELLOW "%s\n" ANSI_RESET, message);
 }

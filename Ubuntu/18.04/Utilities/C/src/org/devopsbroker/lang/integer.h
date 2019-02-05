@@ -1,7 +1,7 @@
 /*
  * integer.h - DevOpsBroker C header file for providing integer-related functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -74,6 +74,20 @@ uint32_t f45efac2_getStringSize_uint32(const uint32_t value);
  */
 static inline uint32_t f45efac2_max_uint32(register const uint32_t foo, register const uint32_t bar) {
 	return (foo > bar) ? foo : bar;
+}
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f45efac2_min_uint32
+ * Description: Returns the minimum unsigned integer value
+ *
+ * Parameters:
+ *   foo        An unsigned integer value to evaluate
+ *   bar        An unsigned integer value to evaluate
+ * Returns:     The minimum unsigned integer value
+ * ----------------------------------------------------------------------------
+ */
+static inline uint32_t f45efac2_min_uint32(register const uint32_t foo, register const uint32_t bar) {
+	return (foo < bar) ? foo : bar;
 }
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
