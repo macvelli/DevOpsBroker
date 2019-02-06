@@ -19,6 +19,11 @@
  * -----------------------------------------------------------------------------
  * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-43
  *
+ * TODO: The Realtek RTL8168 does not support:
+ *   o Changing Frame Ring Buffers
+ *   o Changing flow control
+ *   o Changing Interrupt Coalescing
+ *
  * Linux FAQ Information
  * ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Routing tables under /proc:
@@ -296,15 +301,20 @@ static void calcEthtoolSettings(EthtoolSettings *ethtoolSettings, TuningCalcs *t
 
 	ethtoolSettings->txqueuelen = (tuningCalcs->ulFramesPerSecond * tuningParams->acceptableLatency);
 
-	ethtoolSettings->txqueuelen >>= 5;
-	if (tuningCalcs->ulFramesPerSecond < 1440) {
-		if (ethtoolSettings->txqueuelen == 0) {
-			ethtoolSettings->txqueuelen++;
-		}
-		ethtoolSettings->txqueuelen <<= 5;
+	if (ethtoolSettings->txqueuelen <= ethtoolSettings->txFrameRingBufferSize) {
+		ethtoolSettings->txFrameRingBufferSize = ethtoolSettings->txqueuelen;
+		ethtoolSettings->txqueuelen = 32;
 	} else {
-		ethtoolSettings->txqueuelen <<= 5;
-		ethtoolSettings->txqueuelen = ethtoolSettings->txqueuelen - ethtoolSettings->txFrameRingBufferSize;
+		ethtoolSettings->txqueuelen >>= 5;
+		if (tuningCalcs->ulFramesPerSecond < 1440) {
+			if (ethtoolSettings->txqueuelen == 0) {
+				ethtoolSettings->txqueuelen++;
+			}
+			ethtoolSettings->txqueuelen <<= 5;
+		} else {
+			ethtoolSettings->txqueuelen <<= 5;
+			ethtoolSettings->txqueuelen = ethtoolSettings->txqueuelen - ethtoolSettings->txFrameRingBufferSize;
+		}
 	}
 }
 

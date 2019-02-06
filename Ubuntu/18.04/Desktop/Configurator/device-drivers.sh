@@ -64,6 +64,8 @@ fi
 
 ## Bash exec variables
 EXEC_DRIVERS=/usr/bin/ubuntu-drivers
+EXEC_LSMOD=/sbin/lsmod
+EXEC_LSPCI=/usr/bin/lspci
 
 ################################### Actions ###################################
 
@@ -105,6 +107,13 @@ echo
 mapfile -t deviceArray < <($EXEC_GREP -E '^(vendor|driver)' /etc/devops/device-drivers.info)
 declare -A vendorDriverMap
 declare -a installList
+
+# Look for the Realtek RTL8168 device
+if $EXEC_LSPCI | $EXEC_GREP -q 'Realtek .*8168'; then
+	if ! $EXEC_LSMOD | $EXEC_GREP -Fq 'r8168'; then
+		installList+=( "r8168-dkms" )
+	fi
+fi
 
 IFS=': '
 for device in "${deviceArray[@]}"; do
