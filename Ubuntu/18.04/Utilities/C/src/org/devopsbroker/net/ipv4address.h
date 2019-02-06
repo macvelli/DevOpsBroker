@@ -1,7 +1,7 @@
 /*
  * ipv4address.h - DevOpsBroker C header file for the org.devopsbroker.net.IPv4Address struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -19,6 +19,11 @@
  * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-39
  *
  * echo ORG_DEVOPSBROKER_NET_IPV4ADDRESS | md5sum | cut -c 25-32
+ *
+ * The method signatures defined in this header file are implemented in the
+ * following files:
+ *
+ *   o ipv4address.linux.asm
  * -----------------------------------------------------------------------------
  */
 
@@ -45,10 +50,10 @@ typedef enum IPv4StringType {
 } IPv4StringType;
 
 typedef struct IPv4Address {
-	uint32_t address;               // 192.168.1.102
-	uint32_t cidrSuffix;            // 24
-	uint32_t subnetMask;            // 255.255.255.0
-	uint32_t routingPrefix;         // 192.168.1.0
+	uint32_t address;         // 192.168.1.102
+	uint32_t cidrSuffix;      // 24
+	uint32_t subnetMask;      // 255.255.255.0
+	uint32_t routingPrefix;   // 192.168.1.0
 } IPv4Address;
 
 static_assert(sizeof(IPv4Address) == 16, "Check your assumptions");

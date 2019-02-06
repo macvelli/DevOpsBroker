@@ -47,19 +47,7 @@
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-/*
-IPv6Address *b7808f25_createIPv6Address(char *ipAddress) {
-	IPv6Address *ipv6Address = malloc(sizeof(IPv6Address));
 
-	b7808f25_initIPv6Address(ipv6Address, ipAddress);
-
-	return ipv6Address;
-}
-
-void b7808f25_destroyIPv6Address(IPv6Address *iPv6Address) {
-	free(iPv6Address);
-}
-*/
 int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
 /*
 	char *source = ipAddress;
