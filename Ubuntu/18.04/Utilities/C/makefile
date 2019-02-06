@@ -187,6 +187,7 @@ bin/verifyip: obj/verifyip.o | library
 install: all
 	/bin/cp -uv bin/between ../usr/local/bin
 	/bin/cp -uv bin/convert-temp ../usr/local/bin
+	/bin/cp -uv bin/derivesubnet ../usr/local/bin
 	/bin/cp -uv bin/firelog ../usr/local/bin
 	/bin/cp -uv bin/nettuner ../usr/local/bin
 	/bin/cp -uv bin/schedtuner ../usr/local/sbin

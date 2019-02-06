@@ -289,6 +289,9 @@ installUserUtility deb-control
 # Install decrypt user utility
 installUserUtility decrypt
 
+# Install derivesubnet user utility
+installUserUtility derivesubnet
+
 # Install encrypt user utility
 installUserUtility encrypt
 

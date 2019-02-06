@@ -315,8 +315,14 @@ b7808f25_extractString:
 	jmp        processHextet
 
 .cidrSuffix:
+	mov        cl, ah                 ; preserve hasShorthand value
 	movd       eax, xmm15             ; retrieve cidrSuffix from xmm15
+
+	test       cl, cl                 ; if (hasShorthand) skip correcting buffer pointer
+	jnz        .skipCorrection
 	dec        rsi                    ; correct string buffer pointer position
+
+.skipCorrection:
 	mov        r10b, 0x0a             ; r10b = 10 (constant)
 	xor        rdx, rdx               ; clear out rdx
 
