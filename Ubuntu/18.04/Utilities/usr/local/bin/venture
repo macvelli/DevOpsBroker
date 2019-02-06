@@ -350,11 +350,11 @@ elif [ "$command" == 'create' ]; then
 		# Create a new C source file
 		printInfo "Creating $baseDir/$sourceFile"
 
-		# Set source-file-c.tpl location and make it executable
-		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/source-file-c.tpl)
+		# Set c-source-file.tpl location and make it executable
+		cSourceFileTpl=$(isExecutable "$SCRIPT_DIR"/template/c-source-file.tpl)
 
 		# Execute template script
-		"$sourceFileCTpl" "$sourceFile" > "$baseDir/$sourceFile"
+		"$cSourceFileTpl" "$sourceFile" > "$baseDir/$sourceFile"
 	fi
 
 	# END Create new project
@@ -379,32 +379,32 @@ elif [ "$command" == 'new' ]; then
 	if [[ "$fileName" == *.asm ]]; then
 		printInfo "Creating new NASM Assembly source file '$fileName'"
 
-		# Set source-file-asm.tpl location and make it executable
-		sourceFileASMTpl=$(isExecutable "$SCRIPT_DIR/template/source-file-asm.tpl")
+		# Set asm-source-file.tpl location and make it executable
+		asmSourceFileTpl=$(isExecutable "$SCRIPT_DIR/template/asm-source-file.tpl")
 
 		# Execute template script
-		"$sourceFileASMTpl" "$fileName" > "$baseDir/$fileName"
+		"$asmSourceFileTpl" "$fileName" > "$baseDir/$fileName"
 
 	# Create a new C source file
 	elif [[ "$fileName" == *.c ]]; then
 		fileName="${fileName,,}"
 		printInfo "Creating new C source file '$fileName'"
 
-		# Set source-file-c.tpl location and make it executable
-		sourceFileCTpl=$(isExecutable "$SCRIPT_DIR/template/source-file-c.tpl")
+		# Set c-source-file.tpl location and make it executable
+		cSourceFileTpl=$(isExecutable "$SCRIPT_DIR/template/c-source-file.tpl")
 
 		# Execute template script
-		"$sourceFileCTpl" "$fileName" > "$baseDir/$fileName"
+		"$cSourceFileTpl" "$fileName" > "$baseDir/$fileName"
 
 	# Create a new C header file
 	elif [[ "$fileName" == *.h ]]; then
 		printInfo "Creating new C header file '$fileName'"
 
-		# Set header-file-c.tpl location and make it executable
-		headerFileCTpl=$(isExecutable "$SCRIPT_DIR"/template/header-file-c.tpl)
+		# Set c-header-file.tpl location and make it executable
+		cHeaderFileTpl=$(isExecutable "$SCRIPT_DIR"/template/c-header-file.tpl)
 
 		# Execute template script
-		"$headerFileCTpl" "$fileName" > "$baseDir/$fileName"
+		"$cHeaderFileTpl" "$fileName" > "$baseDir/$fileName"
 
 	# Create a new Linux configuration file
 	elif [[ "$fileName" == *.conf ]]; then

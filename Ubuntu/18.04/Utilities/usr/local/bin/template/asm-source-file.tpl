@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-# source-file-asm.tpl - DevOpsBroker template script for generating NASM source files
+# asm-source-file.tpl - DevOpsBroker template script for generating NASM source files
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -53,35 +53,34 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 sourceFileName="$1"
 functionName=${2:-'main'}
 
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$sourceFileName" ]; then
-	printUsage "source-file-asm.tpl file.asm ${gold}[FUNC_NAME]"
+	printUsage "asm-source-file.tpl file.asm ${gold}[FUNC_NAME]"
 	exit 1
 fi
 
 # Display error if invalid source file name specified
 if [[ "$sourceFileName" != *.asm ]]; then
-	printError 'source-file-asm.tpl' "Invalid NASM source file name: '$sourceFileName'"
+	printError 'asm-source-file.tpl' "Invalid NASM source file name: '$sourceFileName'"
 	echo
-	printUsage "source-file-asm.tpl file.asm ${gold}[FUNC_NAME]"
+	printUsage "asm-source-file.tpl file.asm ${gold}[FUNC_NAME]"
 
 	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set $ubuntuRelease and $kernelVersion variables
-ubuntuRelease="$(getUbuntuRelease)"
-kernelVersion="$(getKernelVersion)"
-
 ## Template
 /bin/cat << EOF
 ;
 ; $sourceFileName - Description goes here
 ;
-; Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+; Copyright (C) $YEAR AUTHOR_NAME <email@address.com>
 ;
 ; This program is free software: you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -97,7 +96,7 @@ kernelVersion="$(getKernelVersion)"
 ; this program.  If not, see <http://www.gnu.org/licenses/>.
 ;
 ; -----------------------------------------------------------------------------
-; Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+; Developed on $(getUbuntuRelease) running kernel.osrelease = $(getKernelVersion)
 ;
 ; nasm -felf64 $sourceFileName
 ;

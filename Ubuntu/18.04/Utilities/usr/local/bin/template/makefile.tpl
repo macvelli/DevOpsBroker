@@ -3,7 +3,7 @@
 #
 # makefile.tpl - DevOpsBroker template script for generating makefiles
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -52,26 +52,25 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 ## Options
 projectName="$1"
 
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no project name parameter specified
 if [ -z "$projectName" ]; then
-	printUsage "makefile.tpl PROJ_NAME ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	printUsage "makefile.tpl PROJ_NAME"
 	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Set $ubuntuRelease and $kernelVersion variables
-ubuntuRelease=${2:-"$(getUbuntuRelease)"}
-kernelVersion=${3:-"$(getKernelVersion)"}
 
 ## Template
 /bin/cat << EOF
 #
 # makefile - Description goes here
 #
-# Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+# Copyright (C) $YEAR AUTHOR_NAME <email@address.com>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -87,7 +86,7 @@ kernelVersion=${3:-"$(getKernelVersion)"}
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+# Developed on $(getUbuntuRelease) running kernel.osrelease = $(getKernelVersion)
 #
 # -----------------------------------------------------------------------------
 #

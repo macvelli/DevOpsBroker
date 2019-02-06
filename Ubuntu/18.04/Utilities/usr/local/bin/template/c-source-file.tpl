@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-# header-file-c.tpl - DevOpsBroker template script for generating C header files
+# c-source-file.tpl - DevOpsBroker template script for generating C source files
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -50,41 +50,39 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 ################################## Variables ##################################
 
 ## Options
-headerFileName="$1"
+sourceFileName="$1"
+
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if no header file name parameter specified
-if [ -z "$headerFileName" ]; then
-	printUsage "header-file-c.tpl file.h ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+# Display usage if no source file name parameter specified
+if [ -z "$sourceFileName" ]; then
+	printUsage "c-source-file.tpl file.c"
 	exit 1
 fi
 
-# Display error and usage if invalid header file name specified
-if [[ "$headerFileName" != *.h ]]; then
-	printError "header-file-c.tpl" "Invalid C header file name: '$headerFileName'"
+# Display error and usage if invalid source file name specified
+if [[ "$sourceFileName" != *.c ]]; then
+	printError "c-source-file.tpl" "Invalid C source file name: '$sourceFileName'"
 	echo
-	printUsage "header-file-c.tpl file.h ${gold}[UBUNTU_RELEASE] [KERNEL_VERSION]"
+	printUsage "c-source-file.tpl file.c"
 
 	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Set $ubuntuRelease and $kernelVersion variables
-ubuntuRelease=${2:-"$(getUbuntuRelease)"}
-kernelVersion=${3:-"$(getKernelVersion)"}
-
-# Derive the include guard from the header file name
-includeGuard="${headerFileName^^}"
-includeGuard=${includeGuard/./_}
+# Derive the header file name from the source file name
+headerFileName=${sourceFileName/.c/.h}
 
 ## Template
 /bin/cat << EOF
 /*
- * $headerFileName - Description goes here
+ * $sourceFileName - C source file
  *
- * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+ * Copyright (C) $YEAR AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -98,19 +96,25 @@ includeGuard=${includeGuard/./_}
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * -----------------------------------------------------------------------------
- * Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+ * Developed on $(getUbuntuRelease) running kernel.osrelease = $(getKernelVersion)
  *
  * -----------------------------------------------------------------------------
  */
 
-#ifndef $includeGuard
-#define $includeGuard
+// ════════════════════════════ Feature Test Macros ═══════════════════════════
+
+#define _DEFAULT_SOURCE
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <locale.h>
+
+#include "$headerFileName"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -118,15 +122,28 @@ includeGuard=${includeGuard/./_}
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
-// ════════════════════════════════ Structures ════════════════════════════════
-
-
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
-// ═══════════════════════════ Function Declarations ══════════════════════════
+// ════════════════════════════ Function Prototypes ═══════════════════════════
 
 
-#endif /* $includeGuard */
+// ══════════════════════════════════ main() ══════════════════════════════════
+
+int main(int argc, char *argv[]) {
+
+	// For a list of all supported locales, try "locale -a" from the command-line
+	setlocale(LC_ALL, "C.UTF-8");
+
+	for (int i=0; i < argc; i++) {
+		printf("%s\n", argv[i]);
+	}
+
+	// Exit with success
+	exit(EXIT_SUCCESS);
+}
+
+// ═════════════════════════ Function Implementations ═════════════════════════
+
 
 EOF

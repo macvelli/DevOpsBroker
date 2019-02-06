@@ -402,18 +402,18 @@ if [ ! -d /usr/local/bin/template ]; then
 	echoOnExit=true
 fi
 
+installTemplate 'asm-source-file.tpl'
 installTemplate 'bash-complete.tpl'
 installTemplate 'bash-script.tpl'
 installTemplate 'bash-template.tpl'
 installTemplate 'c-enum-source.tpl'
+installTemplate 'c-header-file.tpl'
+installTemplate 'c-source-file.tpl'
 installTemplate 'c-struct-source.tpl'
 installTemplate 'fileinfo.tpl'
-installTemplate 'header-file-c.tpl'
 installTemplate 'html5.tpl'
 installTemplate 'linux-conf.tpl'
 installTemplate 'makefile.tpl'
-installTemplate 'source-file-asm.tpl'
-installTemplate 'source-file-c.tpl'
 
 if [ $echoOnExit == 'true' ]; then
 	echo

@@ -3,7 +3,7 @@
 #
 # bash-complete.tpl - DevOpsBroker template for generating Bash complete scripts
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -55,6 +55,9 @@ EXEC_WHICH=/usr/bin/which
 ## Options
 commandName="$1"
 
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
@@ -90,9 +93,9 @@ functionName="_$commandName"
 #!/bin/bash
 
 #
-# $commandName - Description goes here
+# $commandName - Bash completion script for the $commandName utility
 #
-# Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+# Copyright (C) $YEAR AUTHOR_NAME <email@address.com>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software

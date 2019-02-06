@@ -3,7 +3,7 @@
 #
 # c-enum-source.tpl - DevOpsBroker template script for generating C enum source files
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -63,6 +63,8 @@ md5Hash=''
 filename=''
 variableName=''
 
+YEAR=$($EXEC_DATE +'%Y')
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if enum name is missing
@@ -98,16 +100,12 @@ filename=${typedefName,,}
 # Set the variable name according to the typedef name
 variableName=${typedefName,}
 
-# Set $ubuntuRelease and $kernelVersion variables
-ubuntuRelease=${2:-"$(getUbuntuRelease)"}
-kernelVersion=${3:-"$(getKernelVersion)"}
-
 ## Template
 /bin/cat << EOF > $filename.h
 /*
  * $filename.h - C header file for the ${enumName} enum
  *
- * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+ * Copyright (C) $YEAR AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -122,7 +120,7 @@ kernelVersion=${3:-"$(getKernelVersion)"}
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+ * Developed on $(getUbuntuRelease) running kernel.osrelease = $(getKernelVersion)
  *
  * echo $includeGuard | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
@@ -174,7 +172,7 @@ EOF
 /*
  * $filename.c - C source file for the ${enumName} enum
  *
- * Copyright (C) 2018 AUTHOR_NAME <email@address.com>
+ * Copyright (C) $YEAR AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -189,7 +187,7 @@ EOF
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on $ubuntuRelease running kernel.osrelease = $kernelVersion
+ * Developed on $(getUbuntuRelease) running kernel.osrelease = $(getKernelVersion)
  *
  * -----------------------------------------------------------------------------
  */
