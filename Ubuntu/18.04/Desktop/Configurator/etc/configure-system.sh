@@ -139,6 +139,7 @@ installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/lo
 
 # Install /etc/bash_completion.d/*
 $EXEC_CP -uv "$SCRIPT_DIR"/bash_completion.d/* /etc/bash_completion.d
+$EXEC_CHMOD 644 /etc/bash_completion.d/*
 
 # Install /etc/default/resolvconf
 installConfig 'resolvconf' "$SCRIPT_DIR"/default /etc/default

@@ -21,12 +21,15 @@
 # -----------------------------------------------------------------------------
 # Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-39
 #
+# Bash Completion FAQ Information
+# -------------------------------
+# COMP_CWORD: Index into COMP_WORDS of the word containing the current cursor position
 # -----------------------------------------------------------------------------
 #
 
 function _convert-temp() {
 
-	# Exit if we have already completed the first word
+	# Exit if we have already completed the first two words
 	if [ $COMP_CWORD -eq 2 ]; then
 		return
 	fi
@@ -39,29 +42,28 @@ function _convert-temp() {
 	if [ "$programName" == 'celsius' ]; then
 		if [ -z "$firstWord" ]; then
 			COMPREPLY+=('fahrenheit' 'kelvin')
-		elif /bin/grep -q "$firstWord" <<<"fahrenheit"; then
+		elif [[ "fahrenheit" == "$firstWord"* ]]; then
 			COMPREPLY+=('fahrenheit')
-		elif /bin/grep -q "$firstWord" <<<"kelvin"; then
+		elif [[ "kelvin" == "$firstWord"* ]]; then
 			COMPREPLY+=('kelvin')
 		fi
 	elif [ "$programName" == 'fahrenheit' ]; then
 		if [ -z "$firstWord" ]; then
 			COMPREPLY+=('celsius' 'kelvin')
-		elif /bin/grep -q "$firstWord" <<<"celsius"; then
+		elif [[ "celsius" == "$firstWord"* ]]; then
 			COMPREPLY+=('celsius')
-		elif /bin/grep -q "$firstWord" <<<"kelvin"; then
+		elif [[ "kelvin" == "$firstWord"* ]]; then
 			COMPREPLY+=('kelvin')
 		fi
 	elif [ "$programName" == 'kelvin' ]; then
 		if [ -z "$firstWord" ]; then
 			COMPREPLY+=('celsius' 'fahrenheit')
-		elif /bin/grep -q "$firstWord" <<<"celsius"; then
+		elif [[ "celsius" == "$firstWord"* ]]; then
 			COMPREPLY+=('celsius')
-		elif /bin/grep -q "$firstWord" <<<"fahrenheit"; then
+		elif [[ "fahrenheit" == "$firstWord"* ]]; then
 			COMPREPLY+=('fahrenheit')
 		fi
 	fi
-
 
 }
 

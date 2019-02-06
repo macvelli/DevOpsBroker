@@ -38,12 +38,7 @@ Ubuntu/16.04/Utilities/C/schedtuner
 Ubuntu/16.04/Utilities/C/scriptinfo
 Ubuntu/16.04/Utilities/C/verifyclass
 Ubuntu/16.04/Utilities/C/verifyip
-Ubuntu/18.04/Utilities/C/between
-Ubuntu/18.04/Utilities/C/firelog
-Ubuntu/18.04/Utilities/C/schedtuner
-Ubuntu/18.04/Utilities/C/scriptinfo
-Ubuntu/18.04/Utilities/C/verifyclass
-Ubuntu/18.04/Utilities/C/verifyip
+Ubuntu/18.04/Utilities/C/bin/*
 
 # Debug files
 *.dSYM/
