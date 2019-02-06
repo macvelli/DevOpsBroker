@@ -1,7 +1,7 @@
 #
 # profile - DevOpsBroker Bash initialization file for $HOME/.profile
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -39,29 +39,20 @@ export USER_UID=$(/usr/bin/id -u $USER)
 # Create /mnt/ramdisk user directories
 if [ -d /mnt/ramdisk ]; then
 	if [ ! -d /mnt/ramdisk/$USER ]; then
-		/bin/mkdir -p --mode=0700 /mnt/ramdisk/$USER
-		/bin/mkdir -p --mode=0700 /mnt/ramdisk/$USER/mozilla/firefox
+		# Create user directory in ramdisk
+		/bin/mkdir -pv --mode=0700 /mnt/ramdisk/$USER
 
-		# Recreate Firefox cache directory in /mnt/ramdisk
-		if [ -d /cache/$USER ] && [ -f /cache/$USER/*.default.tar.gz ]; then
+		# Create directory for Mozilla Firefox cache
+		/bin/mkdir -pv --mode=0700 /mnt/ramdisk/$USER/mozilla/firefox
 
-			/bin/tar xzvf /cache/$USER/*.default.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox
-
-		elif [ -d $HOME/.cache/mozilla ] && [ ! -L $HOME/.cache/mozilla/firefox ]; then
-
-			# Move Firefox cache to /mnt/ramdisk
+		# Migrate Mozilla Firefox cache to the ramdisk
+		if [ ! -L $HOME/.cache/mozilla/firefox ]; then
 			/bin/cp -a $HOME/.cache/mozilla/firefox/* /mnt/ramdisk/$USER/mozilla/firefox
 			/bin/rm -rf $HOME/.cache/mozilla/firefox
 			/usr/local/bin/symlink -o $USER:$USER $HOME/.cache/mozilla/firefox /mnt/ramdisk/$USER/mozilla/firefox
-
-		elif [ -d $HOME/.mozilla/firefox ]; then
-			profileDir=$( /usr/bin/basename $( /bin/ls -d $HOME/.mozilla/firefox/*.default ) )
-
-			if [ ! -z "$profileDir" ]; then
-				/bin/mkdir -p --mode=0700 /mnt/ramdisk/$USER/mozilla/firefox/$profileDir
-			fi
 		fi
 
+		# Adjust file and directory ownership to the user
 		/bin/chown -R $USER:$USER /mnt/ramdisk/$USER
 	fi
 

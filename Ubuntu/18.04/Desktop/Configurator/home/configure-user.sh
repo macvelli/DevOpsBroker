@@ -3,7 +3,7 @@
 #
 # configure-user.sh - DevOpsBroker script for configuring users
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -70,10 +70,12 @@
 #
 # Configure GPG
 #
-# Installs systemd user service logout.service
 # Installs systemd user service ssh-agent.service
 #
 # Applies stricter file and directory settings to the user's home directory
+#
+# 20190206: Removed Firefox cache persistence functionality as it does not
+#           work properly under Gnome as it did with Unity
 # -----------------------------------------------------------------------------
 #
 
@@ -470,19 +472,19 @@ fi
 # Install logout.service
 #
 
-if [ ! -f "$userhome"/.config/systemd/user/logout.service ]; then
-	printInfo 'Installing systemd user service logout.service'
-
-	# Install as $username:$username with rw-r--r-- privileges
-	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/systemd/logout.service "$userhome"/.config/systemd/user
-
-	# Need XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS
-	printInfo 'Enable systemd user service logout.service'
-	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user enable logout.service
-
-	printInfo 'Start systemd user service logout.service'
-	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user start logout.service
-fi
+#if [ ! -f "$userhome"/.config/systemd/user/logout.service ]; then
+#	printInfo 'Installing systemd user service logout.service'
+#
+#	# Install as $username:$username with rw-r--r-- privileges
+#	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/systemd/logout.service "$userhome"/.config/systemd/user
+#
+#	# Need XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS
+#	printInfo 'Enable systemd user service logout.service'
+#	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user enable logout.service
+#
+#	printInfo 'Start systemd user service logout.service'
+#	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user start logout.service
+#fi
 
 #
 # Configure GPG

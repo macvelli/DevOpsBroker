@@ -1,10 +1,9 @@
 #!/bin/bash
 
 #
-# bgedit - DevOpsBroker utility for opening files in the background for editing
-#	   with gedit
+# bgedit - DevOpsBroker utility for opening files in the background for editing with gedit
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -27,67 +26,13 @@
 # -----------------------------------------------------------------------------
 #
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Load /etc/devops/ansi.conf if ANSI_CONFIG is unset
-if [ -z "$ANSI_CONFIG" ] && [ -f /etc/devops/ansi.conf ]; then
-	source /etc/devops/ansi.conf
-fi
-
-${ANSI_CONFIG?"[1;91mCannot load '/etc/devops/ansi.conf': No such file[0m"}
-
-# Load /etc/devops/exec.conf if EXEC_CONFIG is unset
-if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
-	source /etc/devops/exec.conf
-fi
-
-${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
-
-# Load /etc/devops/functions.conf if FUNC_CONFIG is unset
-if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
-	source /etc/devops/functions.conf
-fi
-
-${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
-
 ################################## Variables ##################################
 
 ## Bash exec variables
 EXEC_GEDIT=/usr/bin/gedit
 
-## Options
-filesToOpen=()
-i=0
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Display usage if no parameters given
-if [ -z "$1" ]; then
-  printUsage 'bgedit FILE...'
-  echo
-
-  exit 1
-fi
-
-for file in "$@"; do
-
-  # Display error if file does not exist
-  if [ ! -f "$file" ]; then
-    printError 'bgedit' "Cannot access '$file': No such file"
-    echo
-    printUsage 'bgedit FILE...'
-
-    exit 1
-  fi
-
-  filesToOpen[$i]="$file"
-  i=$i+1
-
-done
-
-
 ################################### Actions ###################################
 
-$EXEC_GEDIT "${filesToOpen[@]}" &
+$EXEC_GEDIT "$@" &
 
 exit 0

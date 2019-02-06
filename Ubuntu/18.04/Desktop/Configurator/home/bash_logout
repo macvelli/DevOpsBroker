@@ -1,7 +1,7 @@
 #
 # bash_logout - DevOpsBroker Bash initialization file for $HOME/.bash_logout
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -23,6 +23,9 @@
 #
 # Turns out .bash_logout only works when logging out from an interactive shell
 # (aka, tty 1 through 6).
+#
+# 20190206: Removed Firefox cache persistence functionality as it does not
+#           work properly under Gnome as it did with Unity
 # -----------------------------------------------------------------------------
 #
 
@@ -31,15 +34,15 @@
 #
 
 # Gzip and copy Firefox cache from /mnt/ramdisk
-if [ -d /cache/$USER ] && [ -L $HOME/.cache/mozilla/firefox ]; then
-
-	# Delete the existing Firefox cache backup
-	/bin/rm -f /cache/$USER/$profileDir.tar.gz
-
-	profileDir=$(/bin/ls -A /mnt/ramdisk/$USER/mozilla/firefox/)
-	/bin/tar czvf /cache/$USER/$profileDir.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox/ $profileDir/
-
-fi
+#if [ -d /cache/$USER ] && [ -L $HOME/.cache/mozilla/firefox ]; then
+#
+#	# Delete the existing Firefox cache backup
+#	/bin/rm -f /cache/$USER/$profileDir.tar.gz
+#
+#	profileDir=$(/bin/ls -A /mnt/ramdisk/$USER/mozilla/firefox/)
+#	/bin/tar czvf /cache/$USER/$profileDir.tar.gz -C /mnt/ramdisk/$USER/mozilla/firefox/ $profileDir/
+#
+#fi
 
 #
 # When leaving the console clear the screen to increase privacy
