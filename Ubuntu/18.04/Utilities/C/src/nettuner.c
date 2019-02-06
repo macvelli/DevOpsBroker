@@ -19,12 +19,21 @@
  * -----------------------------------------------------------------------------
  * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-43
  *
+ * Linux FAQ Information
+ * ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Routing tables under /proc:
+ *   o /proc/net/route
+ *   o /proc/net/ipv6_route
+ *
  * Useful Linux Command-Line Utilities
  * ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Query system configuration variables:
  *   o getconf -a
  *   o getconf LEVEL1_DCACHE_SIZE
  *   o getconf PAGE_SIZE
+ *
+ * Query network device for state of protocol offload and other features:
+ *   o ethtool -k enp31s0
  *
  * Query ethernet interface ring parameters:
  *   o ethtool -g enp31s0
@@ -34,6 +43,16 @@
  *
  * Query ethernet link parameters including txqueuelen:
  *   o ip link show enp31s0
+ *
+ * TODO: Need to check for virtual network device
+ *
+ # Exit if default interface is a virtual network device (i.e. bridge, tap, etc)
+ if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
+ 	printInfo "Default network interface '$NIC' is virtual"
+ 	printInfo 'Exiting'
+
+ 	exit 0
+ fi
  * -----------------------------------------------------------------------------
  */
 
@@ -447,7 +466,7 @@ static void generateTuningScript(char * deviceName, EthtoolSettings *ethtoolSett
 
 	puts(  "	# Configure RX and TX Interrput Coalescing");
 	printf("	/sbin/ethtool -C %s adaptive-rx off rx-usecs %u rx-frames 0\n", deviceName, ethtoolSettings->rxIntCoalescing);
-	printf("	/sbin/ethtool -C %s adaptive-tx off tx-usecs %u tx-frames 0\n\n", deviceName, ethtoolSettings->txIntCoalescing);
+	printf("	/sbin/ethtool -C %s adaptive-tx off tx-usecs %u tx-frames 0\n", deviceName, ethtoolSettings->txIntCoalescing);
 	puts(  "fi\n");
 
 	puts(  "exit 0\n");

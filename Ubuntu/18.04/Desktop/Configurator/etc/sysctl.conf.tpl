@@ -85,6 +85,15 @@ export TMPDIR=${TMPDIR:-'/tmp'}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Display error if network interface parameter is invalid
+if [ ! -L /sys/class/net/$NIC ]; then
+	printError 'sysctl.conf.tpl' "Cannot access '$NIC': No such network interface"
+	echo
+	printUsage 'sysctl.conf.tpl NIC'
+
+	exit 1
+fi
+
 # Exit if network interface is a virtual network device (i.e. bridge, tap, etc)
 if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
 	printInfo "Network interface '$NIC' is virtual"

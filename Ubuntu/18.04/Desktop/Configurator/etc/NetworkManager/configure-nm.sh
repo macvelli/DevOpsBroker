@@ -3,7 +3,7 @@
 #
 # configure-nm.sh - DevOpsBroker script for configuring NetworkManager
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -92,9 +92,6 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
-# Set tune-nic.tpl location and make it executable
-tuneNic=$(isExecutable "$SCRIPT_DIR"/dispatcher.d/tune-nic.tpl)
-
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -120,10 +117,11 @@ function installNMScript() {
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_NETTUNER=/usr/local/bin/nettuner
 EXEC_NMCLI=/usr/bin/nmcli
 
 ## Options
-NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
+NIC="${1:-$($EXEC_IP -4 route show default | $EXEC_SORT -k9 -n | $EXEC_HEAD -1 | $EXEC_AWK '{print $5}')}"
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
@@ -131,6 +129,15 @@ isWireless=false
 restartNetworkManager=false
 restartNIC=false
 echoOnExit=false
+
+################################### Actions ###################################
+
+# Clear screen only if called from command line
+if [ $SHLVL -eq 1 ]; then
+	clear
+fi
+
+printBox "DevOpsBroker $UBUNTU_RELEASE NetworkManager Configurator" 'true'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -143,15 +150,6 @@ if [ ! -L /sys/class/net/$NIC ]; then
 	exit 1
 fi
 
-################################### Actions ###################################
-
-# Clear screen only if called from command line
-if [ $SHLVL -eq 1 ]; then
-	clear
-fi
-
-printBox "DevOpsBroker $UBUNTU_RELEASE NetworkManager Configurator" 'true'
-
 # Exit if default interface is a virtual network device (i.e. bridge, tap, etc)
 if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
 	printInfo "Default network interface '$NIC' is virtual"
@@ -159,6 +157,16 @@ if [[ "$($EXEC_READLINK /sys/class/net/$NIC)" == *"/devices/virtual/"* ]]; then
 
 	exit 0
 fi
+
+# ---------------------------- Network Information ----------------------------
+
+# Internet Download speed
+INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+
+# Internet Upload speed
+INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Tasks ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Set isWireless to 'true' if $NIC is a wireless interface device
 if [ -d /sys/class/net/$NIC/wireless ]; then
@@ -226,8 +234,8 @@ fi
 if [ ! -f /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 	printInfo "Installing /etc/NetworkManager/dispatcher.d/tune-$NIC"
 
-	# Execute template script
-	"$tuneNic" $NIC > "$TMPDIR"/tune-$NIC
+	# Execute nettuner
+	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g $NIC > "$TMPDIR"/tune-$NIC)
 
 	# Install as root:root with rwxr-xr-x privileges
 	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/NetworkManager/dispatcher.d
@@ -238,11 +246,11 @@ if [ ! -f /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 	restartNIC=true
 	echoOnExit=true
 
-elif [ "$tuneNic" -nt /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
+elif [ "$EXEC_NETTUNER" -nt /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 	printInfo "Updating /etc/NetworkManager/dispatcher.d/tune-$NIC"
 
-	# Execute template script
-	"$tuneNic" $NIC > "$TMPDIR"/tune-$NIC
+	# Execute nettuner
+	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g $NIC > "$TMPDIR"/tune-$NIC)
 
 	# Install as root:root with rwxr-xr-x privileges
 	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/NetworkManager/dispatcher.d

@@ -185,14 +185,14 @@ bin/verifyip: obj/verifyip.o | library
 	test/testVerifyIP.sh
 
 install: all
-	/bin/cp -v bin/between ../usr/local/bin
-	/bin/cp -v bin/convert-temp ../usr/local/bin
-	/bin/cp -v bin/firelog ../usr/local/bin
-	/bin/cp -v bin/nettuner ../usr/local/bin
-	/bin/cp -v bin/schedtuner ../usr/local/sbin
-	/bin/cp -v bin/scriptinfo ../usr/local/bin
-	/bin/cp -v bin/verifyclass ../usr/local/bin
-	/bin/cp -v bin/verifyip ../usr/local/bin
+	/bin/cp -uv bin/between ../usr/local/bin
+	/bin/cp -uv bin/convert-temp ../usr/local/bin
+	/bin/cp -uv bin/firelog ../usr/local/bin
+	/bin/cp -uv bin/nettuner ../usr/local/bin
+	/bin/cp -uv bin/schedtuner ../usr/local/sbin
+	/bin/cp -uv bin/scriptinfo ../usr/local/bin
+	/bin/cp -uv bin/verifyclass ../usr/local/bin
+	/bin/cp -uv bin/verifyip ../usr/local/bin
 
 ls:
 	echo "Phony Targets:"
