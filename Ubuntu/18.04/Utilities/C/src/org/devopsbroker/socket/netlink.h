@@ -1,7 +1,7 @@
 /*
  * netlink.h - DevOpsBroker C header file for the org.devopsbroker.socket.Netlink struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -122,6 +122,62 @@ typedef enum NetlinkMessageType {                                   // netlink(7
 	NLMT_NEWTFILTER = RTM_NEWTFILTER    // Add a new traffic filter
 } NetlinkMessageType;
 
+typedef enum RoutingAttribute {                               // rtnetlink(7)
+	RA_CACHEINFO = RTA_CACHEINFO,   //
+	RA_DEST_ADDR = RTA_DST,         // route destination address
+	RA_FLOW = RTA_FLOW,
+	RA_GATEWAY = RTA_GATEWAY,       // route gateway
+	RA_IN_INDEX = RTA_IIF,          // input interface index
+	RA_METRICS = RTA_METRICS,       // route metric
+	RA_MULTIPATH = RTA_MULTIPATH,
+	RA_OUT_INDEX = RTA_OIF,         // output interface index
+	RA_PREF = RTA_PREF,             // route preference
+	RA_PREFSRC = RTA_PREFSRC,
+	RA_PRIORITY= RTA_PRIORITY,      // route priority
+	RA_PROTOINFO = RTA_PROTOINFO,
+	RA_SRC_ADDR = RTA_SRC,          // route source address
+	RA_TABLE = RTA_TABLE,           // routing table
+	RA_UNSPEC = RTA_UNSPEC          // ignored
+} RoutingAttribute;
+
+typedef enum RouteOrigin {                                    // rtnetlink(7)
+	BOOT_ROUTE_ORIGIN = RTPROT_BOOT,           // during boot
+	KERNEL_ROUTE_ORIGIN = RTPROT_KERNEL,       // from the kernel
+	REDIRECT_ROUTE_ORIGIN = RTPROT_REDIRECT,   // by an ICMP redirect (currently unused)
+	STATIC_ROUTE_ORIGIN = RTPROT_STATIC,       // from the administrator
+	UNK_ROUTE_ORIGIN = RTPROT_UNSPEC           // unknown
+} RouteOrigin;
+
+typedef enum RouteScope {                                     // rtnetlink(7)
+	GLOBAL_ROUTE_SCOPE = RT_SCOPE_UNIVERSE,   // global route
+	HOST_ROUTE_SCOPE = RT_SCOPE_HOST,         // route on the local host
+	LINK_ROUTE_SCOPE = RT_SCOPE_LINK,         // route on the link
+	SITE_ROUTE_SCOPE = RT_SCOPE_SITE,         // interior route in the local autonomous system
+	VOID_ROUTE_SCOPE = RT_SCOPE_NOWHERE       // destination does not exist
+} RouteScope;
+
+typedef enum RoutingTable {                                   // rtnetlink(7)
+	DEFAULT_ROUTE_TABLE = RT_TABLE_DEFAULT,   // The default table
+	LOCAL_ROUTE_TABLE = RT_TABLE_LOCAL,       // The local table
+	MAIN_ROUTE_TABLE = RT_TABLE_MAIN,         // The main table
+	UNK_ROUTE_TABLE = RT_TABLE_UNSPEC         // Unspecified routing table
+} RoutingTable;
+
+typedef enum RouteType {                                      // rtnetlink(7)
+	ANYCAST_ROUTE_TYPE = RTN_ANYCAST,           // local broadcast route (sent as unicast)
+	BLACKHOLE_ROUTE_TYPE = RTN_BLACKHOLE,       // packet dropping route
+	BROADCAST_ROUTE_TYPE = RTN_BROADCAST,       // local broadcast route (sent as broadcast)
+	LOCAL_ROUTE_TYPE = RTN_LOCAL,               // local interface route
+	MULTICAST_ROUTE_TYPE = RTN_MULTICAST,       // multicast route
+	NAT_ROUTE_TYPE = RTN_NAT,                   // network address translation rule
+	PROHIBIT_ROUTE_TYPE = RTN_PROHIBIT,         // packet rejection route
+	THROW_ROUTE_TYPE = RTN_THROW,               // continue routing lookup in another table
+	UNICAST_ROUTE_TYPE = RTN_UNICAST,           // gateway or direct route
+	UNK_ROUTE_TYPE = RTN_UNSPEC,                // unknown route
+	UNREACHABLE_ROUTE_TYPE = RTN_UNREACHABLE,   // unreachable destination
+	XRESOLVE_ROUTE_TYPE = RTN_XRESOLVE          // refer to an external resolver (not implemented)
+} RouteType;
+
 typedef struct sockaddr_nl NetlinkAddress;
 /*	sa_family_t     nl_family;   // AF_NETLINK
 	unsigned short  nl_pad;      // Zero
@@ -166,6 +222,29 @@ typedef struct NetlinkAddressRequest {
 
 static_assert(sizeof(NetlinkAddressRequest) == 24, "Check your assumptions");
 
+typedef struct rtmsg NetlinkRouteMessage;
+/*	unsigned char rtm_family;    // Address family of route
+	unsigned char rtm_dst_len;   // Length of destination
+	unsigned char rtm_src_len;   // Length of source
+	unsigned char rtm_tos;       // TOS filter
+
+	unsigned char rtm_table;     // Routing table ID (see RoutingTable enum)
+	unsigned char rtm_protocol;  // Routing protocol (see RouteOrigin enum)
+	unsigned char rtm_scope;     // Distance to destination (see RouteScope enum)
+	unsigned char rtm_type;      // Route type (see RouteType enum)
+
+	unsigned int  rtm_flags;
+*/
+
+static_assert(sizeof(NetlinkRouteMessage) == 12, "Check your assumptions");
+
+typedef struct NetlinkRouteRequest {
+	NetlinkMessageHeader msgHeader;
+	NetlinkRouteMessage msgBody;
+} NetlinkRouteRequest;
+
+static_assert(sizeof(NetlinkRouteRequest) == 28, "Check your assumptions");
+
 typedef struct ifinfomsg NetlinkInfoMessage;
 /*	unsigned char  ifi_family;   // AF_UNSPEC
 	unsigned short ifi_type;     // Device type
@@ -183,15 +262,16 @@ typedef struct NetlinkSocket {
 
 static_assert(sizeof(NetlinkSocket) == 32, "Check your assumptions");
 
-/*
-typedef struct Netlink {
-	NetlinkMessageHeader msgHeader;
-	NetlinkClient client;
-	int fd;
-} Netlink;
+typedef struct rta_cacheinfo RouteCacheInfo;
+/*	unsigned int   rta_clntref;
+	unsigned int   rta_lastuse;
+	int            rta_expires;
+	unsigned int   rta_error;
+	unsigned int   rta_used;
+	unsigned int   rta_id;
+	unsigned int   rta_ts;
+	unsigned int   rta_tsage;
 */
-
-//static_assert(sizeof(Netlink) == 64, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -234,6 +314,17 @@ void e7173ad4_destroyNetlinkSocket(NetlinkSocket *netlinkSocket);
  * ----------------------------------------------------------------------------
  */
 void e7173ad4_initNetlinkAddressRequest(NetlinkAddressRequest *nlRequest, unsigned char addressType);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e7173ad4_initNetlinkRouteRequest
+ * Description: Initializes an existing NetlinkRouteRequest struct
+ *
+ * Parameters:
+ *   request        A pointer to the NetlinkRouteRequest instance to initialize
+ *   addressType    The type of address to request (AF_INET or AF_INET6)
+ * ----------------------------------------------------------------------------
+ */
+void e7173ad4_initNetlinkRouteRequest(NetlinkRouteRequest *request, SocketProtocol addressType);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e7173ad4_initReceiveMessageHeader
@@ -288,5 +379,9 @@ void e7173ad4_close(NetlinkSocket *netlinkSocket);
  * ----------------------------------------------------------------------------
  */
 void e7173ad4_setExtendedACKReporting(NetlinkSocket *netlinkSocket, bool extAckFlag);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Debug Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void e7173ad4_debugNetlinkRouteMessage(NetlinkRouteMessage *routeMessage, NetlinkMessageHeader *nlMsgHeader);
 
 #endif /* ORG_DEVOPSBROKER_SOCKET_NETLINK_H */

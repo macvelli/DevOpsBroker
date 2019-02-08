@@ -1,7 +1,7 @@
 /*
  * socket.h - DevOpsBroker C header file for socket-related functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -115,6 +115,21 @@
  *                         overhead) when it is set using setsockopt(2)
  *
  *****************************************************************************/
+
+typedef enum SocketProtocol {                                 // socket(2)
+	ALG_PROTOCOL = AF_ALG,               // Interface to kernel crypto API
+	APPLETALK_PROTOCOL = AF_APPLETALK,   // AppleTalk                        ddp(7)
+	ATMPVC_PROTOCOL = AF_ATMPVC,         // Access to raw ATM PVCs
+	AX25_PROTOCOL = AF_AX25,             // Amateur radio AX.25 protocol
+	IPV4_PROTOCOL = AF_INET,             // IPv4 Internet protocols          ip(7)
+	IPV6_PROTOCOL = AF_INET6,            // IPv6 Internet protocols          ipv6(7)
+	IPX_PROTOCOL = AF_IPX,               // IPX - Novell protocols
+	LOCAL_PROTOCOL = AF_LOCAL,           // Alias for AF_UNIX
+	NETLINK_PROTOCOL = AF_NETLINK,       // Kernel user interface device     netlink(7)
+	PACKET_PROTOCOL = AF_PACKET,         // Low level packet interface       packet(7)
+	UNIX_PROTOCOL = AF_UNIX,             // Local communication              unix(7)
+	X25_PROTOCOL = AF_X25                // ITU-T X.25 / ISO-8208 protocol   x25(7)
+} SocketProtocol;
 
 typedef struct iovec IOBuffer;
 /*	void  *iov_base;   // Starting address

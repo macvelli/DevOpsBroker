@@ -1,7 +1,7 @@
 /*
  * derivesubnet.c - DevOpsBroker utility for deriving IPv4 and IPv6 subnets
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -32,8 +32,9 @@
 #include <stdio.h>
 
 #include <assert.h>
-
 #include <unistd.h>
+
+#include <arpa/inet.h>
 
 #include "org/devopsbroker/lang/error.h"
 #include "org/devopsbroker/net/ipv4address.h"
@@ -148,6 +149,7 @@ int main(int argc, char *argv[]) {
 		f0185083_getIPv4Address(&networkDevice, netlinkSocket);
 	} else {
 		f0185083_getIPv6Addresses(&networkDevice, netlinkSocket);
+		f0185083_getIPv6DefaultRoute(&networkDevice, netlinkSocket);
 	}
 
 	// Close Netlink socket
@@ -161,12 +163,25 @@ int main(int argc, char *argv[]) {
 		e1e7e8f5_extractString(&networkDevice.ipv4Address, IPV4_ROUTE, ipAddrString);
 		puts(ipAddrString);
 	} else {
-		char ipAddrString[IPV6_STRBUF_LEN];
-		IPv6Address ipv6GlobalSubnetPrefix;
+		char ipAddrString[INET6_ADDRSTRLEN];
 
-		b7808f25_deriveSubnetPrefix(&networkDevice.ipv6Global, &ipv6GlobalSubnetPrefix);
-		b7808f25_extractString(&ipv6GlobalSubnetPrefix, ipAddrString);
-		puts(ipAddrString);
+//		b7808f25_extractString(&networkDevice.ipv6Global, ipAddrString);
+		inet_ntop(AF_INET6, &networkDevice.ipv6Global, ipAddrString, INET6_ADDRSTRLEN);
+		printf("%s/%u ", ipAddrString, networkDevice.ipv6Global.cidrSuffix);
+
+//		b7808f25_extractString(&networkDevice.ipv6Local, ipAddrString);
+		inet_ntop(AF_INET6, &networkDevice.ipv6Local, ipAddrString, INET6_ADDRSTRLEN);
+		printf("%s/%u ", ipAddrString, networkDevice.ipv6Local.cidrSuffix);
+
+//		b7808f25_extractString(&networkDevice.ipv6Gateway, ipAddrString);
+		inet_ntop(AF_INET6, &networkDevice.ipv6Gateway, ipAddrString, INET6_ADDRSTRLEN);
+		printf("%s ", ipAddrString);
+
+		IPv6Address ipv6GlobalSubnet;
+		b7808f25_deriveSubnet(&networkDevice.ipv6Global, &ipv6GlobalSubnet);
+//		b7808f25_extractString(&ipv6GlobalSubnet, ipAddrString);
+		inet_ntop(AF_INET6, &ipv6GlobalSubnet, ipAddrString, INET6_ADDRSTRLEN);
+		printf("%s/64\n", ipAddrString);
 	}
 
 	// Exit with success

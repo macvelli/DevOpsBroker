@@ -95,16 +95,16 @@ int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    b7808f25_deriveSubnetPrefix
- * Description: Takes the IPv6 address and derives the subnet prefix which is
- *              always the highest 64 bits of the IPv6 address
+ * Function:    b7808f25_deriveSubnet
+ * Description: Takes the IPv6 address and derives the subnet which is always
+ *              the highest 64 bits of the IPv6 address
  *
  * Parameters:
  *   ipv6Address    A pointer to the IPv6Address instance
- *   subnetPrefix   A pointer to the IPv6Address to populate with the subnet prefix
+ *   ipv6Subnet     A pointer to the IPv6Address to populate with the subnet
  * ----------------------------------------------------------------------------
  */
-void b7808f25_deriveSubnetPrefix(IPv6Address *ipv6Address, IPv6Address *subnetPrefix);
+void b7808f25_deriveSubnet(IPv6Address *ipv6Address, IPv6Address *ipv6Subnet);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    b7808f25_extractString

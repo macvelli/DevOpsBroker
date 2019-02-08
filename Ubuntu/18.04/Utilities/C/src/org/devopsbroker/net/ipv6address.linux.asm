@@ -24,6 +24,7 @@
 ;
 ;   o IPv6Address *b7808f25_createIPv6Address(char *ipAddress);
 ;   o void b7808f25_destroyIPv6Address(IPv6Address *ipv6Address);
+;   o int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
 ;   o void b7808f25_deriveSubnetPrefix(IPv6Address *ipv6Address, IPv6Address *subnetPrefix);
 ;   o void b7808f25_extractString(IPv6Address *ipv6Address, char *buffer);
 ;
@@ -56,8 +57,16 @@
 
 ; ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-%define ZERO         0x30
-%define UPPER_W      0x57
+; character values
+%define FWDSLASH  0x2F
+%define ZERO      0x30
+%define NINE      0x39
+%define COLON     0x3A
+%define UPPER_W   0x57
+%define LOWER_A   0x61
+%define LOWER_F   0x66
+
+%define ERROR_CODE   -1
 
 ; ═════════════════════════════ Initialized Data ═════════════════════════════
 
@@ -76,33 +85,46 @@ section .text
 	global  b7808f25_createIPv6Address:function
 	extern  malloc
 	extern  abort
+	extern  a25c96b2_invalidIPv6Address
 b7808f25_createIPv6Address:
 ; Parameters:
 ;	rdi : char *ipAddress
 
 .prologue:                            ; functions typically have a prologue
-	push       rdi                    ; save rdi onto the stack
+	mov        rsi, rdi               ; prepare to make b7808f25_initIPv6Address call
+	push       rsi                    ; save ipAddress onto the stack
 
-.malloc:                              ; malloc(sizeof(IPv6Address))
-	mov        rdi, 0x30              ; sizeof(IPv6Address) is 48 bytes
+	; malloc(sizeof(IPv6Address))
+.malloc:
+	mov        rdi, 0x14              ; sizeof(IPv6Address) is 20 bytes
 	call       malloc WRT ..plt
-	test       rax, rax               ; if (ptr == NULL)
-	jne        .initIPv6Address
-	call       abort WRT ..plt
 
-.initIPv6Address:                     ; b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress)
-	pop        rdi                    ; retrieve rdi from the stack
-	mov        rsi, rdi
-	mov        rdi, rax
-;	call       b7808f25_initIPv6Address
+	pop        rsi                    ; retrieve ipAddress from the stack
+	sub        rsp, 8                 ; align stack frame before making function calls
+
+	test       rax, rax               ; if (ptr == NULL)
+	hwnt je    .fatalError
+
+	; int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
+	mov        rdi, rax               ; ipv6Address = rax
+	call       b7808f25_initIPv6Address
 
 	test       eax, eax
-	jnz        .epilogue
+	jz         .epilogue
 
-	mov        rax, rdi               ; return IPv6Address *ipv6Address
+	; a25c96b2_invalidIPv6Address(char *ipAddress);
+.invalidIPv6Address:
+	mov        rdi, rsi               ; ipAddress = rsi
+	call       a25c96b2_invalidIPv6Address
 
 .epilogue:                            ; functions typically have an epilogue
+	add        rsp, 8                 ; re-align stack frame before return
+	mov        rax, rdi               ; return IPv6Address *ipv6Address
 	ret                               ; pop return address from stack and jump there
+
+	; abort();
+.fatalError:
+	call       abort WRT ..plt
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_destroyIPv6Address ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -111,35 +133,195 @@ b7808f25_createIPv6Address:
 b7808f25_destroyIPv6Address:
 
 .prologue:                            ; functions typically have a prologue
-	sub        rsp, 8                 ; Re-align stack frame before making call
+	sub        rsp, 8                 ; align stack frame before making function calls
 
-.free:                                ; free(IPv6Address *ipv6Address)
+	; free(IPv6Address *ipv6Address)
+.free:
 	call       free WRT ..plt
 
 .epilogue:                            ; functions typically have an epilogue
-	add        rsp, 8                 ; Re-align stack frame before making ret
+	add        rsp, 8                 ; re-align stack frame before return
 	ret                               ; pop return address from stack and jump there
 
-; ~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_deriveSubnetPrefix ~~~~~~~~~~~~~~~~~~~~~~~~
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_deriveSubnet ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	global  b7808f25_deriveSubnetPrefix:function
-b7808f25_deriveSubnetPrefix:
+	global  b7808f25_deriveSubnet:function
+b7808f25_deriveSubnet:
 ; Parameters:
 ;	rdi : IPv6Address *ipv6Address
-;	rsi : IPv6Address *subnetPrefix
+;	rsi : IPv6Address *ipv6Subnet
 ; Local Variables:
 ;	rax : 64 bit variable
 
 .prologue:                            ; functions typically have a prologue
-	mov        rax, [rdi]             ; put highest 64 bits of IPv6 address into subnet prefix
+	mov        rax, [rdi]             ; put highest 64 bits of IPv6 address into subnet
 	mov        [rsi], rax
 
-	xor        rax, rax               ; set the lowest 64 bits of subnet prefix to zero
+	xor        rax, rax               ; set the lowest 64 bits of subnet to zero
 	mov        [rsi + 8], rax
 
 	mov        [rsi + 16], dword 64   ; set cidrSuffix to 64
 
 .epilogue:                            ; functions typically have an epilogue
+	ret                               ; pop return address from stack and jump there
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_initIPv6Address ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	global  b7808f25_initIPv6Address:function
+b7808f25_initIPv6Address:
+; Parameters:
+;	rdi : IPv6Address *ipv6Address
+;	rsi : char *ipAddress
+; Local Variables:
+;	rax : Hextet value buffer
+;	dx  : shorthandIndex (dh), ':' (dl)
+;	cl  : Hextet index
+;   r8  : Hextet character buffer
+
+.prologue:                            ; functions typically have a prologue
+	prefetcht0 [rsi]                  ; prefetch the ipAddress string into the CPU cache
+	xor        rax, rax               ; clear rax
+	mov        dx, 0xff3a             ; shorthandIndex = -1, dl = ':'
+	xor        cl, cl                 ; hextetIndex = 0
+
+.doWhile:
+	mov        r8, [rsi]              ; move hextet into r8
+
+	cmp        r8b, dl                ; if (ch == ':')
+	je         processShorthandAddress
+
+	inc        cl                     ; hextetIndex++
+	lea        r10, [rel $+9]         ; convert string to hextet
+	jmp short  convertStringToHextet
+
+	cmp        cl, 4                  ; if (hextetIndex == 4)
+	je         .doFourHextets
+	cmp        cl, 8                  ; if (hextetIndex < 8)
+	jb         .doWhile
+
+.doEightHextets:
+	bswap      rax                    ; change to big endian
+	mov        [rdi + 8], rax         ; set the second eight bytes of the IPv6 address
+	xor        eax, eax               ; return value = 0
+	ret                               ; pop return address from stack and jump there
+
+.doFourHextets:
+	bswap      rax                    ; change to big endian
+	mov        [rdi], rax             ; set the first eight bytes of the IPv6 address
+	xor        rax, rax               ; clear rax
+	jmp        .doWhile
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~ convertStringToHextet ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+convertStringToHextet:
+; Parameters:
+;	r8  : Hextet string
+;	rax : Hextet value
+;	dl  : ':'
+; Local Variables:
+;	ch  : charIndex
+
+	mov        ch, 4                  ; charIndex = 4
+	cmp        r8b, dl                ; if (ch > ':')
+	ja         .hexChar
+
+.decimalChar:
+	sub        r8b, ZERO              ; if (ch >= '0')
+	jae        .assignValue
+
+.invalidIPv6Address:
+	mov        eax, ERROR_CODE        ; Set return value to ERROR_CODE
+	ret                               ; pop return address from stack and jump there
+
+.hexChar:
+	or         r8b, 0x20               ; toLowerCase(ch) --> ch |= 0x20
+	cmp        r8b, LOWER_F           ; if (ch > 'f')
+	jae short  .invalidIPv6Address
+	sub        r8b, LOWER_A           ; if (ch < 'a')
+	jb short   .invalidIPv6Address
+
+	add        r8b, 0x0A              ; digit += 10
+
+.assignValue:
+	dec        ch                     ; charIndex--
+	shl        rax, 4                 ; Assign hexadecimal value to rax
+	or         al, r8b
+	inc        rsi                    ; ipAddress++
+
+	shr        r8, 8                  ; ch = next character
+	test       ch, ch                 ; if (charIndex == 0)
+	jz         .validateFifthChar
+
+	; while (ch && ch != ':')
+	test       r8b, r8b               ; if (ch == '\0')
+	jz         .epilogue
+	cmp        r8b, dl                ; if (ch == ':')
+	je         .adjustStringPtr
+	jb         .decimalChar
+	jmp        .hexChar
+
+.validateFifthChar:
+	test       r8b, r8b               ; if (ch == '\0')
+	jz         .epilogue
+	cmp        r8b, dl                ; if (ch == ':')
+	jne short  .invalidIPv6Address
+
+.adjustStringPtr:
+	inc        rsi                    ; ipAddress++
+
+.epilogue:                            ; functions typically have an epilogue
+	jmp        r10                    ; jump to the return address
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~ processShorthandAddress ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+processShorthandAddress:
+; Parameters:
+;	rdi : IPv6Address *ipv6Address
+;	rsi : char *ipAddress
+; Local Variables:
+;	rax : Hextet value buffer
+;	dx  : shorthandIndex (dh), ':' (dl)
+;	cl  : Hextet index
+;   r8  : Hextet character buffer
+
+; TODO: This needs to be finished and tested
+
+	inc        cl                     ; hextetIndex++
+	mov        dh, cl                 ; shorthandIndex = hextetIndex
+	shr        r8, 8                  ; ch = next character
+
+	test       r8b, r8b               ; if (ch == '\0')
+	jz         .makeAdjustments
+
+.doWhile:
+	cmp        cl, 4                  ; if (hextetIndex != 4)
+	jne        .convertString
+
+.saveFourHextets:
+	bswap      rax                    ; change to big endian
+	mov        r11, rax               ; save first eight bytes of IPv6 address into r11
+	xor        rax, rax               ; clear rax
+
+.convertString:
+	inc        cl                     ; hextetIndex++
+	lea        r10, [rel $+9]         ; convert string to hextet
+	jmp short  convertStringToHextet
+
+	cmp        cl, 6                  ; if (hextetIndex < 6)
+	je         .validateAddress
+
+	mov        r8, [rsi]              ; move hextet into r8
+	jmp        .doWhile
+
+.validateAddress:
+	test       r8b, r8b               ; if (ch == '\0')
+	jz         .makeAdjustments
+
+.invalidIPv6Address:
+	mov        eax, ERROR_CODE        ; Set return value to ERROR_CODE
+	ret                               ; pop return address from stack and jump there
+
+.makeAdjustments:
 	ret                               ; pop return address from stack and jump there
 
 ; ~~~~~~~~~~~~~~~~~~~~ b7808f25_extractString (using SSE2) ~~~~~~~~~~~~~~~~~~~

@@ -135,50 +135,50 @@ obj/%.o: src/%.asm
 	$(ASM) $(ASMFLAGS) $< -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/between: obj/between.o | library
+bin/between: obj/between.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 	$(call printInfo,Testing $(@) executable)
 	test/testBetween.sh
 
 # Have to put the library at the end else the linker blows chunks
-bin/convert-temp: obj/convert-temp.o obj/convert-temp.linux.o | library
+bin/convert-temp: obj/convert-temp.o obj/convert-temp.linux.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
 	/usr/bin/strip -s $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/derivesubnet: obj/derivesubnet.o | library
+bin/derivesubnet: obj/derivesubnet.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/firelog: obj/firelog.o obj/org/devopsbroker/firelog/logline.o | library lib-firelog
+bin/firelog: obj/firelog.o obj/org/devopsbroker/firelog/logline.o | lib-firelog
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/nettuner: obj/nettuner.o | library
+bin/nettuner: obj/nettuner.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/schedtuner: obj/schedtuner.o | library
+bin/schedtuner: obj/schedtuner.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/scriptinfo: obj/scriptinfo.o | library
+bin/scriptinfo: obj/scriptinfo.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/verifyclass: obj/verifyclass.o | library
+bin/verifyclass: obj/verifyclass.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/verifyip: obj/verifyip.o | library
+bin/verifyip: obj/verifyip.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 	$(call printInfo,Testing $(@) executable)

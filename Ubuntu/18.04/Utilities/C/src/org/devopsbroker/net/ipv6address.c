@@ -48,8 +48,9 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
 /*
+int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
+
 	char *source = ipAddress;
 	register int ch = *source;
 	register int arrayLength = 0;
@@ -134,6 +135,6 @@ int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress) {
 	}
 
 	// TODO: Process IPv6 data
-*/
 	return 0;
 }
+*/
