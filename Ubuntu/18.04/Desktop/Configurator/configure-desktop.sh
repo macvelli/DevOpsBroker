@@ -208,7 +208,7 @@ function uninstallSnap() {
 EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 
 ## Variables
-DEFAULT_NIC=$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')
+DEFAULT_NIC=''
 PKG_INSTALLED=false
 updateAptSources=false
 
@@ -223,6 +223,20 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Configurator" 'true'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^enp[a-z0-9]+')
+
+if [ ${#ethList[@]} -eq 1 ]; then
+	DEFAULT_NIC=(${ethList[0]})
+else
+	OLD_COLUMNS=$COLUMNS
+	COLUMNS=1
+	echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
+	select DEFAULT_NIC in ${ethList[@]}; do
+		break;
+	done
+	COLUMNS=$OLD_COLUMNS
+fi
+
 # Install iptables
 installPackage '/sbin/iptables' 'iptables'
 
@@ -230,7 +244,7 @@ installPackage '/sbin/iptables' 'iptables'
 if [ ! -f /etc/network/iptables.rules ] || \
 	[ "$SCRIPT_DIR"/etc/network/iptables-desktop.sh -nt /etc/network/iptables.rules ]; then
 
-		"$SCRIPT_DIR"/etc/network/iptables-desktop.sh
+		"$SCRIPT_DIR"/etc/network/iptables-desktop.sh $DEFAULT_NIC
 		echo
 fi
 
@@ -238,7 +252,7 @@ fi
 if [ ! -f /etc/network/ip6tables.rules ] || \
 	[ "$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh -nt /etc/network/ip6tables.rules ]; then
 
-		"$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh
+		"$SCRIPT_DIR"/etc/network/ip6tables-desktop.sh $DEFAULT_NIC
 		echo
 fi
 

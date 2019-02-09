@@ -89,6 +89,7 @@ fi
 ## Bash exec variables
 IPTABLES=/sbin/iptables
 IPTABLES_SAVE=/sbin/iptables-save
+EXEC_DERIVESUBNET=/usr/local/bin/derivesubnet
 
 ## Options
 NIC="$1"
@@ -102,36 +103,21 @@ IPv4_SUBNET_IGMP='224.0.0.0/24'
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if [ -z "$NIC" ]; then
-	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -E '^enp')
+	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^enp[a-z0-9]+')
 
 	if [ ${#ethList[@]} -eq 1 ]; then
-		ethInfo=(${ethList[0]})
+		ethInterface=(${ethList[0]})
 	else
-		declare -a selectList
-		IFS=$'\n'
-		for ethernet in ${ethList[@]}; do
-			ethInfo=(${ethernet})
-			selectList+=(${ethInfo[0]})
-		done
-		unset IFS
-
 		OLD_COLUMNS=$COLUMNS
 		COLUMNS=1
 		echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
-		select ethInterface in ${selectList[@]}; do
-			for ((i=0; i<${#selectList[*]}; i++)); do
-				if [ "$ethInterface" == ${selectList[i]} ]; then
-					ethInfo=(${ethList[i]})
-					break;
-				fi
-			done
+		select ethInterface in ${ethList[@]}; do
 			break;
 		done
 		COLUMNS=$OLD_COLUMNS
 	fi
 
-	NIC=${ethInfo[0]}
-	IPv4_ADDRESS=${ethInfo[2]}
+	NIC=$ethInterface
 else
 	# Display error if network interface parameter is invalid
 	if [ ! -L /sys/class/net/$NIC ]; then
@@ -141,12 +127,13 @@ else
 
 		exit 1
 	fi
-
-	IPv4_ADDRESS=$($EXEC_IP -br -4 address show dev $NIC | $EXEC_AWK '{ print $3; exit }')
 fi
 
-IPv4_GATEWAY=$($EXEC_IP -br -4 route show default | $EXEC_AWK '{ print $3; exit }')
-IPv4_SUBNET=$(echo $IPv4_ADDRESS | $EXEC_SED -e 's/[0-9]+\//0\//')
+ethInfo=( $($EXEC_DERIVESUBNET -4 $NIC) )
+
+IPv4_ADDRESS=${ethInfo[0]}
+IPv4_GATEWAY=${ethInfo[1]}
+IPv4_SUBNET=${ethInfo[2]}
 
 ################################### Actions ###################################
 
@@ -160,7 +147,7 @@ printBox "DevOpsBroker $UBUNTU_RELEASE iptables Configurator" 'true'
 echo "${bold}Network Interface: ${green}$NIC"
 echo "${white}IPv4 Address: ${green}$IPv4_ADDRESS"
 echo "${white}IPv4 Gateway: ${green}$IPv4_GATEWAY"
-echo "${white}IPv4 Subnet: ${green}$IPv4_SUBNET"
+echo "${white}IPv4 Subnet:  ${green}$IPv4_SUBNET"
 echo "${reset}"
 
 #
@@ -197,9 +184,7 @@ echo
 printBanner 'Configuring RAW Table'
 
 #
-# =====================================
-# = Custom Jump Targets for RAW Table =
-# =====================================
+# ═══════════════════════ Custom RAW Table Jump Targets ═══════════════════════
 #
 
 # Rate limit Fragment logging
@@ -221,9 +206,7 @@ $IPTABLES -t raw -A do_not_track -j NOTRACK
 $IPTABLES -t raw -A do_not_track -j ACCEPT
 
 #
-# ==================================
-# = Configure RAW PREROUTING Chain =
-# ==================================
+# ══════════════════════ Configure RAW PREROUTING Chain ═══════════════════════
 #
 
 printInfo 'DROP incoming fragmented packets'
@@ -270,7 +253,7 @@ $IPTABLES -t raw -A raw-${NIC}-pre -p icmp -j raw-${NIC}-icmp-pre
 
 ## IGMP
 printInfo "DROP all incoming IGMP traffic not on $IPv4_SUBNET"
-$IPTABLES -t raw -A raw-${NIC}-pre -j ${NIC}_igmp_drop
+$IPTABLES -t raw -A raw-${NIC}-pre -p igmp -j ${NIC}_igmp_drop
 
 ## ALL OTHERS
 printInfo 'Further process all other incoming protocol traffic'
@@ -327,10 +310,7 @@ echo
 #
 
 printInfo 'DROP all incoming DHCP request packets'
-$IPTABLES -t raw -A raw-${NIC}-udp-pre -s 0.0.0.0 -d 255.255.255.255 -p udp -m udp --sport 68 --dport 67 -j DROP
-
-printInfo 'DROP all incoming Canon/Epson printer discovery packets'
-$IPTABLES -t raw -A raw-${NIC}-udp-pre -p udp -m multiport --dports 8610,8612,3289 -j DROP
+$IPTABLES -t raw -A raw-${NIC}-udp-pre -p udp -m udp -s 0.0.0.0 -d 255.255.255.255 --sport 68 --dport 67 -j DROP
 
 printInfo 'Further process all other incoming UDP traffic'
 $IPTABLES -t raw -A raw-${NIC}-udp-pre -j do_not_track
@@ -338,9 +318,7 @@ $IPTABLES -t raw -A raw-${NIC}-udp-pre -j do_not_track
 echo
 
 #
-# ==============================
-# = Configure RAW OUTPUT Chain =
-# ==============================
+# ════════════════════════ Configure RAW OUTPUT Chain ═════════════════════════
 #
 
 printInfo 'DROP outgoing fragmented packets'
@@ -350,8 +328,8 @@ printInfo 'Allow outgoing IPv4 Subnet packets on all network interfaces'
 $IPTABLES -t raw -A OUTPUT -d $IPv4_SUBNET -j do_not_track
 $IPTABLES -t raw -A OUTPUT -d $IPv4_SUBNET_IGMP -j do_not_track
 
-# Create PREROUTING filter chains for each network interface
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Create OUTPUT filter chains for each network interface
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
 ## lo
 printInfo 'Allow outgoing lo interface traffic'
@@ -386,7 +364,7 @@ $IPTABLES -t raw -A raw-${NIC}-out -p icmp -j do_not_track
 
 ## IGMP
 printInfo "DROP all outgoing IGMP traffic not on $IPv4_SUBNET"
-$IPTABLES -t raw -A raw-${NIC}-out -j ${NIC}_igmp_drop
+$IPTABLES -t raw -A raw-${NIC}-out -p igmp -j ${NIC}_igmp_drop
 
 ## ALL OTHERS
 printInfo 'DROP all other outgoing protocol traffic'
@@ -429,43 +407,33 @@ echo
 printBanner 'Configuring MANGLE Table'
 
 #
-# =====================================
-# = Configure MANGLE PREROUTING Chain =
-# =====================================
+# ═════════════════════ Configure MANGLE PREROUTING Chain ═════════════════════
 #
 
 printInfo 'DROP all incoming INVALID packets'
 $IPTABLES -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
 
 #
-# ================================
-# = Configure MANGLE INPUT Chain =
-# ================================
+# ═══════════════════════ Configure MANGLE INPUT Chain ════════════════════════
 #
 
 
 #
-# ==================================
-# = Configure MANGLE FORWARD Chain =
-# ==================================
+# ══════════════════════ Configure MANGLE FORWARD Chain ═══════════════════════
 #
 
 printInfo 'Disable routing'
 $IPTABLES -t mangle -P FORWARD DROP
 
 #
-# =================================
-# = Configure MANGLE OUTPUT Chain =
-# =================================
+# ═══════════════════════ Configure MANGLE OUTPUT Chain ═══════════════════════
 #
 
 printInfo 'DROP all outgoing INVALID packets'
 $IPTABLES -t mangle -A OUTPUT -m conntrack --ctstate INVALID -j DROP
 
 #
-# ======================================
-# = Configure MANGLE POSTROUTING Chain =
-# ======================================
+# ════════════════════ Configure MANGLE POSTROUTING Chain ═════════════════════
 #
 
 echo
@@ -475,9 +443,7 @@ echo
 printBanner 'Configuring FILTER Table'
 
 #
-# ========================================
-# = Custom Jump Targets for FILTER Table =
-# ========================================
+# ═════════════════════ Custom FILTER Table Jump Targets ══════════════════════
 #
 
 # Rate limit ICMP REJECT logging
@@ -493,9 +459,7 @@ $IPTABLES -A ${NIC}_tcp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --l
 $IPTABLES -A ${NIC}_tcp_reject -p tcp -j REJECT --reject-with tcp-reset
 
 #
-# ================================
-# = Configure FILTER INPUT Chain =
-# ================================
+# ═══════════════════════ Configure FILTER INPUT Chain ════════════════════════
 #
 
 # Create INPUT filter chains for each network interface
@@ -625,9 +589,7 @@ $IPTABLES -A filter-${NIC}-udp-ucast-in -j ${NIC}_icmp_reject
 echo
 
 #
-# ==================================
-# = Configure FILTER FORWARD Chain =
-# ==================================
+# ══════════════════════ Configure FILTER FORWARD Chain ═══════════════════════
 #
 
 printInfo 'Set default FORWARD policy to DROP'
@@ -636,9 +598,7 @@ $IPTABLES -P FORWARD DROP
 echo
 
 #
-# =================================
-# = Configure FILTER OUTPUT Chain =
-# =================================
+# ═══════════════════════ Configure FILTER OUTPUT Chain ═══════════════════════
 #
 
 # Create OUTPUT filter chains for each network interface
@@ -717,7 +677,7 @@ echo
 #
 
 printInfo "REJECT outgoing SMB/NetBIOS TCP request packets not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --dports 139,445 ! -d $IPv4_SUBNET -j ${NIC}_tcp_reject
+$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --dports 139,445 -j ${NIC}_tcp_reject
 
 printInfo 'ACCEPT all other outgoing TCP traffic'
 $IPTABLES -A filter-${NIC}-tcp-out -j ACCEPT
@@ -731,7 +691,7 @@ echo
 #
 
 printInfo "REJECT outgoing NetBIOS UDP request packets not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-udp-out -p udp -m multiport --dports 137,138 ! -d $IPv4_SUBNET -j ${NIC}_icmp_reject
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m multiport --dports 137,138 -j ${NIC}_icmp_reject
 
 printInfo 'ACCEPT all other outgoing UDP traffic'
 $IPTABLES -A filter-${NIC}-udp-out -j ACCEPT

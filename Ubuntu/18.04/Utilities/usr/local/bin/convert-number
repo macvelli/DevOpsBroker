@@ -166,7 +166,7 @@ if [ $fromFormat == 'binary' ] && [[ ! "$2" =~ ^[0-1]+$ ]]; then
 	printUsage "binary $toFormat ${baseNumberMap['binary']}"
 
 	exit 1
-elif [ $fromFormat == 'decimal' ] && [[ ! "$2" =~ ^[0-9]+$ ]]; then
+elif [ $fromFormat == 'decimal' ] && [[ ! "$2" =~ ^-?[0-9]+$ ]]; then
 	printError 'decimal' "Invalid decimal number: $2"
 	echo
 	printUsage "decimal $toFormat ${baseNumberMap['decimal']}"

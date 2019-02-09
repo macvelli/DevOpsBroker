@@ -72,11 +72,12 @@ typedef struct NetworkDevice {
 	IPv6Address ipv6Local;
 	char *name;                     // enp7s0f3
 	IPv6Address ipv6Gateway;
+	uint32_t ipv4Gateway;           // e.g. 192.168.1.1
 	uint32_t index;                 // e.g. 2
-//	char _padding[4];
+	char _padding[4];
 } NetworkDevice;
 
-static_assert(sizeof(NetworkDevice) == 88, "Check your assumptions");
+static_assert(sizeof(NetworkDevice) == 96, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -144,6 +145,17 @@ void f0185083_initNetworkDeviceRequest(NetworkDevice *networkDevice, NetworkDevi
 void f0185083_getIPv4Address(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f0185083_getIPv4Gateway
+ * Description: Retrieves the IPv4 gateway for the NetworkDevice struct
+ *
+ * Parameters:
+ *   networkDevice  A pointer to the NetworkDevice instance to populate
+ *   netlinkSocket  A pointer to a NetlinkSocket instance
+ * ----------------------------------------------------------------------------
+ */
+void f0185083_getIPv4Gateway(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f0185083_getIPv6Addresses
  * Description: Retrieves the IPv6 addresses for the NetworkDevice struct
  *
@@ -155,15 +167,15 @@ void f0185083_getIPv4Address(NetworkDevice *networkDevice, NetlinkSocket *netlin
 void f0185083_getIPv6Addresses(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f0185083_getIPv6DefaultRoute
- * Description: Retrieves the IPv6 default route for the NetworkDevice struct
+ * Function:    f0185083_getIPv6Gateway
+ * Description: Retrieves the IPv6 gateway for the NetworkDevice struct
  *
  * Parameters:
  *   networkDevice  A pointer to the NetworkDevice instance to populate
  *   netlinkSocket  A pointer to a NetlinkSocket instance
  * ----------------------------------------------------------------------------
  */
-void f0185083_getIPv6DefaultRoute(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket);
+void f0185083_getIPv6Gateway(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f0185083_getNetworkDeviceIndex

@@ -91,6 +91,7 @@ fi
 ## Bash exec variables
 IP6TABLES=/sbin/ip6tables
 IP6TABLES_SAVE=/sbin/ip6tables-save
+EXEC_DERIVESUBNET=/usr/local/bin/derivesubnet
 
 ## Options
 NIC="$1"
@@ -99,9 +100,10 @@ NIC="$1"
 IPv6_ADDRESS_GLOBAL=''
 IPv6_ADDRESS_LOCAL=''
 IPv6_GATEWAY=''
+IPv6_SUBNET_GLOBAL=''
 
 IPv6_SUBNET_LOCAL='fe80::/64'
-ALL_NODES_ADDR='ff02::1'
+ALL_NODES_LOCAL='ff02::1'
 ALL_ROUTERS_ADDR='ff02::2'
 MLDv2_ADDR='ff02::16'
 mDNSv6_ADDR='ff02::fb'
@@ -110,35 +112,21 @@ SOLICITED_NODE_ADDR='ff02::1:ff00:0/104'
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if [ -z "$NIC" ]; then
-	mapfile -t ethList < <($EXEC_IP -br -6 addr show | $EXEC_GREP -E '^enp')
+	mapfile -t ethList < <($EXEC_IP -br -6 addr show | $EXEC_GREP -Eo '^enp[a-z0-9]+')
 
 	if [ ${#ethList[@]} -eq 1 ]; then
-		ethInfo=(${ethList[0]})
+		ethInterface=(${ethList[0]})
 	else
-		declare -a selectList
-		IFS=$'\n'
-		for ethernet in ${ethList[@]}; do
-			ethInfo=(${ethernet})
-			selectList+=(${ethInfo[0]})
-		done
-		unset IFS
-
 		OLD_COLUMNS=$COLUMNS
 		COLUMNS=1
 		echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
-		select ethInterface in ${selectList[@]}; do
-			for ((i=0; i<${#selectList[*]}; i++)); do
-				if [ "$ethInterface" == ${selectList[i]} ]; then
-					ethInfo=(${ethList[i]})
-					break;
-				fi
-			done
+		select ethInterface in ${ethList[@]}; do
 			break;
 		done
 		COLUMNS=$OLD_COLUMNS
 	fi
 
-	NIC=${ethInfo[0]}
+	NIC=$ethInterface
 else
 	# Display error if network interface parameter is invalid
 	if [ ! -L /sys/class/net/$NIC ]; then
@@ -148,14 +136,14 @@ else
 
 		exit 1
 	fi
-
-	ethInfo=( $($EXEC_IP -br -6 addr show dev $NIC) )
 fi
 
-IPv6_ADDRESS_GLOBAL=${ethInfo[2]}
-IPv6_ADDRESS_LOCAL=${ethInfo[3]}
-IPv6_GATEWAY=$($EXEC_IP -br -6 route show default dev $NIC | $EXEC_AWK '{ print $3; exit }')
-# TODO: Need global subnet
+ethInfo=( $($EXEC_DERIVESUBNET -6 $NIC) )
+
+IPv6_ADDRESS_GLOBAL=${ethInfo[0]}
+IPv6_ADDRESS_LOCAL=${ethInfo[1]}
+IPv6_GATEWAY=${ethInfo[2]}
+IPv6_SUBNET_GLOBAL=${ethInfo[3]}
 
 ################################### Actions ###################################
 
@@ -166,11 +154,12 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE ip6tables Configurator" 'true'
 
-echo "${bold}Network Interface: ${green}$NIC"
+echo "${bold}Network Interface:   ${green}$NIC"
 echo "${white}IPv6 Global Address: ${green}$IPv6_ADDRESS_GLOBAL"
-echo "${white}IPv6 Local Address: ${green}$IPv6_ADDRESS_LOCAL"
-echo "${white}IPv6 Gateway: ${green}$IPv6_GATEWAY"
-echo "${white}IPv6 Local Subnet: ${green}$IPv6_SUBNET_LOCAL"
+echo "${white}IPv6 Local Address:  ${green}$IPv6_ADDRESS_LOCAL"
+echo "${white}IPv6 Gateway:        ${green}$IPv6_GATEWAY"
+echo "${white}IPv6 Global Subnet:  ${green}$IPv6_SUBNET_GLOBAL"
+echo "${white}IPv6 Local Subnet:   ${green}$IPv6_SUBNET_LOCAL"
 echo "${reset}"
 
 #
@@ -207,9 +196,7 @@ echo
 printBanner 'Configuring RAW Table'
 
 #
-# =====================================
-# = Custom Jump Targets for RAW Table =
-# =====================================
+# ═══════════════════════ Custom RAW Table Jump Targets ═══════════════════════
 #
 
 # Rate limit Fragment logging
@@ -225,9 +212,7 @@ $IP6TABLES -t raw -A do_not_track -j NOTRACK
 $IP6TABLES -t raw -A do_not_track -j ACCEPT
 
 #
-# ==================================
-# = Configure RAW PREROUTING Chain =
-# ==================================
+# ══════════════════════ Configure RAW PREROUTING Chain ═══════════════════════
 #
 
 printInfo 'DROP incoming fragmented packets'
@@ -262,9 +247,8 @@ $IP6TABLES -t raw -N raw-${NIC}-tcp-pre
 $IP6TABLES -t raw -A raw-${NIC}-pre -p tcp -j raw-${NIC}-tcp-pre
 
 ## UDP
-printInfo 'Process incoming UDP traffic'
-$IP6TABLES -t raw -N raw-${NIC}-udp-pre
-$IP6TABLES -t raw -A raw-${NIC}-pre -p udp -j raw-${NIC}-udp-pre
+printInfo 'Further process incoming UDP traffic'
+$IP6TABLES -t raw -A raw-${NIC}-pre -j do_not_track
 
 ## ICMPv6
 printInfo 'Process incoming ICMPv6 traffic'
@@ -282,16 +266,6 @@ echo
 # * raw-${NIC}-icmpv6-pre Rules *
 # *******************************
 #
-
-## ICMPv6 Link-Local
-#$IP6TABLES -t raw -N raw-${NIC}-icmpv6-pre-local
-#$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -s $IPv6_SUBNET_LOCAL -j raw-${NIC}-icmpv6-pre-local
-
-#
-# *************************************
-# * raw-${NIC}-icmpv6-pre-local Rules *
-# *************************************
-#
 # ICMPv6 Type       ICMPv6 Message
 # ¯¯¯¯¯¯¯¯¯¯¯       ¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # 133               router-solicitation
@@ -301,19 +275,8 @@ echo
 # 137               redirect
 #
 
-#printInfo 'Allow ICMPv6 router-advertisement packets'
-#$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre-local -p icmpv6 -m icmpv6 --icmpv6-type router-advertisement -j do_not_track
-
-#printInfo 'Allow ICMPv6 neighbor-solicitation packets'
-#$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre-local -p icmpv6 -m icmpv6 --icmpv6-type neighbor-solicitation -j do_not_track
-
-#printInfo 'Allow ICMPv6 neighbor-advertisement packets'
-#$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre-local -p icmpv6 -m icmpv6 --icmpv6-type neighbor-advertisement -j do_not_track
-
-#printInfo 'Ignore ICMPv6 router-solicitation packets (we are not a router)'
-#$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre-local -p icmpv6 -m icmpv6 --icmpv6-type router-solicitation -j DROP
-
-## Implicit RETURN to raw-${NIC}-icmpv6-pre
+printInfo 'Allow ICMPv6 neighbor-advertisement packets'
+$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 -s $IPv6_SUBNET_GLOBAL -d $ALL_NODES_LOCAL --icmpv6-type neighbor-advertisement -j do_not_track
 
 printInfo 'Allow ICMPv6 destination-unreachable packets'
 $IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 --icmpv6-type destination-unreachable -j do_not_track
@@ -358,23 +321,7 @@ $IP6TABLES -t raw -A raw-${NIC}-tcp-pre -j ACCEPT
 echo
 
 #
-# ****************************
-# * raw-${NIC}-udp-pre Rules *
-# ****************************
-#
-
-printInfo 'DROP all incoming Canon/Epson printer discovery packets'
-$IP6TABLES -t raw -A raw-${NIC}-udp-pre -p udp -m multiport --dports 8610,8612,3289 -j DROP
-
-printInfo 'Further process all other incoming UDP traffic'
-$IP6TABLES -t raw -A raw-${NIC}-udp-pre -j do_not_track
-
-echo
-
-#
-# ==============================
-# = Configure RAW OUTPUT Chain =
-# ==============================
+# ════════════════════════ Configure RAW OUTPUT Chain ═════════════════════════
 #
 
 printInfo 'DROP outgoing fragmented packets'
@@ -383,14 +330,8 @@ $IP6TABLES -t raw -A OUTPUT -m frag --fragmore -j ${NIC}_fragment_drop
 printInfo 'Allow outgoing Link-Local packets on all network interfaces'
 $IP6TABLES -t raw -A OUTPUT -s $IPv6_SUBNET_LOCAL -j do_not_track
 
-#
-# ==============================
-# = Configure RAW OUTPUT Chain =
-# ==============================
-#
-
-# Create PREROUTING filter chains for each network interface
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Create OUTPUT filter chains for each network interface
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
 ## lo
 printInfo 'Allow outgoing lo interface traffic'
@@ -420,7 +361,7 @@ $IP6TABLES -t raw -N raw-${NIC}-udp-out
 $IP6TABLES -t raw -A raw-${NIC}-out -p udp -j raw-${NIC}-udp-out
 
 ## ICMPv6
-printInfo 'Allow outgoing ICMP traffic'
+printInfo 'Allow outgoing ICMPv6 traffic'
 $IP6TABLES -t raw -A raw-${NIC}-out -p icmpv6 -j do_not_track
 
 ## ALL OTHERS
@@ -429,59 +370,6 @@ $IP6TABLES -t raw -A raw-${NIC}-out -m limit --limit 3/min --limit-burst 2 -j LO
 $IP6TABLES -t raw -A raw-${NIC}-out -j DROP
 
 echo
-
-#
-# *******************************
-# * raw-${NIC}-icmpv6-out Rules *
-# *******************************
-#
-# ICMPv6 Type       ICMPv6 Message
-# ¯¯¯¯¯¯¯¯¯¯¯       ¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# 133               router-solicitation
-# 134               router-advertisement
-# 135               neighbor-solicitation
-# 136               neighbor-advertisement
-# 137               redirect
-# 143               Version 2 Multicast Listener Report
-#
-
-#printInfo 'Allow ICMPv6 neighbor-advertisement output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -d $IPv6_LOCAL_SUBNET -p icmpv6 -m icmpv6 --icmpv6-type neighbor-advertisement -j do_not_track
-#
-#printInfo "Allow ICMPv6 neighbor-solicitation (to $IPv6_LOCAL_SUBNET) output"
-#$IP6TABLES -t raw -A raw-icmpv6-out -d $IPv6_LOCAL_SUBNET -p icmpv6 -m icmpv6 --icmpv6-type neighbor-solicitation -j do_not_track
-#
-#printInfo "Allow ICMPv6 neighbor-solicitation (to $SOLICITED_NODE_ADDR) output"
-#$IP6TABLES -t raw -A raw-icmpv6-out -d $SOLICITED_NODE_ADDR -p icmpv6 -m icmpv6 --icmpv6-type neighbor-solicitation -j do_not_track
-#
-#printInfo 'Allow ICMPv6 destination-unreachable output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type destination-unreachable -j do_not_track
-#
-#printInfo 'Allow ICMPv6 router-solicitation output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -d $ALL_ROUTERS_ADDR -p icmpv6 -m icmpv6 --icmpv6-type router-solicitation -j do_not_track
-#
-#printInfo 'Allow ICMPv6 Multicast Listenter Discover REPORT packet output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -d $MLDv2_ADDR -p icmpv6 -m icmpv6 --icmpv6-type 143 -j do_not_track
-#
-#printInfo 'Allow ICMPv6 packet-too-big output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type packet-too-big -j do_not_track
-#
-#printInfo 'Allow ICMPv6 time-exceeded output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type time-exceeded -j do_not_track
-#
-#printInfo 'Allow ICMPv6 parameter-problem output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type parameter-problem -j do_not_track
-#
-#printInfo 'Allow ICMPv6 echo-request output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type echo-request -j do_not_track
-#
-#printInfo 'Allow ICMPv6 echo-reply output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -p icmpv6 -m icmpv6 --icmpv6-type echo-reply -j do_not_track
-#
-#printInfo 'DROP all other ICMPv6 output'
-#$IP6TABLES -t raw -A raw-icmpv6-out -j icmpv6_drop
-#
-#echo
 
 #
 # ****************************
@@ -520,43 +408,33 @@ echo
 printBanner 'Configuring MANGLE Table'
 
 #
-# =====================================
-# = Configure MANGLE PREROUTING Chain =
-# =====================================
+# ═════════════════════ Configure MANGLE PREROUTING Chain ═════════════════════
 #
 
 printInfo 'Drop all incoming INVALID packets'
 $IP6TABLES -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
 
 #
-# ================================
-# = Configure MANGLE INPUT Chain =
-# ================================
+# ═══════════════════════ Configure MANGLE INPUT Chain ════════════════════════
 #
 
 
 #
-# ==================================
-# = Configure MANGLE FORWARD Chain =
-# ==================================
+# ══════════════════════ Configure MANGLE FORWARD Chain ═══════════════════════
 #
 
 printInfo 'Disable routing'
 $IP6TABLES -t mangle -P FORWARD DROP
 
 #
-# =================================
-# = Configure MANGLE OUTPUT Chain =
-# =================================
+# ═══════════════════════ Configure MANGLE OUTPUT Chain ═══════════════════════
 #
 
 printInfo 'DROP all outgoing INVALID packets'
 $IP6TABLES -t mangle -A OUTPUT -m conntrack --ctstate INVALID -j DROP
 
 #
-# ======================================
-# = Configure MANGLE POSTROUTING Chain =
-# ======================================
+# ════════════════════ Configure MANGLE POSTROUTING Chain ═════════════════════
 #
 
 echo
@@ -566,9 +444,7 @@ echo
 printBanner 'Configuring FILTER Table'
 
 #
-# ========================================
-# = Custom Jump Targets for FILTER Table =
-# ========================================
+# ═════════════════════ Custom FILTER Table Jump Targets ══════════════════════
 #
 
 # Rate limit ICMP REJECT logging
@@ -584,9 +460,7 @@ $IP6TABLES -A ${NIC}_tcp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --
 $IP6TABLES -A ${NIC}_tcp_reject -p tcp -j REJECT --reject-with tcp-reset
 
 #
-# ================================
-# = Configure FILTER INPUT Chain =
-# ================================
+# ═══════════════════════ Configure FILTER INPUT Chain ════════════════════════
 #
 
 # Create INPUT filter chains for each network interface
@@ -620,14 +494,8 @@ $IP6TABLES -A filter-${NIC}-in -p tcp -j filter-${NIC}-tcp-in
 
 ## UDP
 printInfo 'Process incoming UDP traffic'
-$IP6TABLES -N filter-${NIC}-udp-ucast-in
-$IP6TABLES -A filter-${NIC}-in -p udp -m pkttype --pkt-type unicast -j filter-${NIC}-udp-ucast-in
-
-#$IP6TABLES -N filter-${NIC}-udp-mcast-in
-#$IP6TABLES -A filter-${NIC}-in -p udp -m pkttype --pkt-type multicast -j filter-${NIC}-udp-mcast-in
-
-#$IP6TABLES -N filter-${NIC}-udp-bcast-in
-#$IP6TABLES -A filter-${NIC}-in -p udp -m pkttype --pkt-type broadcast -j filter-${NIC}-udp-bcast-in
+$IP6TABLES -N filter-${NIC}-udp-in
+$IP6TABLES -A filter-${NIC}-in -p udp -j filter-${NIC}-udp-in
 
 ## ICMPv6
 printInfo 'ACCEPT all incoming ICMPv6 traffic not dropped in RAW table'
@@ -687,21 +555,20 @@ echo
 # ******************************
 #
 
-## UDP Unicast
 printInfo 'ACCEPT incoming HTTPS UDP response packets'
-$IP6TABLES -A filter-${NIC}-udp-ucast-in -p udp -m udp --sport 443 -j ACCEPT
+$IP6TABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 443 -j ACCEPT
 
 printInfo 'ACCEPT incoming DNS UDP response packets'
-$IP6TABLES -A filter-${NIC}-udp-ucast-in -p udp -m udp --sport 53 -j ACCEPT
+$IP6TABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 53 -j ACCEPT
 
-printInfo 'Allow incoming NTP UDP response packets'
-$IP6TABLES -A filter-${NIC}-udp-ucast-in -p udp -m udp --sport 123 -j ACCEPT
+printInfo 'ACCEPT incoming NTP UDP response packets'
+$IP6TABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 123 -j ACCEPT
+
+printInfo 'ACCEPT incoming mDNSv6 UDP response packets'
+$IP6TABLES -A filter-${NIC}-udp-in -p udp -m udp -s $IPv6_SUBNET_GLOBAL -d $mDNSv6_ADDR --sport 5353 -j ACCEPT
 
 printInfo 'REJECT all other incoming UDP UNICAST traffic'
-$IP6TABLES -A filter-${NIC}-udp-ucast-in -j ${NIC}_icmp_reject
-
-#printInfo 'Allow incoming Google Talk Voice and Video packets'
-#$IP6TABLES -A filter-udp-in -p udp -m multiport --sports 19302,19305:19309 -j ACCEPT
+$IP6TABLES -A filter-${NIC}-udp-in -j ${NIC}_icmp_reject
 
 #printInfo 'Allow incoming DHCPv6 UDP response packets'
 #$IP6TABLES -A filter-udp-in -p udp -m udp --dport 546 -j ACCEPT
@@ -710,24 +577,13 @@ $IP6TABLES -A filter-${NIC}-udp-ucast-in -j ${NIC}_icmp_reject
 #$IP6TABLES -N filter-udp-in-multicast
 #$IP6TABLES -A filter-udp-in -p udp -m pkttype --pkt-type multicast -j filter-udp-in-multicast
 
-#
-# *********************************
-# * filter-udp-in-multicast Rules *
-# *********************************
-#
-
-#printInfo "Allow incoming mDNS UDP MULTICAST packets (from $IPv6_LOCAL_SUBNET)"
-#$IP6TABLES -A filter-udp-in-multicast -s $IPv6_LOCAL_SUBNET -d $mDNSv6_ADDR -p udp -m udp --dport 5353 -j ACCEPT
-#
 #printInfo "Allow incoming mDNS UDP MULTICAST packets (from $IPv6_GLOBAL_SUBNET)"
 #$IP6TABLES -A filter-udp-in-multicast -s $IPv6_GLOBAL_SUBNET -d $mDNSv6_ADDR -p udp -m udp --dport 5353 -j ACCEPT
 
 echo
 
 #
-# ==================================
-# = Configure FILTER FORWARD Chain =
-# ==================================
+# ══════════════════════ Configure FILTER FORWARD Chain ═══════════════════════
 #
 
 printInfo 'Set default FORWARD policy to DROP'
@@ -736,9 +592,7 @@ $IP6TABLES -P FORWARD DROP
 echo
 
 #
-# =================================
-# = Configure FILTER OUTPUT Chain =
-# =================================
+# ═══════════════════════ Configure FILTER OUTPUT Chain ═══════════════════════
 #
 
 # Create OUTPUT filter chains for each network interface
@@ -839,14 +693,17 @@ $IP6TABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 53 -j ACCEPT
 printInfo 'ACCEPT outgoing NTP UDP request packets'
 $IP6TABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 123 -j ACCEPT
 
+printInfo 'ACCEPT outgoing mDNSv6 UDP request packets'
+$IP6TABLES -A filter-${NIC}-udp-out -p udp -m udp -d $mDNSv6_ADDR --dport 5353 -j ACCEPT
+
+printInfo 'REJECT all other outgoing UDP traffic'
+$IP6TABLES -A filter-${NIC}-udp-out -j ${NIC}_icmp_reject
+
 #printInfo 'Allow outgoing Google Talk Voice and Video packets'
 #$IP6TABLES -A filter-udp-out -p udp -m multiport --dports 19302,19305:19309 -j ACCEPT
 
 #printInfo 'Allow outgoing DHCPv6 UDP request packets'
 #$IP6TABLES -A filter-udp-out -p udp -m udp --sport 546 --dport 547 -j ACCEPT
-
-printInfo 'REJECT all other outgoing UDP traffic'
-$IP6TABLES -A filter-${NIC}-udp-out -j ${NIC}_icmp_reject
 
 echo
 

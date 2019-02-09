@@ -103,7 +103,7 @@ b7808f25_createIPv6Address:
 	sub        rsp, 8                 ; align stack frame before making function calls
 
 	test       rax, rax               ; if (ptr == NULL)
-	hwnt je    .fatalError
+	je    .fatalError
 
 	; int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
 	mov        rdi, rax               ; ipv6Address = rax
@@ -439,7 +439,7 @@ b7808f25_extractString:
 	movd       edx, xmm10             ; move first hextet into edx
 
 	lea        r10, [rel $+12]        ; process the first hextet
-	jmp        processHextet
+	jmp near   processHextet
 
 .secondHextet:
 	psrldq     xmm10, 4               ; move second hextet into edx
@@ -447,7 +447,7 @@ b7808f25_extractString:
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+12]        ; process the second hextet
-	jmp        processHextet
+	jmp near   processHextet
 
 .thirdHextet:
 	psrldq     xmm10, 4               ; move third hextet into edx
@@ -455,7 +455,7 @@ b7808f25_extractString:
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+12]         ; process the third hextet
-	jmp        processHextet
+	jmp near   processHextet
 
 .fourthHextet:
 	psrldq     xmm10, 4               ; move fourth hextet into edx
@@ -463,14 +463,14 @@ b7808f25_extractString:
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+12]         ; process the fourth hextet
-	jmp        processHextet
+	jmp near   processHextet
 
 .fifthHextet:
 	movd       edx, xmm8              ; move fifth hextet into edx
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+12]         ; process the fifth hextet
-	jmp        processHextet
+	jmp near   processHextet
 
 .sixthHextet:
 	psrldq     xmm8, 4                ; move sixth hextet into edx
@@ -478,7 +478,7 @@ b7808f25_extractString:
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+9]         ; process the sixth hextet
-	jmp        processHextet
+	jmp short  processHextet
 
 .seventhHextet:
 	psrldq     xmm8, 4                ; move seventh hextet into edx
@@ -486,7 +486,7 @@ b7808f25_extractString:
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+9]         ; process the seventh hextet
-	jmp        processHextet
+	jmp short  processHextet
 
 .eighthHextet:
 	psrldq     xmm8, 4                ; move eighth hextet into edx
@@ -494,17 +494,25 @@ b7808f25_extractString:
 	shr        r11, 8                 ; shift to the next bytemask
 
 	lea        r10, [rel $+9]         ; process the eighth hextet
-	jmp        processHextet
+	jmp short  processHextet
 
 .cidrSuffix:
-	mov        cl, ah                 ; preserve hasShorthand value
+	mov        cl, ah                 ; preserve isShorthand value
 	movd       eax, xmm15             ; retrieve cidrSuffix from xmm15
 
-	test       cl, cl                 ; if (hasShorthand) skip correcting buffer pointer
-	jnz        .skipCorrection
+.isShorthand:
+	test       cl, cl                 ; if (isShorthand) skip correcting buffer pointer
+	jnz        .calcCIDRSuffix
 	dec        rsi                    ; correct string buffer pointer position
 
-.skipCorrection:
+	test       eax, eax               ; if (cidrSuffix != 0)
+	jnz        .calcCIDRSuffix
+
+.skipCIDRSuffix:
+	mov        [rsi], eax             ; write out '\0' to [rsi]
+	ret                               ; pop return address from stack and jump there
+
+.calcCIDRSuffix:
 	mov        r10b, 0x0a             ; r10b = 10 (constant)
 	xor        rdx, rdx               ; clear out rdx
 
@@ -547,7 +555,7 @@ processHextet:
 ;	edx : Hextet
 ;	r8  : ':'
 ;	r11 : shorthand bytemask
-;	ah  : boolean hasShorthand
+;	ah  : boolean isShorthand
 ;	al  : '0'
 ; Local Variables:
 ;	rcx : hextet length
@@ -568,10 +576,11 @@ processHextet:
 
 	mov        [rsi], dword 0x3A      ; write out shorthand to [rsi]
 	inc        rsi                    ; rsi += 1
-	inc        ah                     ; hasShorthand = true
+	inc        ah                     ; isShorthand = true
 	jmp        r10                    ; jump to the return address
 
 .writeHextet:
+	xor        ah, ah                 ; isShorthand = false
 	or         rdx, r8                ; append ':' to the hextet
 	mov        cl, 5
 .LWHILE0:

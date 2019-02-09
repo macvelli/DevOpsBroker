@@ -34,8 +34,6 @@
 #include <assert.h>
 #include <unistd.h>
 
-#include <arpa/inet.h>
-
 #include "org/devopsbroker/lang/error.h"
 #include "org/devopsbroker/net/ipv4address.h"
 #include "org/devopsbroker/net/ipv6address.h"
@@ -147,9 +145,10 @@ int main(int argc, char *argv[]) {
 
 	if (deviceParams.deriveIPv4Subnet) {
 		f0185083_getIPv4Address(&networkDevice, netlinkSocket);
+		f0185083_getIPv4Gateway(&networkDevice, netlinkSocket);
 	} else {
 		f0185083_getIPv6Addresses(&networkDevice, netlinkSocket);
-		f0185083_getIPv6DefaultRoute(&networkDevice, netlinkSocket);
+		f0185083_getIPv6Gateway(&networkDevice, netlinkSocket);
 	}
 
 	// Close Netlink socket
@@ -159,29 +158,33 @@ int main(int argc, char *argv[]) {
 	if (deviceParams.deriveIPv4Subnet) {
 		char ipAddrString[IPV4_STRBUF_LEN];
 
+		e1e7e8f5_extractString(&networkDevice.ipv4Address, IPV4_ADDR | IVP4_CIDR_SUFFIX, ipAddrString);
+		printf("%s ", ipAddrString);
+
+		IPv4Address ipv4Gateway;
+		ipv4Gateway.address = networkDevice.ipv4Gateway;
+		e1e7e8f5_extractString(&ipv4Gateway, IPV4_ADDR, ipAddrString);
+		printf("%s ", ipAddrString);
+
 		e1e7e8f5_deriveSubnetMask(&networkDevice.ipv4Address);
 		e1e7e8f5_extractString(&networkDevice.ipv4Address, IPV4_ROUTE, ipAddrString);
 		puts(ipAddrString);
 	} else {
-		char ipAddrString[INET6_ADDRSTRLEN];
+		char ipAddrString[IPV6_STRBUF_LEN];
 
-//		b7808f25_extractString(&networkDevice.ipv6Global, ipAddrString);
-		inet_ntop(AF_INET6, &networkDevice.ipv6Global, ipAddrString, INET6_ADDRSTRLEN);
-		printf("%s/%u ", ipAddrString, networkDevice.ipv6Global.cidrSuffix);
+		b7808f25_extractString(&networkDevice.ipv6Global, ipAddrString);
+		printf("%s ", ipAddrString);
 
-//		b7808f25_extractString(&networkDevice.ipv6Local, ipAddrString);
-		inet_ntop(AF_INET6, &networkDevice.ipv6Local, ipAddrString, INET6_ADDRSTRLEN);
-		printf("%s/%u ", ipAddrString, networkDevice.ipv6Local.cidrSuffix);
+		b7808f25_extractString(&networkDevice.ipv6Local, ipAddrString);
+		printf("%s ", ipAddrString);
 
-//		b7808f25_extractString(&networkDevice.ipv6Gateway, ipAddrString);
-		inet_ntop(AF_INET6, &networkDevice.ipv6Gateway, ipAddrString, INET6_ADDRSTRLEN);
+		b7808f25_extractString(&networkDevice.ipv6Gateway, ipAddrString);
 		printf("%s ", ipAddrString);
 
 		IPv6Address ipv6GlobalSubnet;
 		b7808f25_deriveSubnet(&networkDevice.ipv6Global, &ipv6GlobalSubnet);
-//		b7808f25_extractString(&ipv6GlobalSubnet, ipAddrString);
-		inet_ntop(AF_INET6, &ipv6GlobalSubnet, ipAddrString, INET6_ADDRSTRLEN);
-		printf("%s/64\n", ipAddrString);
+		b7808f25_extractString(&ipv6GlobalSubnet, ipAddrString);
+		printf("%s\n", ipAddrString);
 	}
 
 	// Exit with success

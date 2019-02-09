@@ -135,6 +135,62 @@ void f0185083_getIPv4Address(NetworkDevice *networkDevice, NetlinkSocket *netlin
 	}
 }
 
+void f0185083_getIPv4Gateway(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket) {
+	NetlinkRouteRequest request;
+	ReceiveMessageHeader response;
+	ssize_t msgLen;
+
+	// Initialize and send NetlinkRouteRequest
+	e7173ad4_initNetlinkRouteRequest(&request, IPV4_PROTOCOL);
+	request.msgBody.rtm_table = DEFAULT_ROUTE_TABLE;
+	a36b5966_sendMessage(netlinkSocket->fd, &request, sizeof(NetlinkRouteRequest), 0);
+
+	// Initialize and receive ReceiveMessageHeader response
+	e7173ad4_initReceiveMessageHeader(&response, netlinkSocket);
+	msgLen = a36b5966_receiveMessage(netlinkSocket->fd, &response, 0);
+
+	NetlinkMessageHeader *nlMsgHeader = (NetlinkMessageHeader *) netlinkSocket->ioBuffer->iov_base;
+	NetlinkRouteMessage *nlRouteMessage;
+	NetlinkAttribute *nlAttribute;
+
+	int msgLength;
+	bool foundGateway;
+	int outputDeviceIndex;
+
+	while (nlMsgHeader->nlmsg_type != NLMSG_DONE) {
+		for(; NLMSG_OK(nlMsgHeader, msgLen); nlMsgHeader = NLMSG_NEXT(nlMsgHeader, msgLen)) {
+			nlRouteMessage = (NetlinkRouteMessage *) NLMSG_DATA(nlMsgHeader);
+
+			if (nlRouteMessage->rtm_table == RT_TABLE_MAIN && nlRouteMessage->rtm_type == RTN_UNICAST) {
+				nlAttribute = (NetlinkAttribute *) RTM_RTA(nlRouteMessage);
+				msgLength = RTM_PAYLOAD(nlMsgHeader);
+				foundGateway = false;
+				outputDeviceIndex = -1;
+
+				for(; RTA_OK(nlAttribute, msgLength); nlAttribute = RTA_NEXT(nlAttribute, msgLength)) {
+					if (nlAttribute->rta_type == RTA_GATEWAY) {
+						networkDevice->ipv4Gateway = *((int *) RTA_DATA(nlAttribute));
+						foundGateway = true;
+					} else if (nlAttribute->rta_type == RTA_OIF) {
+						outputDeviceIndex = *((int *) RTA_DATA(nlAttribute));
+
+						if (outputDeviceIndex != networkDevice->index) {
+							break;
+						}
+					}
+				}
+
+				if (foundGateway && outputDeviceIndex == networkDevice->index) {
+					break;
+				}
+			}
+		}
+
+		msgLen = a36b5966_receiveMessage(netlinkSocket->fd, &response, 0);
+		nlMsgHeader = (NetlinkMessageHeader *) netlinkSocket->ioBuffer->iov_base;
+	}
+}
+
 void f0185083_getIPv6Addresses(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket) {
 	NetlinkAddressRequest request;
 	ReceiveMessageHeader response;
@@ -182,7 +238,7 @@ void f0185083_getIPv6Addresses(NetworkDevice *networkDevice, NetlinkSocket *netl
 	}
 }
 
-void f0185083_getIPv6DefaultRoute(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket) {
+void f0185083_getIPv6Gateway(NetworkDevice *networkDevice, NetlinkSocket *netlinkSocket) {
 	NetlinkRouteRequest request;
 	ReceiveMessageHeader response;
 	ssize_t msgLen;
