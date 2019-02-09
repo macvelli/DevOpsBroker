@@ -377,11 +377,11 @@ uninstallSnap '/snap/gnome-calculator/current/usr/bin/gnome-calculator' 'gnome-c
 # Install gnome-calculator package
 installPackage '/usr/bin/gnome-calculator' 'gnome-calculator'
 
-# Uninstall gnome-characters
+# Uninstall gnome-characters snap
 uninstallSnap '/snap/gnome-characters/current/usr/bin/gnome-characters' 'gnome-characters'
 
-# Install gnome-calculator package
-installPackage '/usr/bin/gnome-calculator' 'gnome-calculator'
+# Install gnome-characters package
+installPackage '/usr/bin/gnome-characters' 'gnome-characters'
 
 # Install gnome-shell-extensions
 installPackage '/usr/share/doc/gnome-shell-extensions/copyright' 'gnome-shell-extensions'

@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Intel x86-64 Assembly Reference Guide</title>
+  <meta charset="UTF-8">
+  <meta name="keywords" content="x86-64, x64, x86_64, amd64">
+<style>
+
+body {
+  font: normal 11pt Verdana, Arial, sans-serif;
+  color: #181818;
+}
+
+a {
+  text-decoration: none;
+}
+
+code {
+  font: normal 11pt "Courier New", mono;
+}
+
+div.center {
+  text-align: center;
+}
+
+div#header {
+  position: fixed;
+  height: 80px;
+  width: 100%;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  overflow: hidden;
+  background-color: #726F76;
+  color: #FBFBFD;
+}
+
+div#toc {
+  position: fixed;
+  width: 20%;
+  height: auto;
+  top: 80px;
+  right: auto;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  padding-left: 8px;
+  background-color: #DDDAE7;
+}
+
+div#content {
+  position: fixed;
+  width: auto;
+  height: auto;
+  top: 80px;
+  right: 0;
+  bottom: 0;
+  left: 20%;
+  overflow-y: auto;
+  padding-left: 16px;
+  background-color: #FBFBFD;
+}
+
+dl {
+  margin-left: 2em;
+}
+
+dt {
+  font-weight: bold;
+}
+
+dd {
+  padding-bottom: 1em;
+}
+
+h2 {
+  color: #354875;
+}
+
+ol#tocOutline {
+  color: #04383A;
+}
+
+ol#tocOutline a {
+  color: #04383A;
+}
+
+ol#tocOutline a:hover {
+  color: #AF8B44;
+}
+
+ul.description {
+  list-style-type: circle;
+  padding-bottom: 1em;
+}
+
+ul.tocSubtopic {
+  list-style-type: none;
+  margin-left: -2.75em;
+  font-size: 11pt;
+}
+
+li.tocTopic {
+  font-size: 13pt;
+}
+
+li.padTop {
+  padding-top: 11pt;
+}
+
+table {
+  border-spacing: 0px;
+  border-collapse: collapse;
+}
+
+table.center {
+  margin-left:auto;
+  margin-right:auto;
+}
+
+caption, th, td {
+  padding: 0.375em;
+  line-height: 1.25em;
+}
+
+caption {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #354875;
+}
+
+th, td {
+  border: 1px solid #181818;
+}
+
+th {
+  font-size: 12pt;
+  background: #BEBBC6;
+}
+
+th.center {
+  text-align: center;
+  padding: 0em 1em;
+}
+
+td.center {
+  text-align: center;
+}
+
+td.hex {
+  font: 12pt "Courier New", Courier, monospace;
+}
+
+td.red {
+  color: #60090B;
+}
+
+table.stripe tr:nth-child(odd) td {
+  background: #E4E4E7;
+}
+
+table#x64Registers td.x64 {
+  text-align: right;
+  font-weight: bold;
+  width: 4em;
+  border: none;
+}
+
+table#x64Registers td.x86_32 {
+  text-align: right;
+  font-weight: bold;
+  width: 32em;
+  background: #FCF0B4;
+}
+
+table#x64Registers td.x86_16 {
+  text-align: right;
+  font-weight: bold;
+  width: 16em;
+  background: #D6C679;
+}
+
+table#x64Registers td.x86_8 {
+  text-align: center;
+  font-weight: bold;
+  width: 8em;
+  background: #AE9C45;
+}
+
+table#abiRegisters {
+  width: 20em;
+}
+
+table#abiRegisters td {
+  text-align: center;
+}
+
+table#flagsRegister {
+  width: 45em;
+}
+
+table#x86jumps tr td:first-child {
+  font-weight: bold;
+}
+
+</style>
+</head>
+<body>
+
+<div id="header" class="center">
+  <h1>Intel x86-64 Assembly Reference Guide</h1>
+</div>
+
+<div id="body">
+  <div id="toc">
+    <h2>Intel x86-64 Assembly</h2>
+    <ol id="tocOutline">
+      <li class="tocTopic"><a href="#registers">Registers</a></li>
+      <li class="tocTopic padTop">
+        <a href="#systemVABI">System V AMD64 ABI</a>
+        <ul class="tocSubtopic">
+          <li class="padTop">
+            <a href="#intArgRegs">Integer/Pointer Argument Registers</a>
+          </li>
+          <li><a href="#floatArgRegs">Floating Point Argument Registers</a></li>
+          <li><a href="#scratchRegs">Scratch Registers</a></li>
+          <li><a href="#calleePreserveRegs">Callee Preserved Registers</a></li>
+          <li><a href="#returningValues">Returning Values from Fuctions</a></li>
+        </ul>
+      </li>
+      <li class="tocTopic padTop">
+        <a href="#x86JumpInstructions">x86 Jump Instructions</a>
+        <ul class="tocSubtopic">
+          <li class="padTop">
+            <a href="#x86ProcessorFlags">x86 Processor Flags</a>
+          </li>
+          <li><a href="#flagsRegister">x86 FLAGS Register</a></li>
+          <li><a href="#x86JumpReference">x86 JUMP Instruction Reference</a></li>
+          <li><a href="#x86JumpTypes">x86 JUMP Instruction Types</a></li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+  <div id="content">
+    <h2 id="registers">Registers</h2>
+    <p>
+    There are sixteen 64-bit general purpose registers broken down into the following
+    segments:
+    </p>
+
+    <table id="x64Registers" class="center">
+    <caption>x86-64 General Purpose Registers</caption>
+    <thead>
+    <tr>
+      <th style="background: #FBFBFD; border: none;">&nbsp;</th>
+      <th class="center">Bytes 1-4</th>
+      <th class="center">Bytes 5-6</th>
+      <th class="center">Byte 7</th>
+      <th class="center">Byte 8</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td class="x64">rax</td>
+      <td class="x86_32">eax</td>
+      <td class="x86_16">ax</td>
+      <td class="x86_8">ah</td>
+      <td class="x86_8">al</td>
+    </tr>
+    <tr>
+      <td class="x64">rbx</td>
+      <td class="x86_32">ebx</td>
+      <td class="x86_16">bx</td>
+      <td class="x86_8">bh</td>
+      <td class="x86_8">bl</td>
+    </tr>
+    <tr>
+      <td class="x64">rcx</td>
+      <td class="x86_32">ecx</td>
+      <td class="x86_16">cx</td>
+      <td class="x86_8">ch</td>
+      <td class="x86_8">cl</td>
+    </tr>
+    <tr>
+      <td class="x64">rdx</td>
+      <td class="x86_32">edx</td>
+      <td class="x86_16">dx</td>
+      <td class="x86_8">dh</td>
+      <td class="x86_8">dl</td>
+    </tr>
+    <tr>
+      <td class="x64">rsi</td>
+      <td class="x86_32">esi</td>
+      <td class="x86_16">si</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">sil</td>
+    </tr>
+    <tr>
+      <td class="x64">rdi</td>
+      <td class="x86_32">edi</td>
+      <td class="x86_16">di</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">dil</td>
+    </tr>
+    <tr>
+      <td class="x64">rsp</td>
+      <td class="x86_32">esp</td>
+      <td class="x86_16">sp</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">spl</td>
+    </tr>
+    <tr>
+      <td class="x64">rbp</td>
+      <td class="x86_32">ebp</td>
+      <td class="x86_16">bp</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">bpl</td>
+    </tr>
+    <tr>
+      <td class="x64">r8</td>
+      <td class="x86_32">r8d</td>
+      <td class="x86_16">r8w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r8b</td>
+    </tr>
+    <tr>
+      <td class="x64">r9</td>
+      <td class="x86_32">r9d</td>
+      <td class="x86_16">r9w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r9b</td>
+    </tr>
+    <tr>
+      <td class="x64">r10</td>
+      <td class="x86_32">r10d</td>
+      <td class="x86_16">r10w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r10b</td>
+    </tr>
+    <tr>
+      <td class="x64">r11</td>
+      <td class="x86_32">r11d</td>
+      <td class="x86_16">r11w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r11b</td>
+    </tr>
+    <tr>
+      <td class="x64">r12</td>
+      <td class="x86_32">r12d</td>
+      <td class="x86_16">r12w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r12b</td>
+    </tr>
+    <tr>
+      <td class="x64">r13</td>
+      <td class="x86_32">r13d</td>
+      <td class="x86_16">r13w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r13b</td>
+    </tr>
+    <tr>
+      <td class="x64">r14</td>
+      <td class="x86_32">r14d</td>
+      <td class="x86_16">r14w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r14b</td>
+    </tr>
+    <tr>
+      <td class="x64">r15</td>
+      <td class="x86_32">r15d</td>
+      <td class="x86_16">r15w</td>
+      <td class="x86_8 red">X</td>
+      <td class="x86_8">r15b</td>
+    </tr>
+    </tbody>
+    </table>
+
+    <h2 id="systemVABI">System V AMD64 ABI</h2>
+    <p>
+    The System V AMD64 ABI calling convention is followed on Solaris, Linux, FreeBSD,
+    macOS, and is the de facto standard among Unix and Unix-like operating systems.
+    </p>
+
+    <h3>Calling Convention Characteristics</h3>
+    <ul>
+      <li>The first six integer or pointer arguments are passed in registers <code>RDI</code>,
+          <code>RSI</code>, <code>RDX</code>, <code>RCX</code>, <code>R8</code>,
+          <code>R9</code></li>
+    </ul>
+
+    <table id="abiRegisters" class="center stripe">
+    <caption id="intArgRegs">Integer/Pointer Argument Registers</caption>
+    <tr>
+      <td>rdi</td>
+    </tr>
+    <tr>
+      <td>rsi</td>
+    </tr>
+    <tr>
+      <td>rdx</td>
+    </tr>
+    <tr>
+      <td>rcx</td>
+    </tr>
+    <tr>
+      <td>r8</td>
+    </tr>
+    <tr>
+      <td>r9</td>
+    </tr>
+    </table>
+
+    <ul>
+      <li>The SSE registers <code>XMM0</code>, <code>XMM1</code>, <code>XMM2</code>,
+          <code>XMM3</code>, <code>XMM4</code>, <code>XMM5</code>, <code>XMM6</code>
+          and <code>XMM7</code> are used for floating point arguments</li>
+    </ul>
+
+    <table id="abiRegisters" class="center stripe">
+    <caption id="floatArgRegs">Floating Point Argument Registers</caption>
+    <tr>
+      <td>xmm0</td>
+    </tr>
+    <tr>
+      <td>xmm1</td>
+    </tr>
+    <tr>
+      <td>xmm2</td>
+    </tr>
+    <tr>
+      <td>xmm3</td>
+    </tr>
+    <tr>
+      <td>xmm4</td>
+    </tr>
+    <tr>
+      <td>xmm5</td>
+    </tr>
+    <tr>
+      <td>xmm6</td>
+    </tr>
+    <tr>
+      <td>xmm7</td>
+    </tr>
+    </table>
+
+    <h4>Calling Functions</h4>
+    <ul>
+      <li>All other arguments are passed on the stack as they appear on the function
+          definition in Right-to-Left order</li>
+      <li>Functions are called using the call instruction which pushes the address
+          of the next instruction onto the stack before calling the specified function</li>
+      <ul>
+        <li>The stack must be 16-byte aligned just before making the call instruction</li>
+      </ul>
+      <li>Scratch registers that can be used by the function include <code>RAX</code>,
+          <code>RDI</code>, <code>RSI</code>, <code>RDX</code>, <code>RCX</code>,
+          <code>R8</code>, <code>R9</code>, <code>R10</code>, and <code>R11</code></li>
+    </ul>
+
+    <table id="abiRegisters" class="center stripe">
+    <caption id="scratchRegs">Scratch Registers</caption>
+    <tr>
+      <td>rax</td>
+    </tr>
+    <tr>
+      <td>rdi</td>
+    </tr>
+    <tr>
+      <td>rsi</td>
+    </tr>
+    <tr>
+      <td>rdx</td>
+    </tr>
+    <tr>
+      <td>rcx</td>
+    </tr>
+    <tr>
+      <td>r8</td>
+    </tr>
+    <tr>
+      <td>r9</td>
+    </tr>
+    <tr>
+      <td>r10</td>
+    </tr>
+    <tr>
+      <td>r11</td>
+    </tr>
+    </table>
+
+    <ul>
+      <li>Functions must preserve the registers <code>RBX</code>, <code>RSP</code>,
+          <code>RBP</code>, <code>R12</code>, <code>R13</code>, <code>R14</code>,
+          and <code>R15</code> if they will be used by the function</li>
+    </ul>
+
+    <table id="abiRegisters" class="center stripe">
+    <caption id="calleePreserveRegs">Callee Preserved Registers</caption>
+    <tr>
+      <td>rbx</td>
+    </tr>
+    <tr>
+      <td>rsp</td>
+    </tr>
+    <tr>
+      <td>rbp</td>
+    </tr>
+    <tr>
+      <td>r12</td>
+    </tr>
+    <tr>
+      <td>r13</td>
+    </tr>
+    <tr>
+      <td>r14</td>
+    </tr>
+    <tr>
+      <td>r15</td>
+    </tr>
+    </table>
+
+    <h3 id="returningValues">Returning Values from Fuctions</h3>
+    <ul>
+      <li>Functions return to the caller using the ret instruction which pops the
+          return address from the stack and jumps to it</li>
+      <li>32-bit integer return values are stored in <code>EAX</code></li>
+      <li>64-bit integer return values are stored in <code>RAX</code></li>
+      <li>128-bit integer return values are stored in <code>RDX</code>:<code>RAX</code></li>
+      <li>32-bit float and 64-bit double return values are stored in <code>XMM0</code></li>
+      <li>128-bit double return values are stored in <code>XMM0:XMM1</code></li>
+    </ul>
+
+    <h2 id="x86JumpInstructions">x86 JUMP Instructions</h2>
+    <p>
+    JUMP instructions transfer program control to another part of the code
+    segment. Essentially it is a GOTO statement (for those who know what BASIC
+    is). The JUMPs destination is usually specified by a label indicating the
+    address of the next instruction to execute. Other possible JUMP operands
+    include immediate values, a general-purpose register, or a memory location.
+    <br><br>
+    All special-purpose JUMP instructions are based upon the state of the
+    <b>x86 Processor Flags</b>.
+    </p>
+
+    <h3 id="x86ProcessorFlags">x86 Processor Flags</h3>
+    <p>
+    The <b>FLAGS</b> register is the status register that contains the current
+    state of the processor. The register is 16 bits wide.
+    </p>
+    <ul>
+      <li>The <b>EFLAGS</b> register is the 32-bit version of the status
+          register and is backwards compatible with the <b>FLAGS</b> register</li>
+      <li><b>RFLAGS</b> is the name of the 64-bit status register</li>
+    </ul>
+
+    <p>
+    The most commonly used flags and their meanings are as follows:
+    <dl>
+     <dt>Carry Flag (CF)</dt>
+     <dd>Set when an arithmetic carry or borrow occurs from the most significant bit
+         during an arithmetic or bit-wise operation; cleared otherwise</dd>
+     <dt>Parity Flag (PF)</dt>
+     <dd>Reflects the parity of just the least significant byte of the instruction
+         result. PF is set to one if the number of set bits is even</dd>
+     <dt>Zero Flag (ZF)</dt>
+     <dd>Set if the arithmetic or bit-wise operation results in zero; cleared otherwise</dd>
+     <dt>Sign Flag (SF)</dt>
+     <dd>Set if the instruction sets the most significant bit to one; cleared otherwise</dd>
+     <dt>Overflow Flag (SF)</dt>
+     <dd>Set when an arithmetic overflow of a signed number has occurred during the
+         execution of an operation; meaningless for unsigned numbers</dd>
+    </dl>
+    </p>
+
+    <table id="flagsRegister" class="center stripe">
+    <caption>x86 FLAGS Register</caption>
+    <thead>
+    <tr>
+    <th>Bit #</th>
+    <th>Mask</th>
+    <th>Abbreviation</th>
+    <th>Description</th>
+    <th>Category</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td class="center">0</td>
+    <td>0x0001</td>
+    <td class="center">CF</td>
+    <td>Carry Flag</td>
+    <td class="center">Status</td>
+    </tr>
+    <tr>
+    <td class="center">1</td>
+    <td>0x0002</td>
+    <td class="center">&nbsp;</td>
+    <td>Reserved (always 1 in EFLAGS)</td>
+    <td class="center">&nbsp;</td>
+    </tr>
+    <tr>
+    <td class="center">2</td>
+    <td>0x0004</td>
+    <td class="center">PF</td>
+    <td>Parity Flag</td>
+    <td class="center">Status</td>
+    </tr>
+    <tr>
+    <td class="center">3</td>
+    <td>0x0008</td>
+    <td class="center">&nbsp;</td>
+    <td>Reserved</td>
+    <td class="center">&nbsp;</td>
+    </tr>
+    <tr>
+    <td class="center">4</td>
+    <td>0x0010</td>
+    <td class="center">AF</td>
+    <td>Adjust Flag</td>
+    <td class="center">Status</td>
+    </tr>
+    <tr>
+    <td class="center">5</td>
+    <td>0x0020</td>
+    <td class="center">&nbsp;</td>
+    <td>Reserved</td>
+    <td class="center">&nbsp;</td>
+    </tr>
+    <tr>
+    <td class="center">6</td>
+    <td>0x0040</td>
+    <td class="center">ZF</td>
+    <td>Zero Flag</td>
+    <td class="center">Status</td>
+    </tr>
+    <tr>
+    <td class="center">7</td>
+    <td>0x0080</td>
+    <td class="center">SF</td>
+    <td>Sign Flag</td>
+    <td class="center">Status</td>
+    </tr>
+    <tr>
+    <td class="center">8</td>
+    <td>0x0100</td>
+    <td class="center">TF</td>
+    <td>Trap Flag</td>
+    <td class="center">Control</td>
+    </tr>
+    <tr>
+    <td class="center">9</td>
+    <td>0x0200</td>
+    <td class="center">IF</td>
+    <td>Interrupt Enable Flag</td>
+    <td class="center">Control</td>
+    </tr>
+    <tr>
+    <td class="center">10</td>
+    <td>0x0400</td>
+    <td class="center">DF</td>
+    <td>Direction Flag</td>
+    <td class="center">Control</td>
+    </tr>
+    <tr>
+    <td class="center">11</td>
+    <td>0x0800</td>
+    <td class="center">OF</td>
+    <td>Overflow Flag</td>
+    <td class="center">Status</td>
+    </tr>
+    <tr>
+    <td class="center">12-13</td>
+    <td>0x3000</td>
+    <td class="center">IOPL</td>
+    <td>I/O Privilege Level</td>
+    <td class="center">System</td>
+    </tr>
+    <tr>
+    <td class="center">14</td>
+    <td>0x4000</td>
+    <td class="center">NT</td>
+    <td>Nested Task Flag</td>
+    <td class="center">System</td>
+    </tr>
+    <tr>
+    <td class="center">15</td>
+    <td>0x8000</td>
+    <td class="center">&nbsp;</td>
+    <td>Reserved</td>
+    <td class="center">&nbsp;</td>
+    </tr>
+    </tbody>
+    </table>
+
+    <h3 id="x86JumpReference">x86 JUMP Instruction Reference</h3>
+    <p>
+    The following is an Intel x86 JUMP Reference table made by
+    <a href="http://unixwiz.net/techtips/x86-jumps.html">Steve Friedl</a>
+    in which he says, "many of the instructions are synonyms for each other, and in
+    practice the entire instruction collection is not needed".
+    <br><br>
+    Steve grouped the JUMP instructions by functionality, with all instruction
+    synonyms in the same row.
+    </p>
+
+    <table id="x86jumps" class="center stripe">
+      <caption>x86 JUMP Instruction Reference</caption>
+    <thead>
+      <tr>
+        <th rowspan="2">Instruction</th>
+        <th rowspan="2">Description</th>
+        <th rowspan="2">Signedness</th>
+        <th rowspan="2">Flags</th>
+        <th colspan="2">Opcodes</th>
+      </tr>
+      <tr>
+        <th>Short Jump</th>
+        <th>Near Jump</th>
+      </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>JO</td>
+      <td>Jump if overflow</td>
+      <td>&nbsp;</td>
+      <td>OF = 1</td>
+      <td class="hex">70</td>
+      <td class="hex">0F 80</td>
+    </tr>
+    <tr>
+      <td>JNO</td>
+      <td>Jump if not overflow</td>
+      <td>&nbsp;</td>
+      <td>OF = 0</td>
+      <td class="hex">71</td>
+      <td class="hex">0F 81</td>
+    </tr>
+    <tr>
+      <td>JS</td>
+      <td>Jump if sign</td>
+      <td>&nbsp;</td>
+      <td>SF = 1</td>
+      <td class="hex">78</td>
+      <td class="hex">0F 88</td>
+    </tr>
+    <tr>
+      <td>JNS</td>
+      <td>Jump if not sign</td>
+      <td>&nbsp;</td>
+      <td>SF = 0</td>
+      <td class="hex">79</td>
+      <td class="hex">0F 89</td>
+    </tr>
+    <tr>
+      <td>JE<br>JZ</td>
+      <td>
+        Jump if equal<br>
+        Jump if zero
+      </td>
+      <td>&nbsp;</td>
+      <td>ZF = 1</td>
+      <td class="hex">74</td>
+      <td class="hex">0F 84</td>
+    </tr>
+    <tr>
+      <td>JNE<br>JNZ</td>
+      <td>
+        Jump if not equal<br>
+        Jump if not zero
+      </td>
+      <td>&nbsp;</td>
+      <td>ZF = 0</td>
+      <td class="hex">75</td>
+      <td class="hex">0F 85</td>
+    </tr>
+    <tr>
+      <td>JB<br>JNAE<br>JC</td>
+      <td>
+        Jump if below<br>
+        Jump if not above or equal<br>
+        Jump if carry
+      </td>
+      <td>unsigned</td>
+      <td>CF = 1</td>
+      <td class="hex">72</td>
+      <td class="hex">0F 82</td>
+    </tr>
+    <tr>
+      <td>JNB<br>JAE<br>JNC</td>
+      <td>
+        Jump if not below<br>
+        Jump if above or equal<br>
+        Jump if not carry
+      </td>
+      <td>unsigned</td>
+      <td>CF = 0</td>
+      <td class="hex">73</td>
+      <td class="hex">0F 83</td>
+    </tr>
+    <tr>
+      <td>JBE<br>JNA</td>
+      <td>
+        Jump if below or equal<br>
+        Jump if not above
+      </td>
+      <td>unsigned</td>
+      <td>CF = 1 or ZF = 1</td>
+      <td class="hex">76</td>
+      <td class="hex">0F 86</td>
+    </tr>
+    <tr>
+      <td>JA<br>JNBE</td>
+      <td>
+        Jump if above<br>
+        Jump if not below or equal
+      </td>
+      <td>unsigned</td>
+      <td>CF = 0 and ZF = 0</td>
+      <td class="hex">77</td>
+      <td class="hex">0F 87</td>
+    </tr>
+    <tr>
+      <td>JL<br>JNGE</td>
+      <td>
+        Jump if less<br>
+        Jump if not greater or equal
+      </td>
+      <td>signed</td>
+      <td>SF &lt;&gt; OF</td>
+      <td class="hex">7C</td>
+      <td class="hex">0F 8C</td>
+    </tr>
+    <tr>
+      <td>JGE<br>JNL</td>
+      <td>
+        Jump if greater or equal<br>
+        Jump if not less
+      </td>
+      <td>signed</td>
+      <td>SF = OF</td>
+      <td class="hex">7D</td>
+      <td class="hex">0F 8D</td>
+    </tr>
+    <tr>
+      <td>JLE<br>JNG</td>
+      <td>
+        Jump if less or equal<br>
+        Jump if not greater
+      </td>
+      <td>signed</td>
+      <td>ZF = 1 or SF &lt;&gt; OF</td>
+      <td class="hex">7E</td>
+      <td class="hex">0F 8E</td>
+    </tr>
+    <tr>
+      <td>JG<br>JNLE</td>
+      <td>
+        Jump if greater<br>
+        Jump if not less or equal
+      </td>
+      <td>signed</td>
+      <td>ZF = 0 and SF = OF</td>
+      <td class="hex">7F</td>
+      <td class="hex">0F 8F</td>
+    </tr>
+    <tr>
+      <td>JP<br>JPE</td>
+      <td>
+        Jump if parity<br>
+        Jump if parity even
+      </td>
+      <td>&nbsp;</td>
+      <td>PF = 1</td>
+      <td class="hex">7A</td>
+      <td class="hex">0F 8A</td>
+    </tr>
+    <tr>
+      <td>JNP<br>JPO</td>
+      <td>
+        Jump if not parity<br>
+        Jump if parity odd
+      </td>
+      <td>&nbsp;</td>
+      <td>PF = 0</td>
+      <td class="hex">7B</td>
+      <td class="hex">0F 8B</td>
+    </tr>
+    <tr>
+      <td>JCXZ<br>JECXZ</td>
+      <td>
+        Jump if CX register is 0<br>
+        Jump if ECX register is 0
+      </td>
+      <td>&nbsp;</td>
+      <td>CX = 0<br>ECX = 0</td>
+      <td class="hex">E3</td>
+      <td class="hex">&nbsp;</td>
+    </tr>
+    </tbody>
+    </table>
+
+    <h3 id="x86JumpTypes">x86 JUMP Instruction Types</h3>
+    <p>
+    There are four types of jump instructions, each of which are generally
+    encoded as follows:
+    <ul>
+      <li>Jump instruction</li>
+      <li>The number of bytes to jump (+/-)</li>
+    </ul>
+    <dl>
+      <dt>Short Jump</dt>
+      <ul class="description">
+        <li>A signed byte (+127/-128) jump relative to the current instruction pointer (IP)</li>
+        <li>Encoded as two bytes: one byte for the jump instruction and another byte for the number of bytes to jump</li>
+      </ul>
+      <dt>Near Jump</dt>
+      <ul class="description">
+        <li>A signed integer (+2,147,483,647/-2,147,483,648) jump relative to the current instruction pointer (IP) and within the current code segment as defined by the 16-bit CS register</li>
+        <li>Encoded as six bytes: two bytes for the jump instruction and another four bytes for the number of bytes to jump</li>
+      </ul>
+      <dt>Far Jump</dt>
+      <ul class="description">
+        <li>A signed integer (+2,147,483,647/-2,147,483,648) absolute jump that specifies both the code segment (CS) and offset (IP)</li>
+        <li>The jump must be to an instruction at the same privilege level</li>
+        <li>Encoded as ??? bytes: ??? bytes for the jump instruction and another four bytes for the number of bytes to jump</li>
+      </ul>
+      <dt>Task Switch</dt>
+      <ul class="description">
+        <li>A jump to an instruction located in a different task</li>
+        <li>Can only be executed in protected mode</li>
+      </ul>
+    </dl>
+    </p>
+
+    <br/>
+    <div class="center">Copyright &copy; 2019 <a href="https://www.devopsbroker.org/">DevOpsBroker.org</a></div>
+    <br/>
+  </div>
+</div>
+
+</body>
+</html>
