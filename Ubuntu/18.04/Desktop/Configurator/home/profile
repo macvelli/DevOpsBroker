@@ -27,7 +27,7 @@
 # -----------------------------------------------------------------------------
 #
 
-# The default umask is set in /etc/login.defs; can be overridden here
+# The default umask is set in /etc/pam.d/common-session; can be overridden here
 umask 027
 
 # Set PATH so it includes user's private bin directories

@@ -3,7 +3,7 @@
 #
 # 60-user-limits.conf.tpl - DevOpsBroker script for generating /etc/security/limits.d/60-user-limits.conf
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -101,9 +101,9 @@ USER_FILE_MAX_HARD=$[ $FS_FILE_MAX / 2 ]
 
 # <domain>      <type>  <item>          <value>
 
-# Sets the core file size limit to unlimited for all users (except root)
-*               soft    core            unlimited
-*               hard    core            unlimited
+# Sets the core file size limit to 128MB/256MB for all users (except root)
+*               soft    core            131072
+*               hard    core            262144
 
 # Set maximum locked-in-memory address space (KB) for all users (except root)
 *               soft    memlock         $MEMLOCK_MAX_SOFT

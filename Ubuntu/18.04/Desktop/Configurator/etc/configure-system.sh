@@ -39,6 +39,7 @@
 # o /etc/modprobe.d/kvm-amd.conf
 # o /etc/modprobe.d/nf_conntrack.conf
 # o /etc/network/interfaces
+# o /etc/pam.d/common-session
 # o /etc/ssl/ca.conf
 # o /etc/ssl/req.conf
 # o /etc/sudoers.d/10-umask
@@ -183,6 +184,9 @@ if ! $EXEC_GREP -Fq 'iface lo inet6 loopback' /etc/network/interfaces; then
 	echoOnExit=true
 fi
 
+# Install /etc/pam.d/common-session
+installConfig 'common-session' "$SCRIPT_DIR"/pam.d /etc/pam.d
+
 # Install /etc/ssl/ca.conf
 installConfig 'ca.conf' "$SCRIPT_DIR"/ssl /etc/ssl
 
@@ -215,26 +219,6 @@ installConfig '40-ipv6-enable.conf' "$SCRIPT_DIR"/sysctl.d /etc/sysctl.d
 
 # Install /etc/vim/vimrc.local
 installConfig 'vimrc.local' "$SCRIPT_DIR"/vim /etc/vim
-
-#
-# UMASK Configuration
-#
-
-umaskModule=$($EXEC_GREP 'pam_umask.so' /etc/pam.d/common-session)
-if [ -z "$umaskModule" ] ; then
-	printInfo 'Enabling pam_umask module'
-
-	echo -e '\nsession optional\t\t\tpam_umask.so umask=022' >> /etc/pam.d/common-session
-
-	echoOnExit=true
-
-elif [[ "$umaskModule" != *umask=022 ]]; then
-	printInfo "Setting global umask to '022' on pam_umask.so module"
-
-	$EXEC_SED --in-place -e 's/.+pam_umask.so$/& umask=022/' /etc/pam.d/common-session
-
-	echoOnExit=true
-fi
 
 #
 # Disable root login
