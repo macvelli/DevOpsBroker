@@ -64,62 +64,50 @@ clean:
 
 lib-adt:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/adt/adt.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-firelog:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ install firelog,$(MAKECMDGOALS))
 
 lib-info:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/info/info.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-io:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/io/io.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-lang:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/lang/lang.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-net:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/net/net.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-socket:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/socket/socket.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-sysfs:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-terminal:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-text:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/text/text.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 lib-time:
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f src/org/devopsbroker/time/time.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 library: lib-adt lib-info lib-io lib-lang lib-net lib-socket lib-sysfs lib-terminal lib-text lib-time
 	@umask $(UMASK) && \
-	source /etc/devops/ansi.conf && \
 	$(MAKE) -f lib/libdevopsbroker.mk $(filter-out $@ install library,$(MAKECMDGOALS))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

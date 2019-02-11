@@ -449,8 +449,9 @@ table#x86jumps tr td:first-child {
     <ul>
       <li>All other arguments are passed on the stack as they appear on the function
           definition in Right-to-Left order</li>
-      <li>Functions are called using the call instruction which pushes the address
-          of the next instruction onto the stack before calling the specified function</li>
+      <li>Functions are called using the <code>call</code> instruction which
+          pushes the address of the next instruction onto the stack before
+          calling the specified function</li>
       <ul>
         <li>The stack must be 16-byte aligned just before making the call instruction</li>
       </ul>
@@ -523,8 +524,8 @@ table#x86jumps tr td:first-child {
 
     <h3 id="returningValues">Returning Values from Fuctions</h3>
     <ul>
-      <li>Functions return to the caller using the ret instruction which pops the
-          return address from the stack and jumps to it</li>
+      <li>Functions return to the caller using the <code>ret</code> instruction
+          which pops the return address from the stack and jumps to it</li>
       <li>32-bit integer return values are stored in <code>EAX</code></li>
       <li>64-bit integer return values are stored in <code>RAX</code></li>
       <li>128-bit integer return values are stored in <code>RDX</code>:<code>RAX</code></li>

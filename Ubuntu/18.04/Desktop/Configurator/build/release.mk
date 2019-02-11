@@ -1,7 +1,7 @@
 #
 # release.mk - DevOpsBroker makefile for creating a .deb package of Ubuntu 18.04 Desktop Configurator
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -29,7 +29,7 @@ include /etc/devops/globals.mk
 ################################## Variables ##################################
 
 PKG_NAME := desktop-configurator
-VERSION := 2.0.0
+VERSION := 2.1.0
 ARCH := amd64
 PKG_ARCHIVE := $(PKG_NAME)_$(VERSION)_$(ARCH)
 
@@ -126,15 +126,14 @@ copyperf: createdirs
 	$(EXEC_CP) -r $(APPLICATION_DIR)/perf $(BUILD_DIR)/$(INSTALL_DIR)
 
 copyusr: createdirs makeutils
-	$(call printInfo,Copying usr/ files to $(INSTALL_DIR)/usr)
-	$(EXEC_CP) -rL $(APPLICATION_DIR)/usr $(BUILD_DIR)/$(INSTALL_DIR)
+	$(call printInfo,Copying usr/ files to $(BUILD_DIR)/usr)
+	$(EXEC_CP) -rL $(APPLICATION_DIR)/usr $(BUILD_DIR)
 
 copyfiles: copybase copyetc copyhome copyperf copyusr
 
 configdocs: copyusr
 	echo
-	$(call printInfo,Putting documentation files in /usr/share/doc/desktop-configurator)
-	/bin/mv $(BUILD_DIR)/$(INSTALL_DIR)/usr/share/doc $(BUILD_DIR)/usr/share
+	$(call printInfo,Installing documentation files to /usr/share/doc/desktop-configurator)
 	$(EXEC_CP) $(APPLICATION_DIR)/doc/* $(BUILD_DIR)/usr/share/doc/desktop-configurator
 
 	$(call printInfo,Compressing changelog / NEWS.txt / README.txt)
@@ -144,14 +143,18 @@ configdocs: copyusr
 
 installutils: copyusr
 	echo
-	$(call printInfo,Installing utilities in /usr/local)
-	/bin/mv $(BUILD_DIR)/$(INSTALL_DIR)/usr/local $(BUILD_DIR)/usr
+	$(call printInfo,Installing utilities to /usr/local)
 
 	$(call printInfo,Creating symbolic links for /usr/local/bin/convert-number)
 	/bin/ln -sT /usr/local/bin/convert-number $(BUILD_DIR)/usr/local/bin/binary
 	/bin/ln -sT /usr/local/bin/convert-number $(BUILD_DIR)/usr/local/bin/decimal
 	/bin/ln -sT /usr/local/bin/convert-number $(BUILD_DIR)/usr/local/bin/hex
 	/bin/ln -sT /usr/local/bin/convert-number $(BUILD_DIR)/usr/local/bin/octal
+
+	$(call printInfo,Creating symbolic links for /usr/local/bin/convert-temp)
+	/bin/ln -sT /usr/local/bin/convert-temp $(BUILD_DIR)/usr/local/bin/celsius
+	/bin/ln -sT /usr/local/bin/convert-temp $(BUILD_DIR)/usr/local/bin/fahrenheit
+	/bin/ln -sT /usr/local/bin/convert-temp $(BUILD_DIR)/usr/local/bin/kelvin
 
 	$(call printInfo,Creating symbolic links for $(INSTALL_DIR) files)
 	/bin/ln -sT $(INSTALL_DIR)/configure-desktop.sh $(BUILD_DIR)/usr/local/sbin/configure-desktop

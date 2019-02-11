@@ -1,3 +1,22 @@
+desktop-configurator (2.1.0) bionic; urgency=medium
+
+  [ Edward Smith ]
+  * Complete overhaul of iptables-desktop and ip6tables-desktop
+  * Complete revamp of network interface tuner
+  * Complete revamp of sysctl.conf network tuning
+  * Fixed security issues
+  * Example APT preferences and APT sources list files for backporting packages
+    from Ubuntu 19.04 Disco into Ubuntu 18.04 Bionic
+  * Expanded libdevopsbroker functionality
+  * Added new venture templates
+    - NASM assembly source file
+	- Bash completion function
+  * Added new user utilities
+    - convert-temp
+  * Numerous bug fixes and enhancements
+
+ -- Edward Smith <edwardsmith@devopsbroker.org>  Mon, 11 Feb 2019 04:03:59 -0600
+
 desktop-configurator (2.0.0) bionic; urgency=low
 
   [ Edward Smith ]
