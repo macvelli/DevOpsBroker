@@ -1,7 +1,7 @@
 #
 # bash.bashrc - DevOpsBroker configuration file for /etc/bash.bashrc
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -133,7 +133,7 @@ fi
 
 # Source /etc/devops/exec.conf
 if [ -f /etc/devops/exec.conf ]; then
-  source /etc/devops/exec.conf
+	source /etc/devops/exec.conf
 fi
 
 # Source /etc/devops/functions.conf
