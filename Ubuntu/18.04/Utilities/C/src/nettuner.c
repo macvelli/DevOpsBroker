@@ -78,6 +78,7 @@
 #include "org/devopsbroker/lang/float.h"
 #include "org/devopsbroker/lang/integer.h"
 #include "org/devopsbroker/lang/memory.h"
+#include "org/devopsbroker/lang/string.h"
 #include "org/devopsbroker/net/ethernet.h"
 #include "org/devopsbroker/socket/ipv4.h"
 #include "org/devopsbroker/terminal/commandline.h"
@@ -90,7 +91,7 @@
 #define ONE_MEGABIT_BYTES 125000
 #define ONE_GIGABYTE 1073741824
 
-#define USAGE_MSG "nettuner " ANSI_GOLD "{ -d dlSpeed | -u ulSpeed | -s speed | -l latency | -e | -h }" ANSI_YELLOW " IF_NAME"
+#define USAGE_MSG "nettuner " ANSI_GOLD "{ -d dlSpeed | -u ulSpeed | -s speed | -l latency | -g type | -h }" ANSI_YELLOW " IF_NAME"
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -103,6 +104,8 @@ typedef struct TuningParams {
 	float    acceptableLatency;
 	uint32_t mtu;
 	uint32_t ramInGB;
+	bool     generateIfaceScript;
+	bool     generateNMScript;
 } TuningParams;
 
 static_assert(sizeof(TuningParams) == 40, "Check your assumptions");
@@ -161,7 +164,6 @@ static_assert(sizeof(SysctlSettings) == 104, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
-bool generateScript = false;
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
@@ -173,7 +175,9 @@ static void performTuningCalcs(TuningCalcs *tuningCalcs, TuningParams *tuningPar
 
 static void setTuningParams(TuningParams *tuningParams, Ethernet *ethDevice);
 
-static void generateTuningScript(char *deviceName, EthtoolSettings *ethtoolSettings);
+static void generateIfaceTuningScript(char *deviceName, EthtoolSettings *ethtoolSettings);
+
+static void generateNetworkManagerTuningScript(char *deviceName, EthtoolSettings *ethtoolSettings);
 
 static void printNetworkKernelTuningConfig(SysctlSettings *sysctlSettings);
 
@@ -186,7 +190,7 @@ static void printHelp();
  *   -u -> Upload speed
  *   -s -> Speed
  *   -l -> Acceptable latency
- *   -g -> Generate NetworkManager tuning script
+ *   -g -> Generate tuning script
  *   -h -> Help
  * ----------------------------------------------------------------------------
  */
@@ -209,7 +213,17 @@ static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams
 			} else if (argv[i][1] == 'l') {
 				tuningParams->acceptableLatency = d7ad7024_getFloat(cmdLineParm, "acceptable latency", i);
 			} else if (argv[i][1] == 'g') {
-				generateScript = true;
+				char *tuningScript = d7ad7024_getString(cmdLineParm, "tuning script type", i);
+
+				if (f6215943_isEqual("iface", tuningScript)) {
+					tuningParams->generateIfaceScript = true;
+				} else if (f6215943_isEqual("nm", tuningScript)) {
+					tuningParams->generateNMScript = true;
+				} else {
+					c7c88e52_invalidValue("tuning script type", tuningScript);
+					c7c88e52_printUsage(USAGE_MSG);
+					exit(EXIT_FAILURE);
+				}
 			} else if (argv[i][1] == 'h') {
 				printHelp();
 				exit(EXIT_SUCCESS);
@@ -261,8 +275,10 @@ int main(int argc, char *argv[]) {
 	performTuningCalcs(&tuningCalcs, &tuningParams);
 	calcEthtoolSettings(&ethtoolSettings, &tuningCalcs, &tuningParams);
 
-	if (generateScript) {
-		generateTuningScript(tuningParams.deviceName, &ethtoolSettings);
+	if (tuningParams.generateIfaceScript) {
+		generateIfaceTuningScript(tuningParams.deviceName, &ethtoolSettings);
+	} else if (tuningParams.generateNMScript) {
+		generateNetworkManagerTuningScript(tuningParams.deviceName, &ethtoolSettings);
 	} else {
 		SysctlSettings sysctlSettings;
 
@@ -410,7 +426,76 @@ static void performTuningCalcs(TuningCalcs *tuningCalcs, TuningParams *tuningPar
 	tuningCalcs->ulFramesPerSecond = (tuningParams->uploadSpeed * ONE_MEGABIT_BYTES) / tuningParams->mtu;
 }
 
-static void generateTuningScript(char * deviceName, EthtoolSettings *ethtoolSettings) {
+static void generateIfaceTuningScript(char * deviceName, EthtoolSettings *ethtoolSettings) {
+	Time time;
+	a66923ff_initTime(&time, a66923ff_getTime());
+
+	puts(  "#!/bin/bash");
+	puts(  "#");
+	printf("# tune-%s - DevOpsBroker network interface tuning script\n", deviceName);
+	puts(  "#");
+	printf("# Copyright (C) %d Edward Smith <edwardsmith@devopsbroker.org>\n", a66923ff_getYear(&time));
+	puts(  "#");
+	puts(  "# This program is free software: you can redistribute it and/or modify it under");
+	puts(  "# the terms of the GNU General Public License as published by the Free Software");
+	puts(  "# Foundation, either version 3 of the License, or (at your option) any later");
+	puts(  "# version.");
+	puts(  "#");
+	puts(  "# This program is distributed in the hope that it will be useful, but WITHOUT");
+	puts(  "# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS");
+	puts(  "# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more");
+	puts(  "# details.");
+	puts(  "#");
+	puts(  "# You should have received a copy of the GNU General Public License along with");
+	puts(  "# this program.  If not, see <http://www.gnu.org/licenses/>.");
+	puts(  "#");
+	puts(  "# -----------------------------------------------------------------------------");
+	printf("# Configuration file for optimizing %s:\n", deviceName);
+	printf("#   o TX Queue Length = %u\n", ethtoolSettings->txqueuelen);
+	printf("#   o RX Frame Ring Buffer Size = %u\n", ethtoolSettings->rxFrameRingBufferSize);
+	printf("#   o TX Frame Ring Buffer Size = %u\n", ethtoolSettings->txFrameRingBufferSize);
+	printf("#   o RX Interrput Coalescing = %u\n", ethtoolSettings->rxIntCoalescing);
+	printf("#   o TX Interrput Coalescing = %u\n", ethtoolSettings->txIntCoalescing);
+	puts(  "# -----------------------------------------------------------------------------");
+	puts(  "#\n");
+
+	puts(  "################################## Variables ##################################\n");
+
+	puts(  "if [ -z \"$IFACE\" ] && [ -z \"$MODE\" ] && [ -z \"$PHASE\" ]; then");
+	printf("	IFACE='%s'\n", deviceName);
+	puts(  "	MODE='start'");
+	puts(  "	PHASE='post-up'");
+	puts(  "fi\n");
+
+	puts(  "################################### Actions ###################################\n");
+
+	printf("/usr/bin/logger -p syslog.notice -i Called /etc/network/if-up.d/tune-%s with interface \"$IFACE\" mode \"$MODE\" and phase \"$PHASE\";\n\n", deviceName);
+
+	printf("if [ \"$IFACE\" == '%s' ] && [ \"$MODE\" == 'start' ] && [ \"$PHASE\" == 'post-up' ]; then\n", deviceName);
+	puts(  "	# Optimize TX Queue Length");
+	printf("	/sbin/ip link set %s txqueuelen %u\n\n", deviceName, ethtoolSettings->txqueuelen);
+
+	puts(  "	# Optimize RX and TX Frame Ring Buffers");
+	printf("	/sbin/ethtool -G %s rx %u tx %u\n\n", deviceName, ethtoolSettings->rxFrameRingBufferSize, ethtoolSettings->txFrameRingBufferSize);
+
+	puts(  "	# Enable Flow Control");
+	printf("	/sbin/ethtool -A %s rx on tx on\n\n", deviceName);
+
+	puts(  "	# Enable IPv4/IPv6 RX and TX checksum offload");
+	printf("	/sbin/ethtool -K %s tx-checksum-ipv4 on tx-checksum-ipv6 on\n\n", deviceName);
+
+	puts(  "	# Disable TSO/USO/LSO/GSO Processing");
+	printf("	/sbin/ethtool -K %s sg off tso off ufo off gso off gro off lro off\n\n", deviceName);
+
+	puts(  "	# Configure RX and TX Interrput Coalescing");
+	printf("	/sbin/ethtool -C %s adaptive-rx off rx-usecs %u rx-frames 0\n", deviceName, ethtoolSettings->rxIntCoalescing);
+	printf("	/sbin/ethtool -C %s adaptive-tx off tx-usecs %u tx-frames 0\n", deviceName, ethtoolSettings->txIntCoalescing);
+	puts(  "fi\n");
+
+	puts(  "exit 0\n");
+}
+
+static void generateNetworkManagerTuningScript(char * deviceName, EthtoolSettings *ethtoolSettings) {
 	Time time;
 	a66923ff_initTime(&time, a66923ff_getTime());
 
@@ -658,12 +743,13 @@ static void printHelp() {
 	puts(ANSI_BOLD "\nExamples:" ANSI_RESET);
 	puts("  nettuner -d 320.33 -u 23.98 enp31s0");
 	puts("  nettuner -s 320.33 -l 0.05 enp31s0");
+	puts("  nettuner -g iface enp31s0");
 
 	puts(ANSI_BOLD "\nValid Options:\n");
 	puts(ANSI_YELLOW "  -d\t" ANSI_ROMANTIC "Specify the download speed");
 	puts(ANSI_BOLD ANSI_YELLOW "  -u\t" ANSI_ROMANTIC "Specify the upload speed");
 	puts(ANSI_BOLD ANSI_YELLOW "  -s\t" ANSI_ROMANTIC "Specify both the upload and download speed");
 	puts(ANSI_BOLD ANSI_YELLOW "  -l\t" ANSI_ROMANTIC "Specify the acceptable latency");
-	puts(ANSI_BOLD ANSI_YELLOW "  -g\t" ANSI_ROMANTIC "Generate NetworkManager tuning script");
+	puts(ANSI_BOLD ANSI_YELLOW "  -g\t" ANSI_ROMANTIC "Generate tuning script" ANSI_BOLD ANSI_YELLOW " { nm | iface }");
 	puts(ANSI_BOLD ANSI_YELLOW "  -h\t" ANSI_ROMANTIC "Print this help message\n");
 }

@@ -72,8 +72,22 @@ void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParm, int argc, char **argv,
  *   cmdLineParm    A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
  *   i              The current command-line parameter index
+ * Returns:     The float command-line parameter value
  * ----------------------------------------------------------------------------
  */
 float d7ad7024_getFloat(CmdLineParam *cmdLineParm, char *paramName, int i);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    d7ad7024_getString
+ * Description: Retrieves a string value from the information in CmdLineParam at index i
+ *
+ * Parameters:
+ *   cmdLineParm    A pointer to the CmdLineParam instance
+ *   paramName      The name of the parameter
+ *   i              The current command-line parameter index
+ * Returns:     The string command-line parameter value
+ * ----------------------------------------------------------------------------
+ */
+char *d7ad7024_getString(CmdLineParam *cmdLineParm, char *paramName, int i);
 
 #endif /* ORG_DEVOPSBROKER_TERMINAL_COMMANDLINE_H */

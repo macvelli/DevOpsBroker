@@ -62,6 +62,7 @@ d7ad7024_getFloat:
 ;	rsi : char *paramName
 ;	rdx : int i
 ; Local Variables:
+;	ecx  : cmdLineParm->argc
 ;	r10  : saves argv[i] reference
 ;	r11  : saves CmdLineParam* reference
 
@@ -118,4 +119,46 @@ d7ad7024_getFloat:
 	call       exit WRT ..plt
 
 .epilogue:                            ; functions typically have an epilogue
+	ret                               ; pop return address from stack and jump there
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ d7ad7024_getString ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	global  d7ad7024_getString:function
+	extern  c7c88e52_missingParam
+	extern  c7c88e52_invalidValue
+	extern  c7c88e52_printUsage
+	extern  exit
+	section .text
+d7ad7024_getString:
+; Parameters:
+;	rdi : CmdLineParam *cmdLineParm
+;	rsi : char *paramName
+;	rdx : int i
+
+.prologue:                            ; functions typically have a prologue
+	mov        ecx, [rdi + 16]        ; ecx = cmdLineParm->argc
+	inc        edx                    ; ++i
+
+.missingParameter:
+	cmp        edx, ecx
+	jne        .epilogue
+
+	; c7c88e52_missingParam(paramName);
+	push       rdi                    ; save CmdLineParam reference on the stack
+	mov        rdi, rsi               ; rdi = paramName
+	call       c7c88e52_missingParam
+
+	; c7c88e52_printUsage(cmdLineParm->usageMsg);
+	pop        rdi                    ; retrieve CmdLineParam reference from the stack
+	mov        rdi, [rdi]             ; rdi = cmdLineParm->usageMsg
+	sub        rsp, 8                 ; Re-align stack frame before making call
+	call       c7c88e52_printUsage
+
+	; exit(EXIT_FAILURE);
+	mov        rdi, EXIT_FAILURE
+	call       exit WRT ..plt
+
+.epilogue:                            ; functions typically have an epilogue
+	mov        rax, [rdi + 8]         ; rax = cmdLineParm->argv[i]
+	mov        rax, [rax + 8*rdx]
 	ret                               ; pop return address from stack and jump there

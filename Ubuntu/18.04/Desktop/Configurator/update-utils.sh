@@ -215,9 +215,6 @@ installSystemUtility firewall
 # Install gksu system administration utility
 installSystemUtility gksu
 
-# Install initcrwnd system administration utility
-installSystemUtility initcrwnd
-
 # Install logbroker system administration utility
 installSystemUtility logbroker
 

@@ -42,6 +42,12 @@ export ASMFLAGS
 export CC
 export CFLAGS
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dependencies ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+OBJ_TERMINAL := obj/org/devopsbroker/terminal
+
+NETTUNER_DEPS := $(OBJ_TERMINAL)/commandline.linux.o
+
 ################################### Targets ###################################
 
 .ONESHELL:
@@ -146,7 +152,7 @@ bin/firelog: obj/firelog.o obj/org/devopsbroker/firelog/logline.o | lib-firelog
 	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/nettuner: obj/nettuner.o
+bin/nettuner: obj/nettuner.o $(NETTUNER_DEPS)
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
