@@ -428,8 +428,8 @@ installPackage '/usr/include/magic.h' 'libmagic-dev'
 # Install libpam-modules
 installPackage '/etc/security/access.conf' 'libpam-modules'
 
-# Install linux-generic
-installPackage '/usr/share/doc/linux-generic/copyright' 'linux-generic'
+# Install linux-generic-hwe-18.04
+installPackage '/usr/share/doc/linux-generic-hwe-18.04/copyright' 'linux-generic-hwe-18.04'
 
 # Install lm-sensors
 installPackage '/usr/bin/sensors' 'lm-sensors'
@@ -567,8 +567,8 @@ installPackage '/usr/bin/whoopsie' 'whoopsie'
 # Install xclip
 installPackage '/usr/bin/xclip' 'xclip'
 
-# Install xserver-xorg
-installPackage '/usr/share/doc/xserver-xorg/copyright' 'xserver-xorg'
+# Install xserver-xorg-hwe-18.04
+#installPackage '/usr/share/doc/xserver-xorg-hwe-18.04/copyright' 'xserver-xorg-hwe-18.04'
 
 # Install yad
 installPackage '/usr/bin/yad' 'yad'

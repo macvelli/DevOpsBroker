@@ -235,7 +235,7 @@ if [ ! -f /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 	printInfo "Installing /etc/NetworkManager/dispatcher.d/tune-$NIC"
 
 	# Execute nettuner
-	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g $NIC > "$TMPDIR"/tune-$NIC)
+	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g nm $NIC > "$TMPDIR"/tune-$NIC)
 
 	# Install as root:root with rwxr-xr-x privileges
 	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/NetworkManager/dispatcher.d
@@ -250,7 +250,7 @@ elif [ "$EXEC_NETTUNER" -nt /etc/NetworkManager/dispatcher.d/tune-$NIC ]; then
 	printInfo "Updating /etc/NetworkManager/dispatcher.d/tune-$NIC"
 
 	# Execute nettuner
-	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g $NIC > "$TMPDIR"/tune-$NIC)
+	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g nm $NIC > "$TMPDIR"/tune-$NIC)
 
 	# Install as root:root with rwxr-xr-x privileges
 	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/NetworkManager/dispatcher.d

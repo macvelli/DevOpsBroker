@@ -53,6 +53,11 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -116,15 +121,19 @@ function setSourcePortIndex() {
 
 ################################## Variables ##################################
 
+## Bash exec variables
 IPTABLES=/sbin/iptables
 IPTABLES_SAVE=/sbin/iptables-save
+EXEC_DERIVESUBNET=/usr/local/bin/derivesubnet
 
 ## Options
 command="$1"
+NIC="$2"
 
 ## Variables
 persistRules=false
 validCommands=('enable')
+IPv4_SUBNET=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -143,68 +152,96 @@ if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	exit 1
 fi
 
-################################### Actions ###################################
+if [ -z "$NIC" ]; then
+	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^enp[a-z0-9]+')
 
-# Find the IPv4 subnet
-IPv4_SUBNET=$($EXEC_IP -4 route show | $EXEC_AWK '/proto kernel/{ print $1 }')
+	if [ ${#ethList[@]} -eq 1 ]; then
+		ethInterface=(${ethList[0]})
+	else
+		OLD_COLUMNS=$COLUMNS
+		COLUMNS=1
+		echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
+		select ethInterface in ${ethList[@]}; do
+			break;
+		done
+		COLUMNS=$OLD_COLUMNS
+	fi
+
+	NIC=$ethInterface
+else
+	# Display error if network interface parameter is invalid
+	if [ ! -L /sys/class/net/$NIC ]; then
+		printError "$SCRIPT_EXEC" "Cannot access '$NIC': No such network interface"
+		echo
+		printUsage "$SCRIPT_EXEC ${gold}[NIC]"
+
+		exit 1
+	fi
+fi
+
+ethInfo=( $($EXEC_DERIVESUBNET -4 $NIC) )
+
+IPv4_SUBNET=${ethInfo[2]}
+
+################################### Actions ###################################
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RAW PREROUTING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Process the raw-tcp-pre table
-processChain 'raw' 'raw-tcp-pre'
+processChain 'raw' "raw-${NIC}-tcp-pre"
 
 # Insert PREROUTING source port entry if necessary
 if [ "$sourcePortIndex" -eq 0 ]; then
-	printInfo 'NOTRACK incoming SMB TCP response packets'
+	printInfo 'Allow incoming TCP SMB response packets'
 	setSourcePortIndex
 
-	$IPTABLES -t raw -I raw-tcp-pre $sourcePortIndex -p tcp -m tcp --sport 445 -j do_not_track
+	$IPTABLES -t raw -I raw-${NIC}-tcp-pre $sourcePortIndex -p tcp -m tcp --sport 445 -j do_not_track
 	persistRules=true
 fi
 
 # Insert PREROUTING destination port entry if necessary
 if [ "$destPortIndex" -eq 0 ]; then
-	printInfo 'NOTRACK incoming SMB TCP request packets'
+	printInfo 'Allow incoming TCP SMB request packets'
 	destPortIndex=$[ $sourcePortIndex + 1 ]
 
-	$IPTABLES -t raw -I raw-tcp-pre $destPortIndex -p tcp -m tcp --dport 445 -j do_not_track
+	$IPTABLES -t raw -I raw-${NIC}-tcp-pre $destPortIndex -p tcp -m tcp --dport 445 -j do_not_track
 	persistRules=true
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RAW OUTPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Process the raw-tcp-out table
-processChain 'raw' 'raw-tcp-out'
+processChain 'raw' "raw-${NIC}-tcp-out"
 
 # Insert OUTPUT source port entry if necessary
 if [ "$sourcePortIndex" -eq 0 ]; then
-	printInfo 'NOTRACK outgoing SMB TCP response packets'
+	printInfo 'Allow outgoing TCP SMB response packets'
 	setSourcePortIndex
 
-	$IPTABLES -t raw -I raw-tcp-out $sourcePortIndex -p tcp -m tcp --sport 445 -j do_not_track
+	$IPTABLES -t raw -I raw-${NIC}-tcp-out $sourcePortIndex -p tcp -m tcp --sport 445 -j do_not_track
 	persistRules=true
 fi
 
 # Insert OUTPUT destination port entry if necessary
 if [ "$destPortIndex" -eq 0 ]; then
-	printInfo 'NOTRACK outgoing SMB TCP request packets'
+	printInfo 'Allow outgoing TCP SMB request packets'
 	destPortIndex=$[ $sourcePortIndex + 1 ]
 
-	$IPTABLES -t raw -I raw-tcp-out $destPortIndex -p tcp -m tcp --dport 445 -j do_not_track
+	$IPTABLES -t raw -I raw-${NIC}-tcp-out $destPortIndex -p tcp -m tcp --dport 445 -j do_not_track
 	persistRules=true
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FILTER INPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Process the filter-tcp-in table
-processChain 'filter' 'filter-tcp-in'
+processChain 'filter' "filter-${NIC}-tcp-in"
 
 # Insert INPUT source port entry if necessary
 if [ "$sourcePortIndex" -eq 0 ]; then
-	printInfo 'Allow incoming SMB TCP response packets'
+	printInfo 'Allow incoming TCP SMB response packets'
 	setSourcePortIndex
 
-	$IPTABLES -I filter-tcp-in $sourcePortIndex -s $IPv4_SUBNET -p tcp -m tcp --sport 445 -j ACCEPT
+	$IPTABLES -I filter-${NIC}-tcp-in $sourcePortIndex -s $IPv4_SUBNET -p tcp -m tcp --sport 445 -j ACCEPT
 	persistRules=true
 fi
 
@@ -213,53 +250,53 @@ if [ "$destPortIndex" -eq 0 ]; then
 	printInfo 'Allow incoming SMB TCP request packets'
 	destPortIndex=$[ $sourcePortIndex + 1 ]
 
-	$IPTABLES -I filter-tcp-in $destPortIndex -s $IPv4_SUBNET -p tcp -m tcp --dport 445 -j ACCEPT
+	$IPTABLES -I filter-${NIC}-tcp-in $destPortIndex -s $IPv4_SUBNET -p tcp -m tcp --dport 445 -j ACCEPT
 	persistRules=true
 fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~ FILTER OUTPUT (filter-tcp-out) ~~~~~~~~~~~~~~~~~~~~~~
 
 # Process the filter-tcp-out table
-processChain 'filter' 'filter-tcp-out' 'multiport sports 139,445$' 'multiport dports 139,445$'
+processChain 'filter' "filter-${NIC}-tcp-out" 'multiport sports 139,445$' 'multiport dports 139,445$'
 
 # Insert OUTPUT source port entry if necessary
 if [ "$sourcePortIndex" -eq 0 ]; then
-	printInfo "Deny outgoing SMB TCP response packets not on $IPv4_SUBNET"
+	printInfo "REJECT outgoing TCP SMB/NetBIOS response packets not on $IPv4_SUBNET"
 	setSourcePortIndex
 
-	$IPTABLES -I filter-tcp-out $sourcePortIndex -p tcp -m multiport --sports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
+	$IPTABLES -I filter-${NIC}-tcp-out $sourcePortIndex -p tcp -m multiport --sports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
 	persistRules=true
 fi
 
 # Insert OUTPUT destination port entry if necessary
 if [ "$destPortIndex" -eq 0 ]; then
-	printInfo "Deny outgoing SMB/NetBIOS TCP request packets not on $IPv4_SUBNET"
+	printInfo "REJECT outgoing TCP SMB/NetBIOS request packets not on $IPv4_SUBNET"
 	destPortIndex=$[ $sourcePortIndex + 1 ]
 
-	$IPTABLES -I filter-tcp-out $destPortIndex -p tcp -m multiport --dports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
+	$IPTABLES -I filter-${NIC}-tcp-out $destPortIndex -p tcp -m multiport --dports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
 	persistRules=true
 fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~ FILTER OUTPUT (filter-udp-out) ~~~~~~~~~~~~~~~~~~~~~~
 
 # Process the filter-udp-out table
-processChain 'filter' 'filter-udp-out' 'multiport sports 137,138$' 'multiport dports 137,138$'
+processChain 'filter' "filter-${NIC}-udp-out" 'multiport sports 137,138$' 'multiport dports 137,138$'
 
 # Insert OUTPUT source port entry if necessary
 if [ "$sourcePortIndex" -eq 0 ]; then
-	printInfo "Deny outgoing NetBIOS UDP response packets not on $IPv4_SUBNET"
+	printInfo "REJECT outgoing UDP NetBIOS response packets not on $IPv4_SUBNET"
 	setSourcePortIndex
 
-	$IPTABLES -I filter-udp-out $sourcePortIndex -p udp -m multiport --sports 137,138 ! -d $IPv4_SUBNET -j out_deny
+	$IPTABLES -I filter-${NIC}-udp-out $sourcePortIndex -p udp -m multiport --sports 137,138 ! -d $IPv4_SUBNET -j icmp_reject
 	persistRules=true
 fi
 
 # Insert OUTPUT destination port entry if necessary
 if [ "$destPortIndex" -eq 0 ]; then
-	printInfo "Deny outgoing NetBIOS UDP request packets not on $IPv4_SUBNET"
+	printInfo "REJECT outgoing UDP NetBIOS request packets not on $IPv4_SUBNET"
 	destPortIndex=$[ $sourcePortIndex + 1 ]
 
-	$IPTABLES -I filter-udp-out $destPortIndex -p udp -m multiport --dports 137,138 ! -d $IPv4_SUBNET -j out_deny
+	$IPTABLES -I filter-${NIC}-udp-out $destPortIndex -p udp -m multiport --dports 137,138 ! -d $IPv4_SUBNET -j icmp_reject
 	persistRules=true
 fi
 

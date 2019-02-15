@@ -3,7 +3,7 @@
 #
 # movedir - DevOpsBroker utility for moving one of /cache /home /opt /snap
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -62,42 +62,82 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError 'smbshare' 'Permission denied (you must be root)'
+	printError 'movedir' 'Permission denied (you must be root)'
 	exit 1
 fi
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
+scriptName='movedir'
+
+# Display error if not running as root
+if [ "$USER" != 'root' ]; then
+	printError $scriptName 'Permission denied (you must be root)'
+	exit 1
+fi
+
+################################## Functions ##################################
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     isDirectory
+# Description:  Verifies whether the directory parameter is not empty and is a valid directory
+#
+# Parameter $1: The command-line directory parameter
+# Returns:      Zero if directory is valid, one if invalid
+# -----------------------------------------------------------------------------
+function isDirectory() {
+	local dirName="$@"
+
+	# Display error if no directory parameter given
+	if [ -z "$dirName" ]; then
+		printError "$scriptName" 'Missing directory parameter'
+		return 0
+	fi
+
+	# Display error if invalid directory parameter given
+	if [ ! -d "$dirName" ]; then
+		printError "$scriptName" "Cannot access '$dirName': No such directory"
+		return 0
+	fi
+
+	echo '0'
+}
 
 ################################## Variables ##################################
 
 ## Options
-SOURCE_DIR="$1"
-DEST_DIR="$2"
-
-## Variables
+SOURCE_DIR=${1:-}
+DEST_DIR=${2:-}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$SOURCE_DIR" ]; then
-	printUsage 'movedir { /cache | /home | /opt | /snap } DEST_DIR'
+	printUsage "$scriptName { /cache | /home | /opt | /snap } DEST_DIR"
 	exit 1
 fi
 
 # Display error if invalid source directory paramter
 if [[ ! "$SOURCE_DIR" =~ ^/(cache|home|opt|snap)$ ]]; then
-	printError 'movedir' "Invalid source directory: '$SOURCE_DIR'"
+	printError $scriptName "Invalid source directory: '$SOURCE_DIR'"
 	echo
-	printUsage 'movedir { /cache | /home | /opt | /snap } DEST_DIR'
+	printUsage "$scriptName { /cache | /home | /opt | /snap } DEST_DIR"
 
 	exit 1
 fi
 
-errorMessage=$(isValidDirectory 'movedir' "$DEST_DIR")
+errorMessage=$(isDirectory "$DEST_DIR")
 
 # Display error if destination directory parameter is missing or invalid
 if [ "$errorMessage" != '0' ]; then
 	echo "$errorMessage"
 	echo
-	printUsage "movedir $SOURCE_DIR DEST_DIR"
+	printUsage "$scriptName $SOURCE_DIR DEST_DIR"
 
 	exit 1
 fi
@@ -106,9 +146,8 @@ fi
 mapfile -t bindMountList < <($EXEC_GREP -E '\bbind\b' /etc/fstab)
 
 # Display message if source dirctory has already been moved
-regExpr="\\b$SOURCE_DIR\\b"
 for bindMount in "${bindMountList[@]}"; do
-	if [[ "$bindMount" =~ $regExpr ]]; then
+	if [[ "$bindMount" =~ [[:blank:]]$SOURCE_DIR[[:blank:]] ]]; then
 		printInfo "Source directory '$SOURCE_DIR' has already been moved"
 		printInfo 'Exiting'
 		exit 0
@@ -123,7 +162,8 @@ $EXEC_CP /etc/fstab /etc/fstab.bak
 
 # Add bind mounts comment to /etc/fstab if necessary
 if [ "${#bindMountList[@]}" -eq 0 ]; then
-	echo '# Bind mounts' >> /etc/fstab
+	# The -e flag tells echo to interpret the newline character
+	echo -e '\n# Bind mounts' >> /etc/fstab
 fi
 
 if [ "$SOURCE_DIR" == '/cache' ]; then

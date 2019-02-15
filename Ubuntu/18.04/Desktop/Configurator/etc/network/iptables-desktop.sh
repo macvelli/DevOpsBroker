@@ -3,7 +3,7 @@
 #
 # iptables-desktop.sh - DevOpsBroker IPv4 iptables firewall script
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -49,7 +49,6 @@
 # TODO: https://www.snort.org/ - filter packets for "alerts" or concerning traffic
 # -----------------------------------------------------------------------------
 #
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Preprocessing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -189,12 +188,12 @@ printBanner 'Configuring RAW Table'
 
 # Rate limit Fragment logging
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-$IPTABLES -t raw -N ${NIC}_fragment_drop
-$IPTABLES -t raw -A ${NIC}_fragment_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 FRAG BLOCK] ' --log-level 7
-$IPTABLES -t raw -A ${NIC}_fragment_drop -j DROP
+$IPTABLES -t raw -N ipv4_fragment_drop
+$IPTABLES -t raw -A ipv4_fragment_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 FRAG BLOCK] ' --log-level 7
+$IPTABLES -t raw -A ipv4_fragment_drop -j DROP
 
 # Rate limit IGMP logging
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 $IPTABLES -t raw -N ${NIC}_igmp_drop
 $IPTABLES -t raw -A ${NIC}_igmp_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 IGMP BLOCK] ' --log-level 7
 $IPTABLES -t raw -A ${NIC}_igmp_drop -j DROP
@@ -210,7 +209,7 @@ $IPTABLES -t raw -A do_not_track -j ACCEPT
 #
 
 printInfo 'DROP incoming fragmented packets'
-$IPTABLES -t raw -A PREROUTING -f -j ${NIC}_fragment_drop
+$IPTABLES -t raw -A PREROUTING -f -j ipv4_fragment_drop
 
 printInfo 'Allow incoming IPv4 Subnet packets on all network interfaces'
 $IPTABLES -t raw -A PREROUTING -s $IPv4_SUBNET -j do_not_track
@@ -322,7 +321,7 @@ echo
 #
 
 printInfo 'DROP outgoing fragmented packets'
-$IPTABLES -t raw -A OUTPUT -f -j ${NIC}_fragment_drop
+$IPTABLES -t raw -A OUTPUT -f -j ipv4_fragment_drop
 
 printInfo 'Allow outgoing IPv4 Subnet packets on all network interfaces'
 $IPTABLES -t raw -A OUTPUT -d $IPv4_SUBNET -j do_not_track
@@ -410,6 +409,9 @@ printBanner 'Configuring MANGLE Table'
 # ═════════════════════ Configure MANGLE PREROUTING Chain ═════════════════════
 #
 
+printInfo 'Allow incoming lo interface traffic'
+$IPTABLES -t mangle -A PREROUTING -i lo -j ACCEPT
+
 printInfo 'DROP all incoming INVALID packets'
 $IPTABLES -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
 
@@ -428,6 +430,9 @@ $IPTABLES -t mangle -P FORWARD DROP
 #
 # ═══════════════════════ Configure MANGLE OUTPUT Chain ═══════════════════════
 #
+
+printInfo 'Allow outgoing lo interface traffic'
+$IPTABLES -t mangle -A OUTPUT -o lo -j ACCEPT
 
 printInfo 'DROP all outgoing INVALID packets'
 $IPTABLES -t mangle -A OUTPUT -m conntrack --ctstate INVALID -j DROP
@@ -448,15 +453,15 @@ printBanner 'Configuring FILTER Table'
 
 # Rate limit ICMP REJECT logging
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-$IPTABLES -N ${NIC}_icmp_reject
-$IPTABLES -A ${NIC}_icmp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 BLOCK] ' --log-level 7
-$IPTABLES -A ${NIC}_icmp_reject -j REJECT --reject-with icmp-port-unreachable
+$IPTABLES -N icmp_reject
+$IPTABLES -A icmp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 BLOCK] ' --log-level 7
+$IPTABLES -A icmp_reject -j REJECT --reject-with icmp-port-unreachable
 
 # Rate limit TCP REJECT logging
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-$IPTABLES -N ${NIC}_tcp_reject
-$IPTABLES -A ${NIC}_tcp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 BLOCK] ' --log-level 7
-$IPTABLES -A ${NIC}_tcp_reject -p tcp -j REJECT --reject-with tcp-reset
+$IPTABLES -N tcp_reject
+$IPTABLES -A tcp_reject -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 BLOCK] ' --log-level 7
+$IPTABLES -A tcp_reject -p tcp -j REJECT --reject-with tcp-reset
 
 #
 # ═══════════════════════ Configure FILTER INPUT Chain ════════════════════════
@@ -494,14 +499,8 @@ $IPTABLES -A filter-${NIC}-in -p tcp -j filter-${NIC}-tcp-in
 
 ## UDP
 printInfo 'Process incoming UDP traffic'
-$IPTABLES -N filter-${NIC}-udp-mcast-in
-$IPTABLES -A filter-${NIC}-in -p udp -m pkttype --pkt-type multicast -j filter-${NIC}-udp-mcast-in
-
-$IPTABLES -N filter-${NIC}-udp-bcast-in
-$IPTABLES -A filter-${NIC}-in -p udp -m pkttype --pkt-type broadcast -j filter-${NIC}-udp-bcast-in
-
-$IPTABLES -N filter-${NIC}-udp-ucast-in
-$IPTABLES -A filter-${NIC}-in -p udp -m pkttype --pkt-type unicast -j filter-${NIC}-udp-ucast-in
+$IPTABLES -N filter-${NIC}-udp-in
+$IPTABLES -A filter-${NIC}-in -p udp -j filter-${NIC}-udp-in
 
 ## ICMP
 printInfo 'ACCEPT all incoming ICMP traffic not dropped in RAW table'
@@ -509,7 +508,7 @@ $IPTABLES -A filter-${NIC}-in -p icmp -j ACCEPT
 
 ## ALL OTHERS
 printInfo 'REJECT all other incoming protocol traffic'
-$IPTABLES -A filter-${NIC}-in -j ${NIC}_icmp_reject
+$IPTABLES -A filter-${NIC}-in -j icmp_reject
 
 echo
 
@@ -551,7 +550,7 @@ printInfo 'ACCEPT Established TCP Sessions'
 $IPTABLES -A filter-${NIC}-tcp-in -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
 printInfo 'REJECT all other incoming TCP traffic'
-$IPTABLES -A filter-${NIC}-tcp-in -j ${NIC}_tcp_reject
+$IPTABLES -A filter-${NIC}-tcp-in -j tcp_reject
 
 echo
 
@@ -561,30 +560,14 @@ echo
 # ******************************
 #
 
-## UDP Multicast
-printInfo "REJECT all incoming UDP MULTICAST traffic not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-udp-mcast-in -j ${NIC}_icmp_reject
-
-echo
-
-## UDP Broadcast
-printInfo "REJECT all incoming UDP BROADCAST traffic not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-udp-bcast-in -j ${NIC}_icmp_reject
-
-echo
-
-## UDP Unicast
 printInfo 'ACCEPT incoming DNS UDP response packets'
-$IPTABLES -A filter-${NIC}-udp-ucast-in -p udp -m udp --sport 53 -j ACCEPT
+$IPTABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 53 -j ACCEPT
 
 printInfo 'ACCEPT incoming NTP UDP response packets'
-$IPTABLES -A filter-${NIC}-udp-ucast-in -p udp -m udp --sport 123 -j ACCEPT
+$IPTABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 123 -j ACCEPT
 
-printInfo 'ACCEPT incoming Google Talk Voice and Video UDP packets'
-$IPTABLES -A filter-${NIC}-udp-ucast-in -p udp -m multiport --sports 19302,19305:19309 -j ACCEPT
-
-printInfo 'REJECT all other incoming UDP UNICAST traffic'
-$IPTABLES -A filter-${NIC}-udp-ucast-in -j ${NIC}_icmp_reject
+printInfo 'REJECT all other incoming UDP traffic'
+$IPTABLES -A filter-${NIC}-udp-in -j icmp_reject
 
 echo
 
@@ -642,7 +625,7 @@ $IPTABLES -A filter-${NIC}-out -p icmp -j ACCEPT
 
 ## ALL OTHERS
 printInfo 'REJECT all other outgoing protocol traffic'
-$IPTABLES -A filter-${NIC}-out -j ${NIC}_icmp_reject
+$IPTABLES -A filter-${NIC}-out -j icmp_reject
 
 echo
 
@@ -676,8 +659,8 @@ echo
 # *******************************
 #
 
-printInfo "REJECT outgoing SMB/NetBIOS TCP request packets not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --dports 139,445 -j ${NIC}_tcp_reject
+printInfo "REJECT outgoing TCP SMB/NetBIOS request packets not on $IPv4_SUBNET"
+$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --dports 139,445 -j tcp_reject
 
 printInfo 'ACCEPT all other outgoing TCP traffic'
 $IPTABLES -A filter-${NIC}-tcp-out -j ACCEPT
@@ -690,11 +673,20 @@ echo
 # *******************************
 #
 
-printInfo "REJECT outgoing NetBIOS UDP request packets not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-udp-out -p udp -m multiport --dports 137,138 -j ${NIC}_icmp_reject
+printInfo 'ACCEPT outoging UDP DNS request packets'
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 53 -j ACCEPT
 
-printInfo 'ACCEPT all other outgoing UDP traffic'
-$IPTABLES -A filter-${NIC}-udp-out -j ACCEPT
+printInfo 'ACCEPT outgoing UDP NTP request packets'
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 123 -j ACCEPT
+
+printInfo 'ACCEPT outgoing UDP UPnP request packets'
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 1900 -d 239.255.255.250 -j ACCEPT
+
+printInfo 'ACCEPT outgoing UDP WS-Discovery request packets'
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 1124 -d 255.255.255.255 -j ACCEPT
+
+printInfo 'REJECT all other outgoing UDP traffic'
+$IPTABLES -A filter-${NIC}-udp-out -j icmp_reject
 
 echo
 

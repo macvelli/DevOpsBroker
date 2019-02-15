@@ -3,7 +3,7 @@
 #
 # ip6tables-desktop.sh - DevOpsBroker IPv6 ip6tables firewall script
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -201,9 +201,15 @@ printBanner 'Configuring RAW Table'
 
 # Rate limit Fragment logging
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-$IP6TABLES -t raw -N ${NIC}_fragment_drop
-$IP6TABLES -t raw -A ${NIC}_fragment_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv6 FRAG BLOCK] ' --log-level 7
-$IP6TABLES -t raw -A ${NIC}_fragment_drop -j DROP
+$IP6TABLES -t raw -N ipv6_fragment_drop
+$IP6TABLES -t raw -A ipv6_fragment_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv6 FRAG BLOCK] ' --log-level 7
+$IP6TABLES -t raw -A ipv6_fragment_drop -j DROP
+
+# Rate limit Canon/Epson logging
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+$IP6TABLES -t raw -N ipv6_canon_drop
+$IP6TABLES -t raw -A ipv6_canon_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv6 CANON BLOCK] ' --log-level 7
+$IP6TABLES -t raw -A ipv6_canon_drop -j DROP
 
 # Perform NOTRACK and ACCEPT
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -216,7 +222,7 @@ $IP6TABLES -t raw -A do_not_track -j ACCEPT
 #
 
 printInfo 'DROP incoming fragmented packets'
-$IP6TABLES -t raw -A PREROUTING -m frag --fragmore -j ${NIC}_fragment_drop
+$IP6TABLES -t raw -A PREROUTING -m frag --fragmore -j ipv6_fragment_drop
 
 printInfo 'Allow incoming Link-Local packets on all network interfaces'
 $IP6TABLES -t raw -A PREROUTING -s $IPv6_SUBNET_LOCAL -j do_not_track
@@ -247,8 +253,9 @@ $IP6TABLES -t raw -N raw-${NIC}-tcp-pre
 $IP6TABLES -t raw -A raw-${NIC}-pre -p tcp -j raw-${NIC}-tcp-pre
 
 ## UDP
-printInfo 'Further process incoming UDP traffic'
-$IP6TABLES -t raw -A raw-${NIC}-pre -j do_not_track
+printInfo 'Process incoming UDP traffic'
+$IP6TABLES -t raw -N raw-${NIC}-udp-pre
+$IP6TABLES -t raw -A raw-${NIC}-pre -p udp -j raw-${NIC}-udp-pre
 
 ## ICMPv6
 printInfo 'Process incoming ICMPv6 traffic'
@@ -275,8 +282,17 @@ echo
 # 137               redirect
 #
 
-printInfo 'Allow ICMPv6 neighbor-advertisement packets'
+printInfo "Allow ICMPv6 neighbor-solicitation packets to $SOLICITED_NODE_ADDR"
+$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 -s $IPv6_SUBNET_GLOBAL -d $SOLICITED_NODE_ADDR --icmpv6-type neighbor-solicitation -j do_not_track
+
+printInfo "Allow ICMPv6 neighbor-solicitation packets to $IPv6_SUBNET_GLOBAL"
+$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 -s $IPv6_SUBNET_GLOBAL -d $IPv6_SUBNET_GLOBAL --icmpv6-type neighbor-solicitation -j do_not_track
+
+printInfo "Allow ICMPv6 neighbor-advertisement packets to $ALL_NODES_LOCAL"
 $IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 -s $IPv6_SUBNET_GLOBAL -d $ALL_NODES_LOCAL --icmpv6-type neighbor-advertisement -j do_not_track
+
+printInfo "Allow ICMPv6 neighbor-advertisement packets to $IPv6_SUBNET_LOCAL"
+$IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 -s $IPv6_SUBNET_GLOBAL -d $IPv6_SUBNET_LOCAL --icmpv6-type neighbor-advertisement -j do_not_track
 
 printInfo 'Allow ICMPv6 destination-unreachable packets'
 $IP6TABLES -t raw -A raw-${NIC}-icmpv6-pre -p icmpv6 -m icmpv6 --icmpv6-type destination-unreachable -j do_not_track
@@ -308,15 +324,33 @@ echo
 # ****************************
 #
 
-printInfo 'Do not track incoming HTTP/HTTPS TCP response packets'
+printInfo 'Allow incoming TCP HTTP/HTTPS response packets'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --sport 443 -j do_not_track
 $IP6TABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --sport 80 -j do_not_track
 
-printInfo 'Do not track incoming DNS TCP response packets'
+printInfo 'Allow incoming TCP DNS response packets'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --sport 53 -j do_not_track
+
+# TODO: I don't like this because it allows *anyone* on that global subnet access
+printInfo "Allow incoming TCP SMB request packets on $IPv6_SUBNET_GLOBAL"
+$IP6TABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --dport 445 -s $IPv6_SUBNET_GLOBAL -j do_not_track
 
 printInfo 'Further process all other incoming TCP traffic'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-pre -j ACCEPT
+
+echo
+
+#
+# ****************************
+# * raw-${NIC}-udp-pre Rules *
+# ****************************
+#
+
+printInfo 'DROP incoming Canon/Epson printer discovery packets'
+$IP6TABLES -t raw -A raw-${NIC}-udp-pre -p udp -m multiport --sports 8610,8612,3289 -j ipv6_canon_drop
+
+printInfo 'Further process all other incoming UDP traffic'
+$IP6TABLES -t raw -A raw-${NIC}-udp-pre -j do_not_track
 
 echo
 
@@ -325,7 +359,7 @@ echo
 #
 
 printInfo 'DROP outgoing fragmented packets'
-$IP6TABLES -t raw -A OUTPUT -m frag --fragmore -j ${NIC}_fragment_drop
+$IP6TABLES -t raw -A OUTPUT -m frag --fragmore -j ipv6_fragment_drop
 
 printInfo 'Allow outgoing Link-Local packets on all network interfaces'
 $IP6TABLES -t raw -A OUTPUT -s $IPv6_SUBNET_LOCAL -j do_not_track
@@ -377,12 +411,16 @@ echo
 # ****************************
 #
 
-printInfo 'Do not track outgoing HTTP/HTTPS TCP request packets'
+printInfo 'Allow outgoing TCP HTTP/HTTPS request packets'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --dport 443 -j do_not_track
 $IP6TABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --dport 80 -j do_not_track
 
-printInfo 'Do not track outgoing DNS TCP request packets'
+printInfo 'Allow outgoing TCP DNS request packets'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --dport 53 -j do_not_track
+
+# TODO: I don't like this because it allows *anyone* on that global subnet access
+printInfo "Allow outgoing TCP SMB response packets on $IPv6_SUBNET_GLOBAL"
+$IP6TABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --sport 445 -d $IPv6_SUBNET_GLOBAL -j do_not_track
 
 printInfo 'Further process all other outgoing TCP traffic'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-out -j ACCEPT
@@ -534,12 +572,16 @@ echo
 # ******************************
 #
 
-printInfo 'ACCEPT incoming HTTP/HTTPS TCP response packets'
+printInfo 'ACCEPT incoming TCP HTTP/HTTPS response packets'
 $IP6TABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 443 -j ACCEPT
 $IP6TABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 80 -j ACCEPT
 
-printInfo 'ACCEPT incoming DNS TCP response packets'
+printInfo 'ACCEPT incoming TCP DNS response packets'
 $IP6TABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 53 -j ACCEPT
+
+# TODO: I don't like this because it allows *anyone* on that global subnet access
+printInfo "ACCEPT incoming TCP SMB request packets on $IPv6_SUBNET_GLOBAL"
+$IP6TABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --dport 445 -s $IPv6_SUBNET_GLOBAL -j ACCEPT
 
 printInfo 'ACCEPT Established TCP Sessions'
 $IP6TABLES -A filter-${NIC}-tcp-in -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
@@ -672,6 +714,10 @@ $IP6TABLES -A filter-${NIC}-tcp-out -p tcp -m tcp --dport 80 -j ACCEPT
 
 printInfo 'ACCEPT outgoing DNS TCP request packets'
 $IP6TABLES -A filter-${NIC}-tcp-out -p tcp -m tcp --dport 53 -j ACCEPT
+
+# TODO: I don't like this because it allows *anyone* on that global subnet access
+printInfo "ACCEPT outgoing TCP SMB response packets on $IPv6_SUBNET_GLOBAL"
+$IP6TABLES -A filter-${NIC}-tcp-out -p tcp -m tcp --sport 445 -d $IPv6_SUBNET_GLOBAL -j ACCEPT
 
 printInfo 'REJECT all other outgoing TCP traffic'
 $IP6TABLES -A filter-${NIC}-tcp-out -j ${NIC}_tcp_reject
