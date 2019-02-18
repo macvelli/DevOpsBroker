@@ -203,6 +203,12 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Desktop Utility Updater" 'true'
 # Install addUserToGroup system administration utility
 installSystemUtility addUserToGroup
 
+# Install bindmount system administration utility
+installSystemUtility bindmount
+
+# Install bridgebroker system administration utility
+installSystemUtility bridgebroker
+
 # Install dirchmod system administration utility
 installSystemUtility dirchmod
 
@@ -360,6 +366,9 @@ installUserUtility shades
 
 # Install showFileFormat user utility
 installUserUtility showFileFormat
+
+# Install snippet user utility
+installUserUtility snippet
 
 # Install ssh-key user utility
 installUserUtility ssh-key
