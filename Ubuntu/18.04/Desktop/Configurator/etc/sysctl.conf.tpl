@@ -68,9 +68,6 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
-## Script information
-SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
-
 ################################## Variables ##################################
 
 ## Bash exec variables

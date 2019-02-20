@@ -128,11 +128,10 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ubuntu Version Check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Check which version of Ubuntu is installed
-DISTRO_INFO="$(/usr/bin/lsb_release -sirc)"
-DISTRO_INFO=${DISTRO_INFO//${newline}/ }
+DISTRO_INFO="$(/usr/bin/lsb_release -sc)"
 
 # Display error if not running on Ubuntu 18.04 bionic
-if [ "$DISTRO_INFO" != 'Ubuntu 18.04 bionic' ]; then
+if [ "$DISTRO_INFO" != 'bionic' ]; then
 	printError "$SCRIPT_EXEC" "Invalid Linux distribution '$DISTRO_INFO'"
 	exit 1
 fi
@@ -350,21 +349,6 @@ if [ -d /usr/share/GeoIP ]; then
 	echo
 fi
 
-# Install ioping
-installPackage '/usr/bin/ioping' 'ioping'
-
-# Install libc-bin
-installPackage '/usr/bin/getent' 'libc-bin'
-
-# Install mmdblookup
-installPackage '/usr/bin/mmdblookup' 'libmmdb0 libmmdb-dev mmdb-bin'
-
-if [ "$PKG_INSTALLED" == 'true' ]; then
-	# Install GeoLite2 City geolocation database
-	/usr/local/bin/geoip update
-	echo
-fi
-
 # Install gimp
 installPackage '/usr/bin/gimp' 'gimp'
 
@@ -410,11 +394,17 @@ installPackage '/usr/sbin/hwinfo' 'hwinfo'
 # Install inkscape
 installPackage '/usr/bin/inkscape' 'inkscape'
 
+# Install ioping
+installPackage '/usr/bin/ioping' 'ioping'
+
 # Uninstall irqbalance
 uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
 
 # Install libaio-dev
 installPackage '/usr/include/libaio.h' 'libaio-dev'
+
+# Install libc-bin
+installPackage '/usr/bin/getent' 'libc-bin'
 
 # Uninstall libc6-dbg
 uninstallPackage '/usr/share/doc/libc6-dbg/copyright' 'libc6-dbg'
@@ -440,6 +430,15 @@ installPackage '/usr/share/doc/materia-gtk-theme/copyright' 'materia-gtk-theme'
 # Install mesa-utils
 installPackage '/usr/bin/glxinfo' 'mesa-utils'
 
+# Install mmdblookup
+installPackage '/usr/bin/mmdblookup' 'mmdb-bin libmaxminddb0'
+
+if [ "$PKG_INSTALLED" == 'true' ]; then
+	# Install GeoLite2 City geolocation database
+	/usr/local/bin/geoip update
+	echo
+fi
+
 # Uninstall mtr-tiny
 uninstallPackage '/usr/share/doc/mtr-tiny/copyright' 'mtr-tiny'
 
@@ -452,14 +451,14 @@ installPackage '/usr/bin/nasm' 'nasm'
 # Install net-tools
 installPackage '/bin/netstat' 'net-tools'
 
-# Install openresolv
-installPackage '/sbin/resolvconf' 'openresolv'
-
 # Install nmap
 installPackage '/usr/bin/nmap' 'nmap'
 
 # Install ntp
 installPackage '/usr/sbin/ntpd' 'ntp'
+
+# Install openresolv
+installPackage '/sbin/resolvconf' 'openresolv'
 
 # Install openssh-client
 installPackage '/usr/bin/ssh-keygen' 'openssh-client'
@@ -513,7 +512,7 @@ installPackage '/usr/bin/sudo' 'sudo'
 installPackage '/usr/bin/systool' 'sysfsutils'
 
 # Install sysstat
-installPackage '/usr/bin/iostat' 'sysstat'
+#installPackage '/usr/bin/iostat' 'sysstat'
 
 # Install latest version of tidy from .deb file
 if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then

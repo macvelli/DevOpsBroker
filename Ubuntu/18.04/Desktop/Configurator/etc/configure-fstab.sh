@@ -147,7 +147,7 @@ if [ ! -d /mnt/ramdisk ]; then
 
 	# Add entry to /etc/fstab to mount ramdisk
 	echo '# ramdisk is on /mnt/ramdisk' >> /etc/fstab
-	echo 'ramdisk /mnt/ramdisk tmpfs nosuid,nodev,noatime,comment=x-gvfs-show,size=512M 0 0' >> /etc/fstab
+	echo 'ramdisk	/mnt/ramdisk	tmpfs	nosuid,nodev,noatime,comment=x-gvfs-show,size=512M	0	0' >> /etc/fstab
 
 	# Need to remount all filesystems
 	remountAll=true
@@ -165,7 +165,7 @@ if [ ! -f /etc/fstab.orig ]; then
 	"$fstabTpl" > "$TMPDIR"/fstab
 
 	# Install as root:root with rw-rw-r-- privileges
-	$EXEC_INSTALL -b --suffix .orig -o root -g root -m 664 "$TMPDIR"/fstab /etc
+	$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/fstab /etc
 
 	# Clean up
 	$EXEC_RM "$TMPDIR"/fstab
@@ -180,7 +180,7 @@ elif [ "$1" == '-f' ]; then
 	"$fstabTpl" > "$TMPDIR"/fstab
 
 	# Install as root:root with rw-rw-r-- privileges
-	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 664 "$TMPDIR"/fstab /etc
+	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/fstab /etc
 
 	# Clean up
 	$EXEC_RM "$TMPDIR"/fstab

@@ -67,16 +67,16 @@ function validateBash() {
 	if [ -z "$snippetName" ]; then
 		printError $scriptName 'Missing snippet name parameter'
 		echo
-		printUsage "$scriptName $command { arrayloop }"
+		printUsage "$scriptName $command { arrayloop | selectmenu }"
 
 		exit 1
 	fi
 
 	# Display error if snippet name parameter is invalid
-	if [[ ! "$snippetName" =~ ^(arrayloop)$ ]]; then
+	if [[ ! "$snippetName" =~ ^(arrayloop|selectmenu)$ ]]; then
 		printError $scriptName "Invalid $command snippet: '$snippetName'"
 		echo
-		printUsage "$scriptName $command { arrayloop }"
+		printUsage "$scriptName $command { arrayloop | selectmenu }"
 
 		exit 1
 	fi
@@ -119,8 +119,14 @@ if [ $command == 'bash' ]; then
 		echo 'for i in "${array[@]}"; do'
 		echo '	echo $i'
 		echo 'done'
+	elif [ $snippetName == 'selectmenu' ]; then
+		echo "select confirmDelete in 'Yes' 'No'; do"
+		echo "	if [ \$confirmDelete == 'Yes' ]; then"
+		echo "		echo 'Perform delete'"
+		echo "	fi"
+		echo "	break;"
+		echo "done"
 	fi
-
 fi
 
 exit 0
