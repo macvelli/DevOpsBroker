@@ -3,7 +3,7 @@
 #
 # pms - DevOpsBroker Package Management System
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -55,6 +55,15 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
+scriptName='pms'
+
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -64,28 +73,51 @@ ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'add-repo' ]; then
-		printUsage 'pms add-repo ppa:<user>/<ppa-name>'
+	if [ -z "$command" ]; then
+		printUsage "$scriptName COMMAND ${gold}[OPTION...]"
+		echo
+		printUsage 'false' "$scriptName add-repo ${gold}ppa:<user>/<ppa-name>"
+		printUsage 'false' "$scriptName autoremove"
+		printUsage 'false' "$scriptName depends ${gold}package-name"
+		printUsage 'false' "$scriptName full-upgrade"
+		printUsage 'false' "$scriptName info ${gold}{ package-name | snap-name }"
+		printUsage 'false' "$scriptName install ${gold}{ package-name | snap-name | file.deb }"
+		printUsage 'false' "$scriptName list ${gold}{ package-name | snap-name | file.deb }"
+		printUsage 'false' "$scriptName reconfigure ${gold}package-name"
+		printUsage 'false' "$scriptName refresh ${gold}snap-name"
+		printUsage 'false' "$scriptName reinstall ${gold}package-name"
+		printUsage 'false' "$scriptName remove ${gold}{ package-name | snap-name }"
+		printUsage 'false' "$scriptName test ${gold}package-name"
+		printUsage 'false' "$scriptName uninstall ${gold}package-name"
+		printUsage 'false' "$scriptName upgrade"
+		printUsage 'false' "$scriptName which ${gold}FILE"
+		echo
+	elif [ "$command" == 'add-repo' ]; then
+		printUsage "$scriptName add-repo ${gold}ppa:<user>/<ppa-name>"
 		echo ${romantic}
-		echo 'Adds an external Personal  Package  Archive to the local APT repository'${reset}
+		echo 'Adds an external Personal Package Archive to the local APT repository'${reset}
 	elif [ "$command" == 'autoremove' ]; then
-		printUsage 'pms autoremove'
+		printUsage "$scriptName autoremove"
 		echo ${romantic}
 		echo 'Removes all packages that were automatically installed to satisfy dependencies for other packages and are now no longer needed'${reset}
+	elif [ "$command" == 'depends' ]; then
+		printUsage "$scriptName depends ${gold}package-name"
+		echo ${romantic}
+		echo 'Shows a list of every dependency for a given APT package'${reset}
 	elif [ "$command" == 'full-upgrade' ]; then
-		printUsage 'pms full-upgrade'
+		printUsage "$scriptName full-upgrade"
 		echo ${romantic}
 		echo 'Performs an upgrade and will remove currently installed packages if this is needed to upgrade the system as a whole'${reset}
 	elif [ "$command" == 'info' ]; then
-		printUsage 'pms info { package-name | snap-name }'
+		printUsage "$scriptName info ${gold}{ package-name | snap-name }"
 		echo ${romantic}
 		echo 'Displays information about the given package/snap'${reset}
 	elif [ "$command" == 'install' ]; then
-		printUsage 'pms install { package-name | snap-name | file.deb }'
+		printUsage "$scriptName install ${gold}{ package-name | snap-name | file.deb }"
 		echo ${romantic}
 		echo 'Installs the specified packages/snaps/.deb files'${reset}
 	elif [ "$command" == 'list' ]; then
-		printUsage "pms list ${gold}{ package-name | snap-name | file.deb }"
+		printUsage "$scriptName list ${gold}{ package-name | snap-name | file.deb }"
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
 		echo -e ${bold}${yellow}'  [none]\t'        ${romantic}'Lists all installed packages and snaps on the system'
@@ -94,11 +126,11 @@ function showHelp() {
 		echo -e ${bold}${yellow}'  file.deb\t'      ${romantic}'Lists all files that are packaged within the .deb file'
 		echo ${reset}
 	elif [ "$command" == 'reconfigure' ]; then
-		printUsage 'pms reconfigure package-name'
+		printUsage "$scriptName reconfigure ${gold}package-name"
 		echo ${romantic}
 		echo 'Reconfigures an already installed package'${reset}
 	elif [ "$command" == 'refresh' ]; then
-		printUsage "pms refresh ${gold}snap-name"
+		printUsage "$scriptName refresh ${gold}snap-name"
 		echo ${romantic}
 		echo 'Refresh a snap in the system'${reset}
 		echo
@@ -107,27 +139,27 @@ function showHelp() {
 		echo -e ${bold}${yellow}'  snap-name\t'     ${romantic}'Refresh the specified snap'
 		echo ${reset}
 	elif [ "$command" == 'reinstall' ]; then
-		printUsage 'pms reinstall package-name'
+		printUsage "$scriptName reinstall ${gold}package-name"
 		echo ${romantic}
 		echo 'Re-install packages that are already installed and at the newest version'${reset}
 	elif [ "$command" == 'remove' ]; then
-		printUsage 'pms remove { package-name | snap-name }'
+		printUsage "$scriptName remove ${gold}{ package-name | snap-name }"
 		echo ${romantic}
 		echo 'Removes an installed package or snap from the system'${reset}
 	elif [ "$command" == 'test' ]; then
-		printUsage 'pms test package-name'
+		printUsage "$scriptName test ${gold}package-name"
 		echo ${romantic}
 		echo 'Performs a dry run installation of an Apt package'${reset}
 	elif [ "$command" == 'uninstall' ]; then
-		printUsage 'pms uninstall package-name'
+		printUsage "$scriptName uninstall ${gold}package-name"
 		echo ${romantic}
 		echo 'Removes everything related to an installed or already removed package including configuration files'${reset}
 	elif [ "$command" == 'upgrade' ]; then
-		printUsage 'pms upgrade'
+		printUsage "$scriptName upgrade"
 		echo ${romantic}
 		echo 'Installs available upgrades of all packages currently installed on the system'${reset}
 	elif [ "$command" == 'which' ]; then
-		printUsage 'pms which FILE'
+		printUsage "$scriptName which ${gold}FILE"
 		echo ${romantic}
 		echo 'Displays which package the given file belongs to'${reset}
 	fi
@@ -150,32 +182,31 @@ EXEC_LSB_RELEASE=/usr/bin/lsb_release
 EXEC_WHICH=/usr/bin/which
 
 ## Options
-command="$1"
+command=${1:-}
 
 ## Variables
 showCommandHelp=false
 sudoCommands=('add-repo' 'autoremove' 'full-upgrade' 'install' 'reconfigure' 'refresh' 'reinstall' 'remove' 'test' 'uninstall' 'upgrade')
-validCommands=(${sudoCommands[@]} 'info' 'list' 'which')
+validCommands=(${sudoCommands[@]} 'depends' 'info' 'list' 'which')
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMAND/OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-if [ "$command" == 'help' ]; then
-	showCommandHelp=true
-	command="$2"
-	shift
-fi
-
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | test | uninstall | upgrade | which }"
+	printUsage "$scriptName ${gold}[help]${yellow} COMMAND ${gold}[OPTION...]"
 	exit 1
 fi
 
+if [ "$command" == 'help' ]; then
+	showCommandHelp=true
+	command=${2:-}
+fi
+
 # Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError 'pms' "Invalid command: '$command'"
+if [ $command ] && [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+	printError $scriptName "Invalid command: '$command'"
 	echo
-	printUsage "pms ${gold}[help]${yellow} { add-repo | autoremove | full-upgrade | info | install | list | reconfigure | refresh | reinstall | remove | test | uninstall | upgrade | which }"
+	printUsage "$scriptName ${gold}[help]${yellow} COMMAND ${gold}[OPTION...]"
 
 	exit 1
 fi
@@ -187,7 +218,7 @@ fi
 
 # Display error if not running as root
 if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$USER" != 'root' ]; then
-	printError 'pms' 'Permission denied (you must be root)'
+	printError $scriptName 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -231,6 +262,16 @@ elif [ "$command" == 'upgrade' ] || [ "$command" == 'full-upgrade' ]; then
 
 	# Update the last-update file to today
 	echo $($EXEC_DATE -I) > /etc/devops/last-update
+
+elif [ $command == 'depends' ]; then
+
+	# Display usage if no package name parameter given
+	if [ -z "$2" ]; then
+		printUsage 'pms depends package-name'
+		exit 1
+	fi
+
+	$EXEC_APT_CACHE depends $2
 
 elif [ $command == 'info' ]; then
 

@@ -148,7 +148,7 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -157,7 +157,7 @@ fi
 # Check which version of Ubuntu is installed
 DISTRO_INFO="$(/usr/bin/lsb_release -sc)"
 
-# Display error if not running on Ubuntu 18.04 bionic
+# Display error if not running on Ubuntu 18.04 Bionic
 if [ "$DISTRO_INFO" != 'bionic' ]; then
 	printError "$SCRIPT_EXEC" "Invalid Linux distribution '$DISTRO_INFO'"
 	exit 1

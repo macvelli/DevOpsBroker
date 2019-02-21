@@ -50,14 +50,28 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
+if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
+	source /etc/devops/functions-io.conf
+fi
+
+${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
 ## Script information
-SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -70,10 +84,35 @@ sourcesListTpl=$(isExecutable "$SCRIPT_DIR"/sources-list.tpl)
 EXEC_TRUNCATE=/usr/bin/truncate
 
 ## Options
-updateAptSources=${1:-'true'}
+option=${1:-}
+forceReconfig=false
+updateAptSources=''
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Process command-line options
+while [[ "$option" == -* ]]; do
+
+	# forceReconfig option
+	if [ "$option" == '-f' ]; then
+
+		forceReconfig=true
+		shift
+		option=${1:-}
+	else
+		# Display error and help if option parameter is not valid
+		printError $SCRIPT_EXEC "Invalid option: '$option'"
+		echo
+		printUsage "$SCRIPT_EXEC ${gold}[-f]"
+
+		exit 1
+	fi
+done
+
+updateAptSources=${option:-'true'}
 
 ################################### Actions ###################################
 
@@ -85,8 +124,8 @@ fi
 printBox "DevOpsBroker $UBUNTU_RELEASE APT Mirror Configurator" 'true'
 
 # Exit if APT Mirror already configured
-if [ -f /etc/apt/sources.list.orig ] && [ "$1" != '-f' ]; then
-	printInfo 'APT Mirror already configured'
+if [ -f /etc/apt/sources.list.orig ] && [ $forceReconfig == 'false' ]; then
+	printNotice $SCRIPT_EXEC 'APT Mirror already configured'
 	echo
 	printUsage "$SCRIPT_EXEC ${gold}[-f]"
 
@@ -98,7 +137,7 @@ if [ -f /etc/apt/sources.list.orig ] && [ "$1" != '-f' ]; then
 	exit 0
 fi
 
-if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list || [ "$1" == '-f' ]; then
+if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list || [ $forceReconfig == 'true' ]; then
 	# BEGIN Configure apt mirror site
 
 	printBanner 'Configuring /etc/apt/sources.list mirror'

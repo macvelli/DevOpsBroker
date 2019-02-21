@@ -31,6 +31,8 @@
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
 # o /etc/devops/functions.conf
+# o /etc/devops/functions-admin.conf
+# o /etc/devops/functions-io.conf
 # o /etc/modprobe.d/nf_conntrack.conf
 # o /etc/pam.d/common-session
 # o /etc/sudoers.d/10-umask
@@ -69,6 +71,20 @@ if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
+
+# Load /etc/devops/functions-admin.conf if FUNC_ADMIN_CONFIG is unset
+if [ -z "$FUNC_ADMIN_CONFIG" ] && [ -f /etc/devops/functions-admin.conf ]; then
+	source /etc/devops/functions-admin.conf
+fi
+
+${FUNC_ADMIN_CONFIG?"[1;91mCannot load '/etc/devops/functions-admin.conf': No such file[0m"}
+
+# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
+if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
+	source /etc/devops/functions-io.conf
+fi
+
+${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -130,13 +146,19 @@ installConfig 'profile' "$SCRIPT_DIR" /etc
 
 if [ -d "$SCRIPT_DIR"/devops ]; then
 	# Install /etc/devops/ansi.conf
-	installConfig 'ansi.conf' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'ansi.conf' "$SCRIPT_DIR/devops" /etc/devops
 
 	# Install /etc/devops/exec.conf
-	installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'exec.conf' "$SCRIPT_DIR/devops" /etc/devops
 
 	# Install /etc/devops/functions.conf
-	installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'functions.conf' "$SCRIPT_DIR/devops" /etc/devops
+
+	# Install /etc/devops/functions-admin.conf
+	installConfig 'functions-admin.conf' "$SCRIPT_DIR/devops" /etc/devops
+
+	# Install /etc/devops/functions-io.conf
+	installConfig 'functions-io.conf' "$SCRIPT_DIR/devops" /etc/devops
 fi
 
 # Install /etc/modprobe.d/nf_conntrack.conf

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-# install.sh - DevOpsBroker Ubuntu 18.04 Desktop Configurator install script
+# install.sh - DevOpsBroker Ubuntu 18.04 Server Configurator install script
 #
-# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -19,11 +19,8 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-36
+# Developed on Ubuntu 18.04.2 LTS running kernel.osrelease = 4.18.0-15
 #
-# To run this script:
-#   o chmod u+x install.sh
-#   o sudo ./install.sh
 # -----------------------------------------------------------------------------
 #
 
@@ -65,11 +62,11 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ubuntu Version Check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Check which version of Ubuntu is installed
-IS_DESKTOP="$(/usr/bin/dpkg -l gnome-shell 2>&1 | /bin/grep -c ^ii || true)"
+IS_SERVER="$(/usr/bin/dpkg -l ubuntu-minimal 2>&1 | /bin/grep -c ^ii || true)"
 
-# Display error if not running on Ubuntu Desktop
-if [ $IS_DESKTOP -eq 0 ]; then
-	printError $scriptName "Invalid Ubuntu version: Not Ubuntu Desktop"
+# Display error if not running on Ubuntu Server
+if [ $IS_SERVER -eq 0 ]; then
+	printError $scriptName "Invalid Ubuntu version: Not Ubuntu Server"
 	exit 1
 fi
 
@@ -101,7 +98,7 @@ function createSymlink() {
 ################################## Variables ##################################
 
 ## Variables
-INSTALL_DIR=/opt/devopsbroker/bionic/desktop/configurator
+INSTALL_DIR=/opt/devopsbroker/bionic/server/configurator
 
 ################################### Actions ###################################
 
@@ -111,8 +108,6 @@ if [ $SHLVL -eq 1 ]; then
 fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Configurator Installer" 'true'
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Add devops group
 if [ -z "$($EXEC_GETENT group devops)" ]; then
@@ -129,15 +124,7 @@ if [[ ! "$userGroups" =~ [[:blank:]]devops[[:blank:]] ]]; then
 	$EXEC_ADDUSER $SUDO_USER 'devops'
 fi
 
-# Create /cache directory for user cache
-if [ ! -d /cache ]; then
-	printInfo 'Creating /cache directory'
-
-	$EXEC_MKDIR --mode=0755 /cache
-	$EXEC_CHOWN root:users /cache
-fi
-
-# Create /opt/devopsbroker/bionic/desktop/configurator directory
+# Create /opt/devopsbroker/bionic/server/configurator directory
 if [ ! -d $INSTALL_DIR ]; then
 	printInfo "Creating $INSTALL_DIR directory"
 
@@ -147,19 +134,15 @@ fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Installation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Copy files into the /opt/devopsbroker/bionic/desktop/configurator directory
+# Copy files into the /opt/devopsbroker/bionic/server/configurator directory
 printBanner "Copying files to $INSTALL_DIR/"
 
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/configure-desktop.sh "$INSTALL_DIR"
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/device-drivers.sh "$INSTALL_DIR"
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/ttf-msclearfonts.sh "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/configure-server.sh "$INSTALL_DIR"
 /bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/update-utils.sh "$INSTALL_DIR"
 
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/archives "$INSTALL_DIR"
 /bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/doc "$INSTALL_DIR"
 /bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/etc "$INSTALL_DIR"
 /bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/home "$INSTALL_DIR"
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/perf "$INSTALL_DIR"
 /bin/cp -ruvL --preserve=timestamps "$SCRIPT_DIR"/usr "$INSTALL_DIR"
 
 echo
@@ -179,20 +162,11 @@ fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Shell Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Make symlink to configure-desktop.sh
-createSymlink /usr/local/sbin/configure-desktop "$INSTALL_DIR"/configure-desktop.sh
-
-# Make symlink to device-drivers.sh
-createSymlink /usr/local/sbin/device-drivers "$INSTALL_DIR"/device-drivers.sh
-
-# Make symlink to ttf-msclearfonts.sh
-createSymlink /usr/local/sbin/ttf-msclearfonts "$INSTALL_DIR"/ttf-msclearfonts.sh
+# Make symlink to configure-server.sh
+createSymlink /usr/local/sbin/configure-server "$INSTALL_DIR"/configure-server.sh
 
 # Make symlink to update-utils.sh
 createSymlink /usr/local/sbin/update-utils "$INSTALL_DIR"/update-utils.sh
-
-# Make symlink to etc/configure-amdgpu.sh
-createSymlink /usr/local/sbin/configure-amdgpu "$INSTALL_DIR"/etc/configure-amdgpu.sh
 
 # Make symlink to etc/configure-fstab.sh
 createSymlink /usr/local/sbin/configure-fstab "$INSTALL_DIR"/etc/configure-fstab.sh
@@ -209,17 +183,17 @@ createSymlink /usr/local/sbin/configure-apt-mirror "$INSTALL_DIR"/etc/apt/config
 # Make symlink to etc/default/configure-grub.sh
 createSymlink /usr/local/sbin/configure-grub "$INSTALL_DIR"/etc/default/configure-grub.sh
 
-# Make symlink to etc/network/ip6tables-desktop.sh
-createSymlink /usr/local/sbin/ip6tables-desktop "$INSTALL_DIR"/etc/network/ip6tables-desktop.sh
+# Make symlink to etc/network/ip6tables-private.sh
+createSymlink /usr/local/sbin/ip6tables-private "$INSTALL_DIR"/etc/network/ip6tables-private.sh
 
-# Make symlink to etc/network/iptables-desktop.sh
-createSymlink /usr/local/sbin/iptables-desktop "$INSTALL_DIR"/etc/network/iptables-desktop.sh
+# Make symlink to etc/network/ip6tables-public.sh
+createSymlink /usr/local/sbin/ip6tables-public "$INSTALL_DIR"/etc/network/ip6tables-public.sh
 
-# Make symlink to etc/NetworkManager/configure-nm.sh
-createSymlink /usr/local/sbin/configure-nm "$INSTALL_DIR"/etc/NetworkManager/configure-nm.sh
+# Make symlink to etc/network/iptables-private.sh
+createSymlink /usr/local/sbin/iptables-private "$INSTALL_DIR"/etc/network/iptables-private.sh
 
-# Make symlink to etc/samba/configure-samba.sh
-createSymlink /usr/local/sbin/configure-samba "$INSTALL_DIR"/etc/samba/configure-samba.sh
+# Make symlink to etc/network/iptables-public.sh
+createSymlink /usr/local/sbin/iptables-public "$INSTALL_DIR"/etc/network/iptables-public.sh
 
 # Make symlink to etc/security/configure-security.sh
 createSymlink /usr/local/sbin/configure-security "$INSTALL_DIR"/etc/security/configure-security.sh
@@ -256,7 +230,5 @@ installConfig 'functions-io.conf' "$INSTALL_DIR/etc/devops" /etc/devops
 
 # Install /etc/devops/functions.conf
 installConfig 'functions.conf' "$INSTALL_DIR/etc/devops" /etc/devops
-
-echo
 
 exit 0

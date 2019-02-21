@@ -35,6 +35,8 @@
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
 # o /etc/devops/functions.conf
+# o /etc/devops/functions-admin.conf
+# o /etc/devops/functions-io.conf
 # o /etc/devops/globals.mk
 # o /etc/modprobe.d/kvm-amd.conf
 # o /etc/modprobe.d/nf_conntrack.conf
@@ -147,16 +149,22 @@ installConfig 'resolvconf' "$SCRIPT_DIR"/default /etc/default
 
 if [ -d "$SCRIPT_DIR"/devops ]; then
 	# Install /etc/devops/ansi.conf
-	installConfig 'ansi.conf' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'ansi.conf' "$SCRIPT_DIR/devops" /etc/devops
 
 	# Install /etc/devops/exec.conf
-	installConfig 'exec.conf' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'exec.conf' "$SCRIPT_DIR/devops" /etc/devops
 
 	# Install /etc/devops/functions.conf
-	installConfig 'functions.conf' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'functions.conf' "$SCRIPT_DIR/devops" /etc/devops
+
+	# Install /etc/devops/functions-admin.conf
+	installConfig 'functions-admin.conf' "$SCRIPT_DIR/devops" /etc/devops
+
+	# Install /etc/devops/functions-io.conf
+	installConfig 'functions-io.conf' "$SCRIPT_DIR/devops" /etc/devops
 
 	# Install /etc/devops/globals.mk
-	installConfig 'globals.mk' "$SCRIPT_DIR"/devops /etc/devops
+	installConfig 'globals.mk' "$SCRIPT_DIR/devops" /etc/devops
 fi
 
 # Install /etc/modprobe.d/kvm-amd.conf

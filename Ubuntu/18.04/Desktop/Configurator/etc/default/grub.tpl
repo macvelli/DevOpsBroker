@@ -69,6 +69,9 @@ ONLINE_CPUS=$($EXEC_CAT /sys/devices/system/cpu/online)
 ## Options
 zswapMaxPoolPct="$1"
 
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -96,8 +99,9 @@ isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
 efiReboot=$([ "$isEfiBoot" == 'true' ] && echo -n 'reboot=efi' || echo -n '')
 
 defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct"
-defaultCmdLine="$defaultCmdLine iommu=memaper=3,noagp,allowdac nmi_watchdog=0 nohz=on"
-defaultCmdLine="$defaultCmdLine rcu_nocbs=$ONLINE_CPUS rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
+defaultCmdLine="$defaultCmdLine iommu=memaper=3,noagp,allowdac"
+defaultCmdLine="$defaultCmdLine nmi_watchdog=0 nohz=on rcu_nocbs=$ONLINE_CPUS"
+defaultCmdLine="$defaultCmdLine rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
 
 if [ "$isEfiBoot" = 'true' ]; then
 	defaultCmdLine="acpi=force $defaultCmdLine"
@@ -108,7 +112,7 @@ fi
 #
 # grub - DevOpsBroker configuration for /etc/default/grub
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) $YEAR Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software

@@ -52,6 +52,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
+if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
+	source /etc/devops/functions-io.conf
+fi
+
+${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 set -o errexit                 # Exit if any statement returns a non-true value
@@ -67,33 +74,6 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
-################################## Functions ##################################
-
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:     isDirectory
-# Description:  Verifies whether the directory parameter is not empty and is a valid directory
-#
-# Parameter $1: The command-line directory parameter
-# Returns:      Zero if directory is valid, one if invalid
-# -----------------------------------------------------------------------------
-function isDirectory() {
-	local dirName="$@"
-
-	# Display error if no directory parameter given
-	if [ -z "$dirName" ]; then
-		printError "$scriptName" 'Missing directory parameter'
-		return 0
-	fi
-
-	# Display error if invalid directory parameter given
-	if [ ! -d "$dirName" ]; then
-		printError "$scriptName" "Cannot access '$dirName': No such directory"
-		return 0
-	fi
-
-	echo '0'
-}
-
 ################################## Variables ##################################
 
 ## Options
@@ -102,7 +82,7 @@ DEST_DIR=${2:-}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-errorMessage=$(isDirectory "$SOURCE_DIR")
+errorMessage=$(isValidDirectory $scriptName "$SOURCE_DIR")
 
 # Display error if source directory parameter is missing or invalid
 if [ "$errorMessage" != '0' ]; then
@@ -113,7 +93,7 @@ if [ "$errorMessage" != '0' ]; then
 	exit 1
 fi
 
-errorMessage=$(isDirectory "$DEST_DIR")
+errorMessage=$(isValidDirectory $scriptName "$DEST_DIR")
 
 # Display error if destination directory parameter is missing or invalid
 if [ "$errorMessage" != '0' ]; then
