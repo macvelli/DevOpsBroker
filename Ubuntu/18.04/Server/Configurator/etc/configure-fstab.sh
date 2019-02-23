@@ -72,7 +72,7 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -157,7 +157,7 @@ if [ ! -d /mnt/ramdisk ]; then
 	printInfo 'Creating RAM Disk'
 
 	# Make the /mnt/ramdisk directory
-	$EXEC_MKDIR --mode=0777 /mnt/ramdisk
+	$EXEC_MKDIR --parents --mode=0777 /mnt/ramdisk
 
 	# Add entry to /etc/fstab to mount ramdisk
 	echo '# ramdisk is on /mnt/ramdisk' >> /etc/fstab

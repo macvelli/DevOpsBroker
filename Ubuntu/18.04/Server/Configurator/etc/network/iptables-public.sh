@@ -72,29 +72,32 @@ if [ -z "$EXEC_CONFIG" ] && [ -f /etc/devops/exec.conf ]; then
 	source /etc/devops/exec.conf
 fi
 
-${EXEC_CONFIG?"${bold}${red}Cannot load '/etc/devops/exec.conf': No such file${reset}"}
+${EXEC_CONFIG?"[1;91mCannot load '/etc/devops/exec.conf': No such file[0m"}
 
 # Load /etc/devops/functions.conf if FUNC_CONFIG is unset
 if [ -z "$FUNC_CONFIG" ] && [ -f /etc/devops/functions.conf ]; then
 	source /etc/devops/functions.conf
 fi
 
-${FUNC_CONFIG?"${bold}${red}Cannot load '/etc/devops/functions.conf': No such file${reset}"}
-
-## Script information
-SCRIPT_EXEC=$( $EXEC_BASENAME "$BASH_SOURCE" )
-
-# Display error if not running as root
-if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
-
-	exit 1
-fi
+${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 set -o errexit                 # Exit if any statement returns a non-true value
 set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
+
+# Display error if not running as root
+if [ "$USER" != 'root' ]; then
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
+	exit 1
+fi
 
 ################################## Variables ##################################
 

@@ -162,9 +162,10 @@ bin/schedtuner: obj/schedtuner.o
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/scriptinfo: obj/scriptinfo.o
+bin/scriptinfo: obj/scriptinfo.o obj/scriptinfo.linux.o
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
+	/usr/bin/strip -s $@
 
 # Have to put the library at the end else the linker blows chunks
 bin/verifyclass: obj/verifyclass.o

@@ -1,7 +1,7 @@
 /*
  * scriptinfo.c - DevOpsBroker C source file for providing Bash script information
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -43,10 +43,7 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-// Global Constants
-#define ALL_VARS 0
-#define SCRIPT_DIR 1
-#define SCRIPT_EXEC 2
+#define USAGE_MSG "scriptinfo SCRIPT_NAME"
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -56,14 +53,10 @@
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static char *setScriptDir(char *pathName);
-static void setScriptExec(char *pathName);
+char *f67f16c0_getScriptName(char *pathName);
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
-char *realPathName = NULL;
-char *scriptDir = NULL;
-char *scriptExec = NULL;
 
 // ══════════════════════════════════ main() ══════════════════════════════════
 
@@ -72,17 +65,20 @@ int main(int argc, char *argv[]) {
 	programName = "scriptinfo";
 
 	if (argc == 1) {
-		c7c88e52_printUsage("scriptinfo SCRIPT_NAME");
+		c7c88e52_printUsage(USAGE_MSG);
 		exit(EXIT_FAILURE);
 	}
 
 	if (argv[1][0] == '\0') {
-		c7c88e52_printError_string("SCRIPT_NAME parameter is missing\n\n");
-		c7c88e52_printUsage("scriptinfo SCRIPT_NAME");
+		c7c88e52_missingParam("script name");
+		c7c88e52_printUsage(USAGE_MSG);
 		exit(EXIT_FAILURE);
 	}
 
 	char *pathName = argv[1];
+	char *realPathName = NULL;
+	char *scriptDir = NULL;
+	char *scriptExec = NULL;
 
 	// Stat the script
 	FileStatus fileStatus;
@@ -92,18 +88,21 @@ int main(int argc, char *argv[]) {
 	if (S_ISLNK(fileStatus.st_mode)) {
 		realPathName = e2f74138_readlink(pathName, fileStatus.st_size);
 
-		setScriptDir(realPathName);
-		setScriptExec(pathName);
+		scriptDir = realPathName;
+		f67f16c0_getScriptName(realPathName);
+		scriptExec = f67f16c0_getScriptName(pathName);
 
 	// Handle regular files
 	} else if (S_ISREG(fileStatus.st_mode)) {
 		realPathName = e2f74138_realpath(pathName);
 
-		scriptExec = setScriptDir(realPathName);
+		scriptDir = realPathName;
+		scriptExec = f67f16c0_getScriptName(realPathName);
 	}
 
 	// Cannot set environment variables in parent shell from binary executable
-	printf("%s %s\n", scriptDir, scriptExec);
+	puts(scriptDir);
+	puts(scriptExec);
 
 	if (realPathName != NULL) {
 		free(realPathName);
@@ -114,39 +113,3 @@ int main(int argc, char *argv[]) {
 }
 
 // ═════════════════════════ Function Implementations ═════════════════════════
-
-static char *setScriptDir(char *pathName) {
-	char *scriptName = NULL;
-	scriptDir = pathName;
-
-	while (*pathName) {
-		if (*pathName == '/') {
-			scriptName = pathName;
-		}
-
-		pathName++;
-	}
-
-	if (scriptName != NULL) {
-		(*scriptName) = '\0';
-		scriptName++;
-	}
-
-	return scriptName;
-}
-
-static void setScriptExec(char *pathName) {
-	scriptExec = pathName;
-
-	while (*pathName) {
-		if (*pathName == '/') {
-			scriptExec = pathName;
-		}
-
-		pathName++;
-	}
-
-	if ((*scriptExec) == '/') {
-		scriptExec++;
-	}
-}

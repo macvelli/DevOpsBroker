@@ -159,12 +159,12 @@ int main(int argc, char *argv[]) {
 		char ipAddrString[IPV4_STRBUF_LEN];
 
 		e1e7e8f5_extractString(&networkDevice.ipv4Address, IPV4_ADDR | IVP4_CIDR_SUFFIX, ipAddrString);
-		printf("%s ", ipAddrString);
+		puts(ipAddrString);
 
 		IPv4Address ipv4Gateway;
 		ipv4Gateway.address = networkDevice.ipv4Gateway;
 		e1e7e8f5_extractString(&ipv4Gateway, IPV4_ADDR, ipAddrString);
-		printf("%s ", ipAddrString);
+		puts(ipAddrString);
 
 		e1e7e8f5_deriveSubnetMask(&networkDevice.ipv4Address);
 		e1e7e8f5_extractString(&networkDevice.ipv4Address, IPV4_ROUTE, ipAddrString);
@@ -173,18 +173,18 @@ int main(int argc, char *argv[]) {
 		char ipAddrString[IPV6_STRBUF_LEN];
 
 		b7808f25_extractString(&networkDevice.ipv6Global, ipAddrString);
-		printf("%s ", ipAddrString);
+		puts(ipAddrString);
 
 		b7808f25_extractString(&networkDevice.ipv6Local, ipAddrString);
-		printf("%s ", ipAddrString);
+		puts(ipAddrString);
 
 		b7808f25_extractString(&networkDevice.ipv6Gateway, ipAddrString);
-		printf("%s ", ipAddrString);
+		puts(ipAddrString);
 
 		IPv6Address ipv6GlobalSubnet;
 		b7808f25_deriveSubnet(&networkDevice.ipv6Global, &ipv6GlobalSubnet);
 		b7808f25_extractString(&ipv6GlobalSubnet, ipAddrString);
-		printf("%s\n", ipAddrString);
+		puts(ipAddrString);
 	}
 
 	// Exit with success

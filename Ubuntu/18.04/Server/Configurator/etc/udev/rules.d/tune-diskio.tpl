@@ -47,6 +47,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
@@ -54,14 +61,9 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-set -o errexit                 # Exit if any statement returns a non-true value
-set -o nounset                 # Exit if use an uninitialised variable
 
 ################################## Variables ##################################
 

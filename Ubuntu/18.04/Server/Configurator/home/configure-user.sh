@@ -79,13 +79,13 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -95,7 +95,9 @@ fi
 # Function:     createDirectory
 # Description:  Creates the specified directory if it does not already exist
 #
-# Parameter $1: Name of the directory to create
+# Parameters:
+#   dirName     The name of the directory to create
+#   mode        The file mode to set on the directory (defaults to 0750)
 # -----------------------------------------------------------------------------
 function createDirectory() {
 	local dirName="$1"
@@ -104,8 +106,8 @@ function createDirectory() {
 	if [ ! -d "$dirName" ]; then
 		printInfo "Creating $dirName directory"
 
-		$EXEC_MKDIR --mode=$mode "$dirName"
-		/bin/chown $username:$username "$dirName"
+		$EXEC_MKDIR --parents --mode=$mode "$dirName"
+		$EXEC_CHOWN --changes $username:$username "$dirName"
 	fi
 }
 

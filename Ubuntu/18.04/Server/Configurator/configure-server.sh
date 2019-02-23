@@ -142,7 +142,7 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
@@ -303,6 +303,7 @@ if [ $IS_KVM -gt 0 ]; then
 	uninstallPackage '/usr/bin/cloud-init' 'cloud-init'
 	$EXEC_RM -rf /etc/cloud
 	$EXEC_RM -rf /var/lib/cloud
+	/usr/sbin/groupdel lxd
 	# TODO: /etc/netplan/50-cloud-init.yaml needs to be replaced by this configuration
 
 	uninstallPackage '/usr/bin/growpart' 'cloud-guest-utils'
