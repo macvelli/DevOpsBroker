@@ -80,7 +80,7 @@ fi
 # Create $debPkgDir/DEBIAN subdirectory, if necessary
 if [ ! -d "$debPkgDir/DEBIAN" ]; then
 	printInfo "Creating $debPkgDir/DEBIAN directory"
-	$EXEC_MKDIR "$debPkgDir/DEBIAN"
+	$EXEC_MKDIR --parents "$debPkgDir/DEBIAN"
 fi
 
 cd "$debPkgDir"

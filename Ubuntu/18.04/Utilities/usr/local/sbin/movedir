@@ -172,8 +172,8 @@ if [ "$SOURCE_DIR" == '/cache' ]; then
 	if [ ! -d "$DEST_DIR/cache" ]; then
 		printInfo "Creating $DEST_DIR/cache directory"
 
-		$EXEC_MKDIR --mode=0770 "$DEST_DIR/cache"
-		$EXEC_CHOWN root:users "$DEST_DIR/cache"
+		$EXEC_MKDIR --parents --mode=0770 "$DEST_DIR/cache"
+		$EXEC_CHOWN --changes root:users "$DEST_DIR/cache"
 	fi
 
 	if [ ! -z "$($EXEC_LS -A /cache)" ]; then
@@ -199,7 +199,7 @@ elif [ "$SOURCE_DIR" == '/home' ]; then
 	if [ ! -d "$DEST_DIR/home" ]; then
 		printInfo "Creating $DEST_DIR/home directory"
 
-		$EXEC_MKDIR --mode=0755 "$DEST_DIR/home"
+		$EXEC_MKDIR --parents --mode=0755 "$DEST_DIR/home"
 	fi
 
 	if [ ! -z "$($EXEC_LS -A /home)" ]; then
@@ -234,7 +234,7 @@ elif [ "$SOURCE_DIR" == '/opt' ]; then
 	if [ ! -d "$DEST_DIR/opt" ]; then
 		printInfo "Creating $DEST_DIR/opt directory"
 
-		$EXEC_MKDIR --mode=0755 "$DEST_DIR/opt"
+		$EXEC_MKDIR --parents --mode=0755 "$DEST_DIR/opt"
 	fi
 
 	if [ ! -z "$($EXEC_LS -A /opt)" ]; then
@@ -260,7 +260,7 @@ elif [ "$SOURCE_DIR" == '/snap' ]; then
 	if [ ! -d "$DEST_DIR/snap" ]; then
 		printInfo "Creating $DEST_DIR/snap directory"
 
-		$EXEC_MKDIR --mode=0755 "$DEST_DIR/snap"
+		$EXEC_MKDIR --parents --mode=0755 "$DEST_DIR/snap"
 	fi
 
 	if [ ! -z "$($EXEC_LS -A /snap)" ]; then

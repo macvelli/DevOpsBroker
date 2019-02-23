@@ -262,7 +262,7 @@ if [ "$USER" != 'root' ] && [ ! -z "$dirName" ]; then
 	# Create $HOME/.ssl directory
 	if [ ! -d "$dirName" ]; then
 		printInfo "Creating $dirName directory"
-		$EXEC_MKDIR --mode=0700 "$dirName"
+		$EXEC_MKDIR --parents --mode=0700 "$dirName"
 	fi
 
 fi
@@ -428,19 +428,19 @@ elif [ "$command" == 'create' ]; then
 
 	# Create the local CA directory structure
 	printInfo "Creating $dirName directory"
-	$EXEC_MKDIR --mode=0700 "$dirName"
+	$EXEC_MKDIR --parents --mode=0700 "$dirName"
 
 	printInfo "Creating $dirName/certsdb directory"
-	$EXEC_MKDIR --mode=0700 "$dirName"/certsdb
+	$EXEC_MKDIR --parents --mode=0700 "$dirName"/certsdb
 
 	printInfo "Creating $dirName/csreqs directory"
-	$EXEC_MKDIR --mode=0700 "$dirName"/csreqs
+	$EXEC_MKDIR --parents --mode=0700 "$dirName"/csreqs
 
 	printInfo "Creating $dirName/crl directory"
-	$EXEC_MKDIR --mode=0700 "$dirName"/crl
+	$EXEC_MKDIR --parents --mode=0700 "$dirName"/crl
 
 	printInfo "Creating $dirName/private directory"
-	$EXEC_MKDIR --mode=0700 "$dirName"/private
+	$EXEC_MKDIR --parents --mode=0700 "$dirName"/private
 
 	echo
 

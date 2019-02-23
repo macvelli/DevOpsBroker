@@ -216,14 +216,14 @@ elif [ "$command" == 'create' ]; then
 	# Create root share directory if necessary
 	if [ ! -d "$rootDir" ]; then
 		printInfo "Creating root share directory '$rootDir'"
-		$EXEC_MKDIR --mode=755 "$rootDir"
+		$EXEC_MKDIR --parents --mode=755 "$rootDir"
 	fi
 
 	if [ "$shareType" == 'Group' ]; then
 		# Create group share directory if necessary
 		if [ ! -d "$rootDir/$shareName" ]; then
 			printInfo "Creating group share directory '$rootDir/$shareName'"
-			$EXEC_MKDIR --mode=2770 "$rootDir/$shareName"
+			$EXEC_MKDIR --parents --mode=2770 "$rootDir/$shareName"
 			/bin/chown root:sambashare "$rootDir/$shareName"
 		fi
 
@@ -245,7 +245,7 @@ elif [ "$command" == 'create' ]; then
 		# Create public share directory if necessary
 		if [ ! -d "$rootDir/$shareName" ]; then
 			printInfo "Creating public share directory '$rootDir/$shareName'"
-			$EXEC_MKDIR --mode=777 "$rootDir/$shareName"
+			$EXEC_MKDIR --parents --mode=777 "$rootDir/$shareName"
 			/bin/chown nobody:nogroup "$rootDir/$shareName"
 		fi
 
@@ -274,7 +274,7 @@ elif [ "$command" == 'create' ]; then
 		# Create user share directory if necessary
 		if [ ! -d "$rootDir/$username" ]; then
 			printInfo "Creating user share directory '$rootDir/$username'"
-			$EXEC_MKDIR --mode=750 "$rootDir/$username"
+			$EXEC_MKDIR --parents --mode=750 "$rootDir/$username"
 			/bin/chown $username:$username "$rootDir/$username"
 		fi
 

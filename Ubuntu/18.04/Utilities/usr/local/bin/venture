@@ -64,7 +64,7 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
@@ -79,7 +79,7 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 function createDirectory() {
 	if [ ! -d "$baseDir/$1" ]; then
 		printInfo "Creating $baseDir/$1 directory"
-		$EXEC_MKDIR "$baseDir/$1"
+		$EXEC_MKDIR --parents "$baseDir/$1"
 	fi
 }
 
@@ -319,7 +319,7 @@ fi
 
 # Make baseDir if not already exists
 if [ ! -d "$baseDir" ]; then
-	$EXEC_MKDIR --mode=0750 "$baseDir"
+	$EXEC_MKDIR --parents --mode=0750 "$baseDir"
 fi
 
 if [ "$command" == 'bashcomplete' ]; then
@@ -460,7 +460,7 @@ elif [ "$command" == 'new' ]; then
 
 		# Execute template script and make Bash script executable
 		"$bashScriptTpl" "$fileName" > "$baseDir/$fileName"
-		$EXEC_CHMOD u+x,g+x "$baseDir/$fileName"
+		$EXEC_CHMOD --changes u+x,g+x "$baseDir/$fileName"
 
 	# Create a new Bash shell template file
 	elif [[ "$fileName" == *.tpl ]]; then
@@ -471,7 +471,7 @@ elif [ "$command" == 'new' ]; then
 
 		# Execute template script and make Bash script executable
 		"$bashTemplateTpl" "$fileName" > "$baseDir/$fileName"
-		$EXEC_CHMOD u+x,g+x "$baseDir/$fileName"
+		$EXEC_CHMOD --changes u+x,g+x "$baseDir/$fileName"
 	fi
 
 	# END Create new file

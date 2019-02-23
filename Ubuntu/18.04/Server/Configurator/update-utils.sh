@@ -81,7 +81,7 @@ function createSymlink() {
 	if [ ! -L "$symlink" ]; then
 		printInfo "Creating symbolic link $symlink"
 		$EXEC_LN -s "$targetFile" "$symlink"
-		$EXEC_CHOWN --no-dereference root:users "$symlink"
+		$EXEC_CHOWN --changes --no-dereference root:users "$symlink"
 		echoOnExit=true
 	fi
 }

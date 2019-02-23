@@ -103,6 +103,6 @@ fi
 
 ################################### Actions ###################################
 
-$EXEC_FIND $dirName/ -type d -execdir $EXEC_CHMOD $dirMode {} +
+$EXEC_FIND $dirName/ -type d -execdir $EXEC_CHMOD --changes $dirMode {} +
 
 exit 0

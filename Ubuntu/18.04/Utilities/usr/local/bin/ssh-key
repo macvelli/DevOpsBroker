@@ -315,12 +315,12 @@ done
 
 # Make SSH directory (if necessary)
 if [ ! -d "$sshDir" ]; then
-  $EXEC_MKDIR --mode=0700 "$sshDir"
+  $EXEC_MKDIR --parents --mode=0700 "$sshDir"
 fi
 
 # Make directory to enable SSH multiplexing (if necessary)
 if [ ! -d "$sshDir/multiplex" ]; then
-  $EXEC_MKDIR --mode=0700 "$sshDir/multiplex"
+  $EXEC_MKDIR --parents --mode=0700 "$sshDir/multiplex"
 fi
 
 if [ $command == 'clip' ]; then
@@ -405,7 +405,7 @@ elif [ $command == 'gen' ] || [ $command == 'generate' ]; then
   $SSH_KEYGEN -t $keyType -C "$emailAddress-$($EXEC_DATE -I)" -f "$sshDir/$sshKeyName"
 
   # Change directory and file ownership to $username
-  $EXEC_CHOWN -R $username:$username "$sshDir"
+  $EXEC_CHOWN --changes -R $username:$username "$sshDir"
 
   # END gen/generate command
 elif [ $command == 'list' ]; then

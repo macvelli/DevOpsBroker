@@ -241,8 +241,8 @@ if [ $command == 'image' ]; then
 	printInfo "Creating QEMU image $QEMU_DIR/$IMG_FILE"
 
 	$EXEC_QEMU_IMG create -f raw "$QEMU_DIR/$IMG_FILE" ${IMG_SIZE}
-	$EXEC_CHOWN $USER:kvm "$QEMU_DIR"
-	$EXEC_CHOWN $USER:kvm "$QEMU_DIR/$IMG_FILE"
+	$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR"
+	$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR/$IMG_FILE"
 
 elif [ $command == 'init' ]; then
 

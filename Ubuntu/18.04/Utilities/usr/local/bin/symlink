@@ -187,7 +187,7 @@ ln -s "$target" "$linkName"
 
 # Change link ownership
 if [ ! -z $owner ]; then
-  $EXEC_CHOWN --no-dereference $owner:$group ${linkName}
+  $EXEC_CHOWN --changes --no-dereference $owner:$group ${linkName}
 fi
 
 exit 0

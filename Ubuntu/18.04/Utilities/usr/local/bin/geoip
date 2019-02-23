@@ -268,7 +268,7 @@ elif [ $command == 'update' ]; then
 	echo
 
 	# Create GeoLite2 directory
-	$EXEC_MKDIR --mode=0755 "$geoDbDir"
+	$EXEC_MKDIR --parents --mode=0755 "$geoDbDir"
 
 	printInfo 'Download latest GeoLite2 City database'
 
@@ -281,8 +281,8 @@ elif [ $command == 'update' ]; then
 	$EXEC_TAR zxf "$geoDbDir/GeoLite2-City.tar.gz" --no-same-owner --no-same-permissions -C "$geoDbDir"
 
 	newDBDir=$($EXEC_FIND "$geoDbDir" -type d -name "GeoLite2-City_*")
-	$EXEC_CHMOD 0755 "$newDBDir"
-	$EXEC_CHMOD 644 "$newDBDir/$geoDbFile"
+	$EXEC_CHMOD --changes 0755 "$newDBDir"
+	$EXEC_CHMOD --changes 644 "$newDBDir/$geoDbFile"
 
 	# Move GeoLite2-City.mmdb file
 	$EXEC_MV "$newDBDir/$geoDbFile" "$geoDbDir"

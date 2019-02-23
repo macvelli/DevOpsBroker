@@ -63,7 +63,7 @@ function getVarLogDirectory() {
 
 	# Create /var/log/logbroker/$logName directory if necessary
 	if [ ! -d /var/log/"$logName" ]; then
-		$EXEC_MKDIR --mode=750 "/var/log/logbroker/$logName"
+		$EXEC_MKDIR --parents --mode=750 "/var/log/logbroker/$logName"
 	fi
 
 	echo "/var/log/logbroker/$logName"
@@ -120,8 +120,8 @@ fi
 
 # Create /var/log/logbroker directory if necessary
 if [ ! -d /var/log/logbroker ]; then
-	$EXEC_MKDIR --mode=2750 /var/log/logbroker
-	/bin/chown root:adm /var/log/logbroker
+	$EXEC_MKDIR --parents --mode=2750 /var/log/logbroker
+	$EXEC_CHOWN --changes root:adm /var/log/logbroker
 fi
 
 if [ "$logName" == 'dmesg' ]; then
@@ -131,7 +131,7 @@ if [ "$logName" == 'dmesg' ]; then
 
 		printInfo "Saving '$logName' log to '$logFilename'"
 		$EXEC_DMESG | $EXEC_GZIP > "$logFilename"
-		/bin/chmod 640 "$logFilename"
+		$EXEC_CHMOD --changes 640 "$logFilename"
 	fi
 
 	if [ "$command" == 'clear' ] || [ "$command" == 'reset' ]; then

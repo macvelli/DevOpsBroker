@@ -254,22 +254,22 @@ fi
 
 printInfo "Changing any root:root files and directories to '$username:$username'"
 
-$EXEC_FIND "$userhome" -xdev -user root -group root -execdir $EXEC_CHOWN $username:$username {} +
+$EXEC_FIND "$userhome" -xdev -user root -group root -execdir $EXEC_CHOWN --changes $username:$username {} +
 
 printInfo "Applying stricter directory security settings to $userhome"
 
 # Configure all hidden directories with drwx------ privileges
-$EXEC_FIND "$userhome" -xdev -maxdepth 1 -type d -path "$userhome/.*" -perm /077 -exec $EXEC_CHMOD 700 {} +
+$EXEC_FIND "$userhome" -xdev -maxdepth 1 -type d -path "$userhome/.*" -perm /077 -exec $EXEC_CHMOD --changes 700 {} +
 
 # Configure all normal directories with drwxr-x--- privileges
-$EXEC_FIND "$userhome" -xdev -type d -perm /027 -exec $EXEC_CHMOD 750 {} + 2>/dev/null
+$EXEC_FIND "$userhome" -xdev -type d -perm /027 -exec $EXEC_CHMOD --changes 750 {} + 2>/dev/null
 
 printInfo "Applying stricter file security settings to $userhome"
 
 excludeDirs="-type d ( -name '.git' -o -name '.svn' ) -prune"
 
 # Remove ----w-rwx file privileges
-$EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /027 -exec $EXEC_CHMOD g-w,o-rwx {} +
+$EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /027 -exec $EXEC_CHMOD --changes g-w,o-rwx {} +
 
 echo
 
