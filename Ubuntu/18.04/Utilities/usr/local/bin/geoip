@@ -117,11 +117,7 @@ geoDbDir="/usr/share/GeoLite2"
 geoDbFile="GeoLite2-City.mmdb"
 
 # Command is the first parameter
-command="$1"
-shift
-
-# Original command-line parameters
-clParams="$@"
+command=${1:-}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -147,11 +143,17 @@ if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$USER" !=
 fi
 
 # Process command-line options, if present
-while [[ "$1" =~ ^- ]]; do
+shift
+clParams="$@"
+option=${1:-}
 
-	if [ "$1" == '-d' ]; then
+while [[ "$option" =~ ^- ]]; do
+
+	if [ "$option" == '-d' ]; then
+		directoryName=${2:-}
+
 		# Display error if directory parameter is missing or invalid
-		errorMessage=$(isValidDirectory 'geoip' "$2")
+		errorMessage=$(isValidDirectory 'geoip' "$directoryName")
 
 		if [ "$errorMessage" != '0' ]; then
 			echo "$errorMessage"
@@ -167,12 +169,14 @@ while [[ "$1" =~ ^- ]]; do
 		fi
 
 		# Use geolocation database directory provided by user
-		geoDbDir="$2"
+		geoDbDir="$directoryName"
 		shift 2
 
 	elif [ "$1" == '-f' ]; then
+		fileName=${2:-}
+
 		# Display error if file parameter is missing or invalid
-		errorMessage=$(isValidFile 'geoip' "$2")
+		errorMessage=$(isValidFile 'geoip' "$fileName")
 
 		if [ "$errorMessage" != '0' ]; then
 			echo "$errorMessage"
@@ -188,16 +192,18 @@ while [[ "$1" =~ ^- ]]; do
 		fi
 
 		# Use geolocation database file provided by user
-		geoDbFile="$2"
+		geoDbFile="$fileName"
 		shift 2
 	else
 		# Display usage and error if option parameter is not valid
-		printError 'geoip' "Invalid option: $1"
+		printError 'geoip' "Invalid option: $option"
 		echo
 		showHelp
 
 		exit 1
 	fi
+
+	option=${1:-}
 done
 
 if [ $command != 'update' ]; then
@@ -211,7 +217,7 @@ if [ $command != 'update' ]; then
 fi
 
 # Display usage if only option parameters given for lookup command
-if [ -z "$1" ] && [ $command == 'lookup' ]; then
+if [ -z "$option" ] && [ $command == 'lookup' ]; then
 	if [ -z "$clParams" ]; then
 		printUsage "geoip lookup IP_ADDR ${gold}[DATA PATH]"
 	else

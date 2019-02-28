@@ -144,16 +144,18 @@ installConfig '60-io-schedulers.rules' "$SCRIPT_DIR"/rules.d /etc/udev/rules.d
 mapfile -t blockDeviceList < <($EXEC_LSBLK -dnp --exclude 7 --output NAME,SERIAL)
 
 for blockDevice in "${blockDeviceList[@]}"; do
-	attributeList=( $blockDevice )
+	IFS=' '; attributeList=( $blockDevice ); IFS=$'\n\t'
 
-	if [ ! -f "/etc/udev/rules.d/65-diskio-${attributeList[1]}.rules" ] || \
-		[ "$tuneDiskIOTpl" -nt "/etc/udev/rules.d/65-diskio-${attributeList[1]}.rules" ]; then
-		printInfo "Tuning Disk I/O for block device '${attributeList[0]}'"
+	if [ ${#attributeList[@]} -eq 2 ]; then
+		if [ ! -f "/etc/udev/rules.d/65-diskio-${attributeList[1]}.rules" ] || \
+			[ "$tuneDiskIOTpl" -nt "/etc/udev/rules.d/65-diskio-${attributeList[1]}.rules" ]; then
+			printInfo "Tuning Disk I/O for block device '${attributeList[0]}'"
 
-		# Execute template script
-		$tuneDiskIOTpl ${attributeList[0]}
+			# Execute template script
+			$tuneDiskIOTpl ${attributeList[0]}
 
-		echoOnExit=true
+			echoOnExit=true
+		fi
 	fi
 done
 

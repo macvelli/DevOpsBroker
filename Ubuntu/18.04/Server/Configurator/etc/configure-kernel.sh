@@ -136,7 +136,7 @@ echoOnExit=false
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Delete /etc/devops/speedtest.info on force kernel retune
-if [ "$1" == '-f' ]; then
+if [ "${1:-}" == '-f' ]; then
 	$EXEC_RM /etc/devops/speedtest.info 2>/dev/null
 fi
 
@@ -176,7 +176,7 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
 		echoOnExit=true
 	fi
 
-elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "$1" == '-f' ]; then
+elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "${1:-}" == '-f' ]; then
 
 	printBanner 'Updating /etc/sysctl.conf'
 

@@ -19,19 +19,16 @@
 # -----------------------------------------------------------------------------
 # Developed on Ubuntu 18.04.2 LTS running kernel.osrelease = 4.18.0-15
 #
-# The ~/.bashrc file is executed by bash(1) for interactive non-login shells
-# (e.g. new Terminal window).
+# Normally the ~/.bashrc file is executed by bash(1) for interactive non-login
+# shells (e.g. new Terminal window).
+#
+# However, on an Ubuntu Server it is sourced in ~/.profile which is executed on
+# login (i.e. console / telnet / ssh).
 #
 # See /usr/share/doc/bash/examples/startup-files (in the package bash-doc) for
 # examples.
 # -----------------------------------------------------------------------------
 #
-
-# If not running interactively, don't do anything
-case $- in
-	*i*) ;;
-	*) return;;
-esac
 
 # If set, the pattern "**" used in a pathname expansion context will match all
 # files and zero or more directories and subdirectories

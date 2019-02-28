@@ -131,7 +131,7 @@ fi
 # Reconfigure Network Manager to use unbound
 #
 
-if $EXEC_GREP -Fq 'dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf; then
+if [ -f /etc/NetworkManager/NetworkManager.conf ] && $EXEC_GREP -Fq 'dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf; then
 	printInfo 'Configuring Network Manager to use unbound'
 	$EXEC_SED -i 's/dns=dnsmasq/dns=unbound/' /etc/NetworkManager/NetworkManager.conf
 

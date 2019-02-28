@@ -137,7 +137,7 @@ fi
 printBox "DevOpsBroker $UBUNTU_RELEASE /etc/fstab Configurator" 'true'
 
 # Exit if /etc/fstab already configured
-if [ -f /etc/fstab.orig ] && [ "$1" != '-f' ]; then
+if [ -f /etc/fstab.orig ] && [ "${1:-}" != '-f' ]; then
 	printInfo '/etc/fstab already configured'
 	echo
 	printUsage "$SCRIPT_EXEC ${gold}[-f]"

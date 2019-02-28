@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# snippet - DevOpsBroker utility for generating code snippets
+# stage - DevOpsBroker script for staging server-configurator to a shared VM folder
 #
 # Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
@@ -47,6 +47,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
+if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
+	source /etc/devops/functions-io.conf
+fi
+
+${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 set -o errexit                 # Exit if any statement returns a non-true value
@@ -54,81 +61,33 @@ set -o nounset                 # Exit if use an uninitialised variable
 set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
-scriptName='snippet'
-
-################################## Functions ##################################
-
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:     validateBash
-# Description:  Performs validation for the bash command
-# -----------------------------------------------------------------------------
-function validateBash() {
-	# Display error if snippet name parameter is missing
-	if [ -z "$snippetName" ]; then
-		printError $scriptName 'Missing snippet name parameter'
-		echo
-		printUsage "$scriptName $command { arraylength | arrayloop | selectmenu }"
-
-		exit 1
-	fi
-
-	# Display error if snippet name parameter is invalid
-	if [[ ! "$snippetName" =~ ^(arraylength|arrayloop|selectmenu)$ ]]; then
-		printError $scriptName "Invalid $command snippet: '$snippetName'"
-		echo
-		printUsage "$scriptName $command { arraylength | arrayloop | selectmenu }"
-
-		exit 1
-	fi
-}
+## Script information
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
+SCRIPT_DIR="${SCRIPT_INFO[0]}"
+SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 ################################## Variables ##################################
 
 ## Options
-command=${1:-}
-snippetName=${2:-}
-
-## Variables
-validCommands=('bash')
-
-usageMessage="$scriptName { bash } SNIPPET_NAME"
+sharedFolder=${1:-}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Display usage if no parameters given
-if [ -z "$command" ]; then
-	printUsage $usageMessage
-	exit 1
-fi
+errorMessage=$(isValidDirectory $SCRIPT_EXEC "$sharedFolder")
 
-# Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError $scriptName "Invalid command: '$command'"
+# Display error if shared folder directory parameter is missing or invalid
+if [ "$errorMessage" != '0' ]; then
+	echo "$errorMessage"
 	echo
-	printUsage $usageMessage
+	printUsage "$SCRIPT_EXEC DEST_DIR"
 
 	exit 1
 fi
 
 ################################### Actions ###################################
 
-if [ $command == 'bash' ]; then
-	validateBash
+printBanner "Staging server-configurator to $sharedFolder"
 
-	if [ $snippetName == 'arraylength' ]; then
-		echo '${#ArrayName[@]}'
-	elif [ $snippetName == 'arrayloop' ]; then
-		echo 'for i in "${array[@]}"; do'
-		echo '	echo $i'
-		echo 'done'
-	elif [ $snippetName == 'selectmenu' ]; then
-		echo "select confirmDelete in 'Yes' 'No'; do"
-		echo "	if [ \$confirmDelete == 'Yes' ]; then"
-		echo "		echo 'Perform delete'"
-		echo "	fi"
-		echo "	break;"
-		echo "done"
-	fi
-fi
+$EXEC_CP -LRuv --preserve=all "$SCRIPT_DIR/." "$sharedFolder"
 
 exit 0

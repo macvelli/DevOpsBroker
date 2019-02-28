@@ -146,7 +146,7 @@ EXEC_VERIFYCLASS=/usr/local/bin/verifyclass
 EXEC_WHICH=/usr/bin/which
 
 ## Options
-command="$1"
+command=${1:-}
 baseDir='.'
 
 ## Variables

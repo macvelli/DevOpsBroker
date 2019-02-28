@@ -122,10 +122,10 @@ function validateBridgeName() {
 	fi
 
 	if [ -f $EXEC_NMCLI ]; then
-		getConnectionInfo $bridgeName
+		connInfo="$($EXEC_NMCLI --terse --fields connection.type connection show $bridgeName 2>/dev/null || true)"
 
 		# Display error if bridge interface parameter is invalid
-		if [ ${#connInfo[@]} -eq 0 ]; then
+		if [ -z "$connInfo" ]; then
 			printError $scriptName "Cannot access '$bridgeName': No such bridge interface"
 			echo
 			printUsage "$1"
@@ -134,7 +134,7 @@ function validateBridgeName() {
 		fi
 
 		# Display error if bridge interface parameter is not a bridge
-		if [ "${connInfo[2]}" != 'bridge' ]; then
+		if [[ ! "$connInfo" =~ bridge$ ]]; then
 			printError $scriptName "Invalid parameter '$bridgeName': Not a bridge interface"
 			echo
 			printUsage "$1"
@@ -431,10 +431,10 @@ EXEC_SYSCTL=/sbin/sysctl
 command=${1:-}
 
 ## Variables
-sudoCommands=('add' 'create' 'delete' 'remove' 'start')
+sudoCommands=('add' 'create' 'delete' 'exists' 'remove' 'start')
 validCommands=(${sudoCommands[@]})
 
-usageMessage="$scriptName { add ${gold}{ link | tap }${yellow} | create | delete | remove ${gold}{ link | tap }${yellow} | start }"
+usageMessage="$scriptName { add ${gold}{ link | tap }${yellow} | create | delete | exists | remove ${gold}{ link | tap }${yellow} | start }"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -523,6 +523,25 @@ elif [ $command == 'delete' ]; then
 	else
 		printInfo "Removing bridge interface '$bridgeName'"
 		$EXEC_IP link delete $bridgeName type bridge
+	fi
+
+elif [ $command == 'exists' ]; then
+	bridgeName=${2:-}
+
+	if [ -f $EXEC_NMCLI ]; then
+		connInfo="$($EXEC_NMCLI --terse --fields connection.type connection show $bridgeName 2>/dev/null || true)"
+
+		if [ -z "$connInfo" ]; then
+			echo 'false'
+		else
+			echo 'true'
+		fi
+	else
+		if [ -L /sys/class/net/$bridgeName ]; then
+			echo 'true'
+		else
+			echo 'false'
+		fi
 	fi
 
 elif [ $command == 'remove' ]; then

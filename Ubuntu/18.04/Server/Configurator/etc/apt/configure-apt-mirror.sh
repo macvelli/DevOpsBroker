@@ -59,9 +59,6 @@ ${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-set -o errexit                 # Exit if any statement returns a non-true value
-set -o nounset                 # Exit if use an uninitialised variable
-set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information

@@ -25,6 +25,7 @@
 #
 # o /etc/adduser.conf
 # o /etc/bash.bashrc
+# o /etc/hosts
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
@@ -107,6 +108,9 @@ fi
 # Set nf_conntrack.conf.tpl location and make it executable
 nfConntrackConfTpl=$(isExecutable "$SCRIPT_DIR"/modprobe.d/nf_conntrack.conf.tpl)
 
+# Set hosts.tpl location and make it executable
+hostsTpl=$(isExecutable "$SCRIPT_DIR"/hosts.tpl)
+
 ################################## Variables ##################################
 
 ## Bash exec variables
@@ -134,6 +138,20 @@ installConfig 'adduser.conf' "$SCRIPT_DIR" /etc
 
 # Install /etc/bash.bashrc
 installConfig 'bash.bashrc' "$SCRIPT_DIR" /etc
+
+# Install /etc/hosts
+if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/hosts; then
+	printBanner 'Installing /etc/hosts'
+
+	# Execute template script
+	"$hostsTpl" > "$TMPDIR"/hosts
+
+	# Install as root:root with rw-r--r-- privileges
+	$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/hosts /etc
+
+	# Clean up
+	$EXEC_RM "$TMPDIR"/hosts
+fi
 
 # Install /etc/modules
 installConfig 'modules' "$SCRIPT_DIR" /etc

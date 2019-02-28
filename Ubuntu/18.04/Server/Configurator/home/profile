@@ -53,3 +53,6 @@ if [ -d /mnt/ramdisk ]; then
 	# Set TMPDIR to /mnt/ramdisk/tmp for gcc and other programs
 	export TMPDIR=/mnt/ramdisk/tmp
 fi
+
+# Source ~/.bashrc on login
+source "$HOME/.bashrc"

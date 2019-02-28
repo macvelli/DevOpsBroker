@@ -161,6 +161,13 @@ if [ ! -z "$CP_OUTPUT" ]  ; then
 	$EXEC_CHOWN --changes root:users /usr/local/bin/scriptinfo
 fi
 
+# Copy derivesubnet to /usr/local/bin
+CP_OUTPUT="$(/bin/cp -uv --preserve=timestamps "$INSTALL_DIR"/usr/local/bin/derivesubnet /usr/local/bin)"
+if [ ! -z "$CP_OUTPUT" ]  ; then
+	$EXEC_CHMOD --changes 755 /usr/local/bin/derivesubnet
+	$EXEC_CHOWN --changes root:users /usr/local/bin/derivesubnet
+fi
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Shell Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Make symlink to configure-server.sh

@@ -166,6 +166,22 @@ fi
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     detectVirtualization
+# Description:  Detect whether Ubuntu Server is running as a virtual machine guest
+# -----------------------------------------------------------------------------
+function detectVirtualization() {
+	local journalEntry="$($EXEC_JOURNALCTL -b | $EXEC_GREP -F --max-count=1 'Detected virtualization' || true)"
+
+	if [ "$journalEntry" ]; then
+		IS_VM_GUEST=1
+
+		if [[ "$journalEntry" =~ (Detected virtualization kvm) ]]; then
+			IS_KVM=1
+		fi
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     installPackage
 # Description:  Installs the specified package, if not already installed
 #
@@ -173,10 +189,14 @@ fi
 # Parameter $2: The name of the package to install
 # -----------------------------------------------------------------------------
 function installPackage() {
+	INSTALL_PKG='false'
+
 	if [ ! -f "$1" ]; then
 		printBanner "Installing $2"
 		$EXEC_APT -y install $2
 		echo
+
+		INSTALL_PKG='true'
 	fi
 }
 
@@ -188,10 +208,14 @@ function installPackage() {
 # Parameter $2: The name of the package to uninstall
 # -----------------------------------------------------------------------------
 function uninstallPackage() {
+	UNINSTALL_PKG='false'
+
 	if [ -f "$1" ]; then
 		printBanner "Uninstalling $2"
 		$EXEC_APT -y purge $2
 		echo
+
+		UNINSTALL_PKG='true'
 	fi
 }
 
@@ -205,7 +229,8 @@ EXEC_JOURNALCTL=/bin/journalctl
 ## Variables
 DEFAULT_NIC=''
 DEPLOY_ENV=''
-IS_KVM=$($EXEC_JOURNALCTL -b | $EXEC_GREP -Fc 'Detected virtualization kvm' || true)
+IS_KVM=0
+IS_VM_GUEST=0
 IPTABLES_SCRIPT=''
 IP6TABLES_SCRIPT=''
 
@@ -217,6 +242,9 @@ if [ $SHLVL -eq 1 ]; then
 fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Configurator" 'true'
+
+# Detect whether Ubuntu Server is running as a guest in a virtual machine
+detectVirtualization
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -245,10 +273,6 @@ select DEPLOY_ENV in 'Public Internet' 'Private Intranet'; do
 	fi
 	break;
 done
-
-echo "Is KVM: $IS_KVM"
-
-exit 0
 
 # Install iptables
 installPackage '/sbin/iptables' 'iptables'
@@ -295,19 +319,19 @@ installPackage '/usr/bin/parallel' 'parallel'
 
 #~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
 
-# Uninstall bind9-host
-uninstallPackage '/usr/bin/host' 'bind9-host'
-
 # Uninstall cloud-init and lxd if running under KVM
-if [ $IS_KVM -gt 0 ]; then
+if [ $IS_KVM -eq 1 ]; then
 	uninstallPackage '/usr/bin/cloud-init' 'cloud-init'
-	$EXEC_RM -rf /etc/cloud
-	$EXEC_RM -rf /var/lib/cloud
-	/usr/sbin/groupdel lxd
-	# TODO: /etc/netplan/50-cloud-init.yaml needs to be replaced by this configuration
 
-	uninstallPackage '/usr/bin/growpart' 'cloud-guest-utils'
-	uninstallPackage '/usr/bin/lxd' 'lxd lxd-client lxcfs'
+	if [ "$UNINSTALL_PKG" == 'true' ]; then
+		$EXEC_RM -rf /etc/cloud
+		$EXEC_RM -rf /var/lib/cloud
+		/usr/sbin/groupdel lxd
+		# TODO: /etc/netplan/50-cloud-init.yaml needs to be replaced by this configuration
+
+		uninstallPackage '/usr/bin/growpart' 'cloud-guest-utils'
+		uninstallPackage '/usr/bin/lxd' 'lxd lxd-client lxcfs'
+	fi
 fi
 
 # Install dnsutils
@@ -335,9 +359,9 @@ uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
 installPackage '/usr/share/doc/linux-generic-hwe-18.04/copyright' 'linux-generic-hwe-18.04'
 
 # Install mmdblookup
-installPackage '/usr/bin/mmdblookup' 'mmdb-bin libmaxminddb0'
+installPackage '/usr/bin/mmdblookup' 'mmdb-bin'
 
-if [ "$PKG_INSTALLED" == 'true' ]; then
+if [ "$INSTALL_PKG" == 'true' ] || [ ! -d /usr/share/GeoLite2 ]; then
 	# Install GeoLite2 City geolocation database
 	/usr/local/bin/geoip update
 	echo
@@ -434,8 +458,11 @@ installPackage '/usr/bin/whois' 'whois'
 # Udev Configuration
 #
 
-# Configure /etc/udev/rules.d/ with configure-udev.sh script
-"$SCRIPT_DIR"/etc/udev/configure-udev.sh
+# Only run UDev configuration if running on bare metal
+if [ $IS_VM_GUEST -eq 0 ]; then
+	# Configure /etc/udev/rules.d/ with configure-udev.sh script
+	"$SCRIPT_DIR"/etc/udev/configure-udev.sh
+fi
 
 #
 # User Configuration

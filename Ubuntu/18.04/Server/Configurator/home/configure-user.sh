@@ -266,10 +266,8 @@ $EXEC_FIND "$userhome" -xdev -type d -perm /027 -exec $EXEC_CHMOD --changes 750 
 
 printInfo "Applying stricter file security settings to $userhome"
 
-excludeDirs="-type d ( -name '.git' -o -name '.svn' ) -prune"
-
 # Remove ----w-rwx file privileges
-$EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /027 -exec $EXEC_CHMOD --changes g-w,o-rwx {} +
+$EXEC_FIND "$userhome" -xdev -type d \( -name ".git" -o -name ".svn" \) -prune -o -type f -perm /027 -exec $EXEC_CHMOD --changes g-w,o-rwx {} +
 
 echo
 

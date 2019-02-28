@@ -94,7 +94,7 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Gather Serial Number, Device Transport Type, and Device Type
-attributeList=($($EXEC_LSBLK -dn --output KNAME,SERIAL,TYPE $deviceNode 2>/dev/null))
+IFS=' '; attributeList=($($EXEC_LSBLK -dn --output KNAME,SERIAL,TYPE $deviceNode 2>/dev/null)); IFS=$'\n\t'
 
 deviceName=${attributeList[0]}
 
