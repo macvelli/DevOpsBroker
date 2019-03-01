@@ -29,6 +29,7 @@
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
+# o /etc/bash_completion.d/*
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
 # o /etc/devops/functions.conf
@@ -161,6 +162,10 @@ installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
 installConfig 'profile' "$SCRIPT_DIR" /etc
+
+# Install /etc/bash_completion.d/*
+$EXEC_CP -uv "$SCRIPT_DIR"/bash_completion.d/* /etc/bash_completion.d
+$EXEC_CHMOD --changes 644 /etc/bash_completion.d/*
 
 if [ -d "$SCRIPT_DIR"/devops ]; then
 	# Install /etc/devops/ansi.conf

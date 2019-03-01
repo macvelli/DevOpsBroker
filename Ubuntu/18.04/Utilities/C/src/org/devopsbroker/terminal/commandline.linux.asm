@@ -31,6 +31,10 @@
 
 ; ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+; character values
+%define ZERO        0x30
+%define NINE        0x39
+
 ; Constants
 %define EXIT_FAILURE   0x01
 
@@ -161,4 +165,103 @@ d7ad7024_getString:
 .epilogue:                            ; functions typically have an epilogue
 	mov        rax, [rdi + 8]         ; rax = cmdLineParm->argv[i]
 	mov        rax, [rax + 8*rdx]
+	ret                               ; pop return address from stack and jump there
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ d7ad7024_getUint64 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	global  d7ad7024_getUint64:function
+	extern  c7c88e52_missingParam
+	extern  c7c88e52_invalidValue
+	extern  c7c88e52_printUsage
+	extern  exit
+	section .text
+d7ad7024_getUint64:
+; Parameters:
+;	rdi : CmdLineParam *cmdLineParam
+;	rsi : char *paramName
+;	rdx : int i
+; Local Variables:
+;	ecx : cmdLineParam->argc
+;	rcx : cmdLineParam->argv[i]
+;	r8  : 64-bit char buffer
+;	r9  : temporary storage to perform 64-bit add
+;	dx  : bufSize
+;	r10 : cmdLineParam->argv[i] reference
+
+.prologue:                            ; functions typically have a prologue
+	mov        ecx, [rdi + 16]        ; ecx = cmdLineParm->argc
+	inc        edx                    ; ++i
+	xor        rax, rax               ; function return value = 0
+
+.missingParameter:
+	cmp        edx, ecx
+	jne        .parseUint64
+
+	; c7c88e52_missingParam(paramName);
+	push       rdi                    ; save CmdLineParam reference on the stack
+	mov        rdi, rsi               ; rdi = paramName
+	call       c7c88e52_missingParam
+
+	; c7c88e52_printUsage(cmdLineParm->usageMsg);
+	pop        rdi                    ; retrieve CmdLineParam reference from the stack
+	mov        rdi, [rdi]             ; rdi = cmdLineParm->usageMsg
+	sub        rsp, 8                 ; Re-align stack frame before making call
+	call       c7c88e52_printUsage
+
+	; exit(EXIT_FAILURE);
+	mov        rdi, EXIT_FAILURE
+	call       exit WRT ..plt
+
+.parseUint64:
+	mov        rcx, [rdi + 8]         ; rcx = cmdLineParam->argv[i]
+	mov        rcx, [rcx + 8*rdx]
+	mov        r10, rcx               ; save argv[i] reference for invalidValue
+
+	mov        r8, [rcx]              ; load first eight characters into r8
+	mov        dx, 0x0808             ; dh = 8, dl = 8
+
+	; Calculate the integer from the input string
+.whileInteger:
+	test       r8b, r8b               ; if (ch == '\0')
+	jz         .epilogue
+
+	cmp        r8b, NINE
+	jg         .invalidValue          ; Error if character greater than nine
+	sub        r8b, ZERO
+	jl         .invalidValue          ; Error if character less than zero
+
+	movzx      r9, r8b                ; value = (value * 10) + digit
+	imul       rax, rax, 0x0a
+	add        rax, r9
+
+.manageCharBuffer:
+	shr        r8, 8                  ; shift to the next character
+	dec        dl                     ; bufSize--
+	inc        rcx                    ; argv[i]++
+
+	test       dl, dl                 ; if (bufSize == 0)
+	jnz        .whileInteger
+
+	mov        r8, [rcx]              ; load next eight characters into r8
+	mov        dl, dh                 ; bufSize = 8
+	jmp        .whileInteger
+
+.invalidValue:
+	; c7c88e52_invalidValue(paramName, cmdLineParm->argv[i]);
+	push       rdi                    ; save CmdLineParam reference on the stack
+	mov        rdi, rsi               ; rdi = paramName
+	mov        rsi, r10               ; rsi = cmdLineParam->argv[i]
+	call       c7c88e52_invalidValue
+
+	; c7c88e52_printUsage(cmdLineParm->usageMsg);
+	pop        rdi                    ; retrieve CmdLineParam reference from the stack
+	mov        rdi, [rdi]             ; rdi = cmdLineParm->usageMsg
+	sub        rsp, 8                 ; Re-align stack frame before making call
+	call       c7c88e52_printUsage
+
+	; exit(EXIT_FAILURE);
+	mov        rdi, EXIT_FAILURE
+	call       exit WRT ..plt
+
+.epilogue:                            ; functions typically have an epilogue
 	ret                               ; pop return address from stack and jump there

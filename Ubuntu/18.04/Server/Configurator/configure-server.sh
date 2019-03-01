@@ -385,6 +385,9 @@ installPackage '/usr/bin/ssh' 'openssh-client'
 # Install openssh-server
 installPackage '/usr/sbin/sshd' 'openssh-server'
 
+# Install openssh-sftp-server
+installPackage '/usr/lib/openssh/sftp-server' 'openssh-sftp-server'
+
 # Uninstall snapd
 uninstallPackage '/usr/bin/snap' 'snapd squashfs-tools'
 

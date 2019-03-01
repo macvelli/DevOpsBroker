@@ -27,6 +27,8 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
+#include <stdint.h>
+
 #include <assert.h>
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
@@ -72,7 +74,7 @@ void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParm, int argc, char **argv,
  *   cmdLineParm    A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
  *   i              The current command-line parameter index
- * Returns:     The float command-line parameter value
+ * Returns:         The float command-line parameter value
  * ----------------------------------------------------------------------------
  */
 float d7ad7024_getFloat(CmdLineParam *cmdLineParm, char *paramName, int i);
@@ -85,9 +87,22 @@ float d7ad7024_getFloat(CmdLineParam *cmdLineParm, char *paramName, int i);
  *   cmdLineParm    A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
  *   i              The current command-line parameter index
- * Returns:     The string command-line parameter value
+ * Returns:         The string command-line parameter value
  * ----------------------------------------------------------------------------
  */
 char *d7ad7024_getString(CmdLineParam *cmdLineParm, char *paramName, int i);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    d7ad7024_getUint64
+ * Description: Retrieves an unsigned long value from the information in CmdLineParam at index i
+ *
+ * Parameters:
+ *   cmdLineParm    A pointer to the CmdLineParam instance
+ *   paramName      The name of the parameter
+ *   i              The current command-line parameter index
+ * Returns:         The unsigned long command-line parameter value
+ * ----------------------------------------------------------------------------
+ */
+uint64_t d7ad7024_getUint64(CmdLineParam *cmdLineParam, char *paramName, int i);
 
 #endif /* ORG_DEVOPSBROKER_TERMINAL_COMMANDLINE_H */

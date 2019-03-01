@@ -86,13 +86,22 @@ static inline uint32_t getHexValue(register char *attrName, register char **data
 	register char *attrValue = f6215943_search(attrName, *data);
 	*data = terminate(attrValue, '\n');
 
-	return f45efac2_parseHex_uint32(attrValue);
+	if (f6215943_isNotEqual(attrValue, "Not Provided")) {
+		return f45efac2_parseHex_uint32(attrValue);
+	}
+
+	return 0;
 }
 
 static inline void setHexValue(register uint32_t *attribute, register char *attrName, register char **data) {
 	register char *attrValue = f6215943_search(attrName, *data);
 	*data = terminate(attrValue, '\n');
-	*attribute = f45efac2_parseHex_uint32(attrValue);
+
+	if (f6215943_isNotEqual(attrValue, "Not Provided")) {
+		*attribute = f45efac2_parseHex_uint32(attrValue);
+	} else {
+		*attribute = 0;
+	}
 }
 
 static inline uint32_t getMaximumCapacity(register char *attrName, register char **data) {

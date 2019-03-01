@@ -35,7 +35,7 @@
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
-char *d485dfa0_stringList[] = { "None", "ECC" };
+char *d485dfa0_stringList[] = { "None", "ECC", "Multi-bit ECC" };
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 

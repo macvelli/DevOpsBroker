@@ -1,7 +1,7 @@
 /*
  * schedtuner.c - DevOpsBroker utility for tuning the Completely Fair Scheduler
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -44,12 +44,16 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <assert.h>
+
 #include "org/devopsbroker/io/file.h"
 #include "org/devopsbroker/lang/error.h"
 #include "org/devopsbroker/lang/integer.h"
+#include "org/devopsbroker/lang/memory.h"
 #include "org/devopsbroker/lang/string.h"
 #include "org/devopsbroker/lang/units.h"
 #include "org/devopsbroker/sysfs/memoryarray.h"
+#include "org/devopsbroker/terminal/commandline.h"
 #include "org/devopsbroker/text/linebuffer.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
@@ -62,15 +66,64 @@
 #define MIN_GRANULARITY_FACTOR 0.65625
 #define WAKEUP_GRANULARITY_FACTOR 0.40625
 
+#define USAGE_MSG "schedtuner " ANSI_GOLD "{ -c cpuMaxFreq | -m memBusSpeed | -h }"
+
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
+
+typedef struct TuningParams {
+	uint64_t cpuMaxFreq;
+	uint64_t memoryBusSpeed;
+} TuningParams;
+
+static_assert(sizeof(TuningParams) == 16, "Check your assumptions");
+
+// ═════════════════════════════ Global Variables ═════════════════════════════
 
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-uint64_t getMemoryBusSpeed();
+static uint64_t getCPUMaxFrequency();
 
-// ═════════════════════════════ Global Variables ═════════════════════════════
+static uint64_t getMemoryBusSpeed();
 
+static void printHelp();
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Possible command-line options:
+ *
+ *   -c -> CPU Max Frequency
+ *   -m -> Memory Bus Speed
+ *   -h -> Help
+ * ----------------------------------------------------------------------------
+ */
+static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams) {
+	register int argc = cmdLineParm->argc;
+	register char **argv = cmdLineParm->argv;
+
+	// Perform initializations
+	f668c4bd_meminit(tuningParams, sizeof(TuningParams));
+
+	for (int i = 1; i < argc; i++) {
+		if (argv[i][0] == '-') {
+			if (argv[i][1] == 'c') {
+				tuningParams->cpuMaxFreq = d7ad7024_getUint64(cmdLineParm, "CPU maximum frequency", i);
+			} else if (argv[i][1] == 'm') {
+				tuningParams->memoryBusSpeed = d7ad7024_getUint64(cmdLineParm, "memory bus speed", i);
+			} else if (argv[i][1] == 'h') {
+				printHelp();
+				exit(EXIT_SUCCESS);
+			} else {
+				c7c88e52_invalidOption(argv[i]);
+				c7c88e52_printUsage(USAGE_MSG);
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			c7c88e52_invalidOption(argv[i]);
+			c7c88e52_printUsage(USAGE_MSG);
+			exit(EXIT_FAILURE);
+		}
+	}
+}
 
 // ══════════════════════════════════ main() ══════════════════════════════════
 
@@ -78,6 +131,12 @@ int main(int argc, char *argv[]) {
 
 	programName = "schedtuner";
 	c7c88e52_ensureUserIsRoot();
+
+	TuningParams tuningParams;
+	CmdLineParam cmdLineParm;
+
+	d7ad7024_initCmdLineParam(&cmdLineParm, argc, argv, USAGE_MSG);
+	processCmdLine(&cmdLineParm, &tuningParams);
 
 	// File-related variables
 	int fileDescriptor;
@@ -151,7 +210,7 @@ int main(int argc, char *argv[]) {
 			adjustedNumCpuCores = numCpuCores * HYPERTHREAD_FACTOR;
 		}
 
-		uint64_t cpuMaxFreq = e2f74138_read_uint64("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq") * UNITS_KHz;
+		uint64_t cpuMaxFreq = getCPUMaxFrequency();
 		uint64_t memoryBusSpeed = getMemoryBusSpeed();
 		double mcc = (adjustedNumCpuCores * cpuMaxFreq) / memoryBusSpeed;
 
@@ -186,7 +245,15 @@ int main(int argc, char *argv[]) {
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-uint64_t getMemoryBusSpeed() {
+static uint64_t getCPUMaxFrequency() {
+	if (e2f74138_fileExists("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")) {
+		return e2f74138_read_uint64("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq") * UNITS_KHz;
+	}
+
+	return 0;
+}
+
+static uint64_t getMemoryBusSpeed() {
 	register MemoryArray *memoryInfo = f004d1bd_createMemoryArray();
 	register uint64_t memoryBusSpeed = memoryInfo->minSpeed;
 
@@ -201,4 +268,22 @@ uint64_t getMemoryBusSpeed() {
 	f004d1bd_destroyMemoryArray(memoryInfo);
 
 	return memoryBusSpeed;
+}
+
+static void printHelp() {
+	c7c88e52_printUsage(USAGE_MSG);
+
+	puts("\nPerforms kernel process scheduler optimization calculations for /etc/sysctl.conf");
+
+	puts(ANSI_BOLD "\nDefault Values:" ANSI_RESET);
+	puts("  CPU Max Frequency\tsysfs value (if present)");
+	puts("  Memory Bus Speed\tdmidecode value (if present)");
+
+	puts(ANSI_BOLD "\nExamples:" ANSI_RESET);
+	puts("  schedtuner -c 3400 -m 3200");
+
+	puts(ANSI_BOLD "\nValid Options:\n");
+	puts(ANSI_YELLOW "  -c\t" ANSI_ROMANTIC "Specify the CPU maximum frequency");
+	puts(ANSI_BOLD ANSI_YELLOW "  -m\t" ANSI_ROMANTIC "Specify the memory bus speed");
+	puts(ANSI_BOLD ANSI_YELLOW "  -h\t" ANSI_ROMANTIC "Print this help message\n");
 }

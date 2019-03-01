@@ -1,7 +1,7 @@
 /*
- * errorcorrectiontype.h - DevOpsBroker C header file for the org.devopsbroker.sysfs.ErrorCorrectionType enum
+ * userinput.h - DevOpsBroker C header file for the org.devopsbroker.terminal.UserInput struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -16,49 +16,43 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-36
+ * Developed on Ubuntu 18.04.2 LTS running kernel.osrelease = 4.18.0-15
  *
- * echo ORG_DEVOPSBROKER_SYSFS_ERRORCORRECTIONTYPE | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_TERMINAL_USERINPUT | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_SYSFS_ERRORCORRECTIONTYPE_H
-#define ORG_DEVOPSBROKER_SYSFS_ERRORCORRECTIONTYPE_H
+#ifndef ORG_DEVOPSBROKER_TERMINAL_USERINPUT_H
+#define ORG_DEVOPSBROKER_TERMINAL_USERINPUT_H
+
+// ═════════════════════════════════ Includes ═════════════════════════════════
+
+#include <stdio.h>
+#include <stdint.h>
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-#define d485dfa0_NUM_VALUES 3
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-typedef enum ErrorCorrectionType {
-	NONE = 0,
-	ECC,
-	MULTI_BIT_ECC
-} ErrorCorrectionType;
+
+// ═════════════════════════════ Global Variables ═════════════════════════════
+
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    d485dfa0_getErrorCorrectionType
- * Description: Returns the ErrorCorrectionType associated with the char* string
- *
- * Parameters:
- *   source     The char* pointer to convert to an ErrorCorrectionType value
- * Returns:     The associated ErrorCorrectionType value
- * ----------------------------------------------------------------------------
- */
-ErrorCorrectionType d485dfa0_getErrorCorrectionType(const char *source);
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    d485dfa0_toStringErrorCorrectionType
- * Description: Returns the char* string representation of the ErrorCorrectionType value
+ * Function:    a5c0506e_read_uint64
+ * Description: Reads an unsigned long value from STDIN
  *
  * Parameters:
- *   ect        The ErrorCorrectionType value to convert to a char* string
- * Returns:     The char* string representation of the ErrorCorrectionType value
+ *   line       The char buffer to use for capturing user input
+ *   answer     The unsigned long variable to populate with the user input
+ * Returns:     The status of the read result (0 = empty string / EOF = invalid value)
  * ----------------------------------------------------------------------------
  */
-char *d485dfa0_toStringErrorCorrectionType(const ErrorCorrectionType ect);
+int a5c0506e_read_uint64(char *line, uint64_t *answer);
 
-#endif /* ORG_DEVOPSBROKER_SYSFS_ERRORCORRECTIONTYPE_H */
+#endif /* ORG_DEVOPSBROKER_TERMINAL_USERINPUT_H */
