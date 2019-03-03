@@ -204,16 +204,16 @@ static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (argv[i][1] == 'd') {
-				tuningParams->downloadSpeed = d7ad7024_getFloat(cmdLineParm, "download speed", i);
+				tuningParams->downloadSpeed = d7ad7024_getFloat(cmdLineParm, "download speed", i++);
 			} else if (argv[i][1] == 'u') {
-				tuningParams->uploadSpeed = d7ad7024_getFloat(cmdLineParm, "upload speed", i);
+				tuningParams->uploadSpeed = d7ad7024_getFloat(cmdLineParm, "upload speed", i++);
 			} else if (argv[i][1] == 's') {
-				tuningParams->downloadSpeed = d7ad7024_getFloat(cmdLineParm, "upload/download speed", i);
+				tuningParams->downloadSpeed = d7ad7024_getFloat(cmdLineParm, "upload/download speed", i++);
 				tuningParams->uploadSpeed = tuningParams->downloadSpeed;
 			} else if (argv[i][1] == 'l') {
-				tuningParams->acceptableLatency = d7ad7024_getFloat(cmdLineParm, "acceptable latency", i);
+				tuningParams->acceptableLatency = d7ad7024_getFloat(cmdLineParm, "acceptable latency", i++);
 			} else if (argv[i][1] == 'g') {
-				char *tuningScript = d7ad7024_getString(cmdLineParm, "tuning script type", i);
+				char *tuningScript = d7ad7024_getString(cmdLineParm, "tuning script type", i++);
 
 				if (f6215943_isEqual("iface", tuningScript)) {
 					tuningParams->generateIfaceScript = true;

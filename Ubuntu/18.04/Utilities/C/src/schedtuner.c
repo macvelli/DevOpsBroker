@@ -45,7 +45,9 @@
 #include <stdio.h>
 
 #include <assert.h>
+#include <unistd.h>
 
+#include "org/devopsbroker/info/cpuid.h"
 #include "org/devopsbroker/io/file.h"
 #include "org/devopsbroker/lang/error.h"
 #include "org/devopsbroker/lang/integer.h"
@@ -82,9 +84,9 @@ static_assert(sizeof(TuningParams) == 16, "Check your assumptions");
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static uint64_t getCPUMaxFrequency();
+static uint64_t getCPUMaxFrequency(TuningParams *tuningParams);
 
-static uint64_t getMemoryBusSpeed();
+static uint64_t getMemoryBusSpeed(TuningParams *tuningParams);
 
 static void printHelp();
 
@@ -106,9 +108,9 @@ static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (argv[i][1] == 'c') {
-				tuningParams->cpuMaxFreq = d7ad7024_getUint64(cmdLineParm, "CPU maximum frequency", i);
+				tuningParams->cpuMaxFreq = d7ad7024_getUint64(cmdLineParm, "CPU maximum frequency", i++);
 			} else if (argv[i][1] == 'm') {
-				tuningParams->memoryBusSpeed = d7ad7024_getUint64(cmdLineParm, "memory bus speed", i);
+				tuningParams->memoryBusSpeed = d7ad7024_getUint64(cmdLineParm, "memory bus speed", i++);
 			} else if (argv[i][1] == 'h') {
 				printHelp();
 				exit(EXIT_SUCCESS);
@@ -128,6 +130,74 @@ static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
+
+	CPUID cpuid;
+	f618482d_getVendorID(&cpuid);
+	f618482d_getProcessorInfo(&cpuid);
+
+	printf("CPU Vendor ID: %s\n", cpuid.vendorId);
+	printf("Max CPUID Level: %d\n", cpuid.maxCpuIdLevel);
+
+	printf("Has x87 FPU: %d\n", cpuid.hasx87Fpu);
+	printf("Has virtual 8086 mode extensions: %d\n", cpuid.hasVirtual8086Mode);
+	printf("Has debugging extensions: %d\n", cpuid.hasDebugExtensions);
+	printf("Has Page Size Extension: %d\n", cpuid.hasPageSizeExtension);
+	printf("Has Time Stamp Counter: %d\n", cpuid.hasTimeStampCounter);
+	printf("Has Model-Specific Registers: %d\n", cpuid.hasModelSpecificRegs);
+	printf("Has Physical Address Extension: %d\n", cpuid.hasPhysAddrExtension);
+	printf("Has Machine Check Exception: %d\n", cpuid.hasMachineCheckException);
+	printf("Has CMPXCHG8: %d\n", cpuid.hasCompareAndSwap);
+	printf("Has Onboard APIC: %d\n", cpuid.hasAPIC);
+	printf("Has SYSENTER and SYSEXIT: %d\n", cpuid.hasSysEnter);
+	printf("Has Memory Type Range Registers: %d\n", cpuid.hasMemTypeRangeRegs);
+	printf("Has Page Global Enable Bit: %d\n", cpuid.hasPageGlobalEnableBit);
+	printf("Has Machine Check Architecture: %d\n", cpuid.hasMachineCheckArchitecture);
+	printf("Has Conditional Move: %d\n", cpuid.hasConditionalMove);
+	printf("Has Page Attribute Table: %d\n", cpuid.hasPageAttrTable);
+	printf("Has 36-bit Page Size Extension: %d\n", cpuid.hasPageSizeExtension36bit);
+	printf("Has Processor Serial Number: %d\n", cpuid.hasProcSerialNumber);
+	printf("Has CLFLUSH: %d\n", cpuid.hasClflush);
+	printf("Has Debug Store: %d\n", cpuid.hasDebugStore);
+	printf("Has Onboard Thermal Control MSRs for ACPI: %d\n", cpuid.hasACPI);
+	printf("Has MMX: %d\n", cpuid.hasMMX);
+	printf("Has FXSAVE/FXRESTOR: %d\n", cpuid.hasFXSAVE);
+	printf("Has SSE: %d\n", cpuid.hasSSE);
+	printf("Has SSE2: %d\n", cpuid.hasSSE2);
+	printf("Has Self-Snoop CPU Cache: %d\n", cpuid.hasSelfSnoopCache);
+	printf("Has Hyper-Threading: %d\n", cpuid.hasHyperThreading);
+	printf("Has Thermal Monitor: %d\n", cpuid.hasThermalMonitor);
+	printf("Has IA64 Emulator: %d\n", cpuid.hasIA64Emulator);
+	printf("Has Pending Break Enable: %d\n", cpuid.hasPendingBreakEnable);
+	printf("Has SSE3: %d\n", cpuid.hasSSE3);
+	printf("Has Carry-Less Multiplication: %d\n", cpuid.hasPCLMULQDQ);
+	printf("Has 64-bit Debug Store: %d\n", cpuid.hasDebugStore64bit);
+	printf("Has MONITOR and MWAIT: %d\n", cpuid.hasMonitor);
+	printf("Has CPL-Qualified Debug Store: %d\n", cpuid.hasDebugStoreCPL);
+	printf("Has Virtual Machine eXtensions: %d\n", cpuid.hasVirtualMachineExtensions);
+	printf("Has Safer Mode Extensions: %d\n", cpuid.hasSaferModeExtensions);
+	printf("Has Enhanced SpeedStep: %d\n", cpuid.hasEnhancedSpeedStep);
+	printf("Has Thermal Monitor 2: %d\n", cpuid.hasThermalMonitor2);
+	printf("Has Supplemental SSE3: %d\n", cpuid.hasSupplementalSSE3);
+	printf("Has L1 Context ID: %d\n", cpuid.hasL1ContextID);
+	printf("Has Silicon Debug Interface: %d\n", cpuid.hasSiliconDebug);
+	printf("Has Fused Multiply-Add: %d\n", cpuid.hasFusedMultiplyAdd);
+	printf("Has CMPXCHG16B: %d\n", cpuid.hasCMPXCHG16B);
+	printf("Has Disable Task Priority Messages: %d\n", cpuid.hasDisableTaskPriorityMsgs);
+	printf("Has Perfmon & Debug Capability: %d\n", cpuid.hasPerfmonDebug);
+	printf("Has Process Context Identifiers: %d\n", cpuid.hasProcessContextIds);
+	printf("Has Direct Cache Access for DMA Writes: %d\n", cpuid.hasDirectCacheAccess);
+	printf("Has SSE4.1: %d\n", cpuid.hasSSE4_1);
+	printf("Has SSE4.2: %d\n", cpuid.hasSSE4_2);
+	printf("Has x2APIC: %d\n", cpuid.hasx2APIC);
+	printf("Has MOVBE: %d\n", cpuid.hasMOVBE);
+	printf("Has POPCNT: %d\n", cpuid.hasPOPCNT);
+	printf("Has APIC TSC Deadline: %d\n", cpuid.hasTSCDeadline);
+	printf("Has AES: %d\n", cpuid.hasAES);
+	printf("Has XSAVE: %d\n", cpuid.hasXSAVE);
+	printf("Has XSAVE Enabled By OS: %d\n", cpuid.hasOSXSAVE);
+	printf("Has Advanced Vector Extensions: %d\n", cpuid.hasAVX);
+	printf("Has F16C: %d\n", cpuid.hasF16C);
+	printf("Has RDRAND: %d\n", cpuid.hasRDRAND);
 
 	programName = "schedtuner";
 	c7c88e52_ensureUserIsRoot();
@@ -210,8 +280,8 @@ int main(int argc, char *argv[]) {
 			adjustedNumCpuCores = numCpuCores * HYPERTHREAD_FACTOR;
 		}
 
-		uint64_t cpuMaxFreq = getCPUMaxFrequency();
-		uint64_t memoryBusSpeed = getMemoryBusSpeed();
+		uint64_t cpuMaxFreq = getCPUMaxFrequency(&tuningParams);
+		uint64_t memoryBusSpeed = getMemoryBusSpeed(&tuningParams);
 		double mcc = (adjustedNumCpuCores * cpuMaxFreq) / memoryBusSpeed;
 
 		// Scale MCC according to the Base MCC
@@ -245,29 +315,33 @@ int main(int argc, char *argv[]) {
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-static uint64_t getCPUMaxFrequency() {
-	if (e2f74138_fileExists("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")) {
+static uint64_t getCPUMaxFrequency(TuningParams *tuningParams) {
+	if (tuningParams->cpuMaxFreq == 0) {
 		return e2f74138_read_uint64("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq") * UNITS_KHz;
 	}
 
-	return 0;
+	return tuningParams->cpuMaxFreq * UNITS_KHz;
 }
 
-static uint64_t getMemoryBusSpeed() {
-	register MemoryArray *memoryInfo = f004d1bd_createMemoryArray();
-	register uint64_t memoryBusSpeed = memoryInfo->minSpeed;
+static uint64_t getMemoryBusSpeed(TuningParams *tuningParams) {
+	if (tuningParams->memoryBusSpeed == 0) {
+		register MemoryArray *memoryInfo = f004d1bd_createMemoryArray();
+		register uint64_t memoryBusSpeed = memoryInfo->minSpeed;
 
-	if (memoryInfo->numChannelsInUse == 4) {
-		memoryBusSpeed <<= 1;
-	} else if (memoryInfo->numChannelsInUse == 3) {
-		memoryBusSpeed += (memoryBusSpeed >> 1);
-	} else if (memoryInfo->numChannelsInUse == 1) {
-		memoryBusSpeed >>= 1;
+		if (memoryInfo->numChannelsInUse == 4) {
+			memoryBusSpeed <<= 1;
+		} else if (memoryInfo->numChannelsInUse == 3) {
+			memoryBusSpeed += (memoryBusSpeed >> 1);
+		} else if (memoryInfo->numChannelsInUse == 1) {
+			memoryBusSpeed >>= 1;
+		}
+
+		f004d1bd_destroyMemoryArray(memoryInfo);
+
+		return memoryBusSpeed;
 	}
 
-	f004d1bd_destroyMemoryArray(memoryInfo);
-
-	return memoryBusSpeed;
+	return tuningParams->memoryBusSpeed;
 }
 
 static void printHelp() {

@@ -56,13 +56,13 @@ static_assert(sizeof(CmdLineParam) == 24, "Check your assumptions");
  * Description: Initializes an existing CmdLineParam struct
  *
  * Parameters:
- *   cmdLineParm    A pointer to the CmdLineParam instance to initalize
+ *   cmdLineParam   A pointer to the CmdLineParam instance to initalize
  *   argc           The number of command-line arguments
  *   argv           The command-line argument array
  *   usageMsg       The usage message to use when there is an issue with a command-line parameter
  * ----------------------------------------------------------------------------
  */
-void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParm, int argc, char **argv, char *usageMsg);
+void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParam, int argc, char **argv, char *usageMsg);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,33 +71,33 @@ void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParm, int argc, char **argv,
  * Description: Retrieves a float value from the information in CmdLineParam at index i
  *
  * Parameters:
- *   cmdLineParm    A pointer to the CmdLineParam instance
+ *   cmdLineParam   A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
  *   i              The current command-line parameter index
  * Returns:         The float command-line parameter value
  * ----------------------------------------------------------------------------
  */
-float d7ad7024_getFloat(CmdLineParam *cmdLineParm, char *paramName, int i);
+float d7ad7024_getFloat(CmdLineParam *cmdLineParam, char *paramName, int i);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    d7ad7024_getString
  * Description: Retrieves a string value from the information in CmdLineParam at index i
  *
  * Parameters:
- *   cmdLineParm    A pointer to the CmdLineParam instance
+ *   cmdLineParam   A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
  *   i              The current command-line parameter index
  * Returns:         The string command-line parameter value
  * ----------------------------------------------------------------------------
  */
-char *d7ad7024_getString(CmdLineParam *cmdLineParm, char *paramName, int i);
+char *d7ad7024_getString(CmdLineParam *cmdLineParam, char *paramName, int i);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    d7ad7024_getUint64
  * Description: Retrieves an unsigned long value from the information in CmdLineParam at index i
  *
  * Parameters:
- *   cmdLineParm    A pointer to the CmdLineParam instance
+ *   cmdLineParam   A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
  *   i              The current command-line parameter index
  * Returns:         The unsigned long command-line parameter value

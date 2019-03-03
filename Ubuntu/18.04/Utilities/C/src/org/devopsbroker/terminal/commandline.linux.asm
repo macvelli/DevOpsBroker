@@ -20,9 +20,11 @@
 ; Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-44
 ;
 ; This file implements the following x86-64 assembly language functions for the
-; org.devopsbroker.lang.commandline.h header file:
+; org.devopsbroker.terminal.commandline.h header file:
 ;
-;   o float d7ad7024_getFloat(CmdLineParam *cmdLineParm, char *paramName, int i);
+;   o float d7ad7024_getFloat(CmdLineParam *cmdLineParam, char *paramName, int i);
+;   o char *d7ad7024_getString(CmdLineParam *cmdLineParam, char *paramName, int i);
+;   o uint64_t d7ad7024_getUint64(CmdLineParam *cmdLineParam, char *paramName, int i);
 ; -----------------------------------------------------------------------------
 ;
 

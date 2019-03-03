@@ -70,6 +70,17 @@ dt {
   font-weight: bold;
 }
 
+dl.instruction dt {
+  font-weight: normal;
+  padding-bottom: 1em;
+  cursor: pointer;
+}
+
+dl.instruction ul {
+  margin-left: -2.75em;
+  list-style-type: none;
+}
+
 dd {
   padding-bottom: 1em;
 }
@@ -204,7 +215,54 @@ table#x86jumps tr td:first-child {
   font-weight: bold;
 }
 
+table#sse2Register td.sse2 {
+  text-align: right;
+  font-weight: bold;
+  width: 4em;
+  border: none;
+}
+
+table#sse2Register td.sse2_64 {
+  font-weight: bold;
+  width: 20em;
+  background: #FCF0B4;
+  padding-left: 12em;
+}
+
+table#sse2Register td.sse2_32 {
+  font-weight: bold;
+  width: 13em;
+  background: #D6C679;
+  padding-left: 3em;
+}
+
+table#sse2Register td.sse2_16 {
+  text-align: center;
+  font-weight: bold;
+  width: 8em;
+  background: #AE9C45;
+}
+
+table#sse2Register td.sse2_8 {
+  text-align: center;
+  font-weight: bold;
+  width: 4em;
+  color: #FBFBFD;
+  background: #8C7A25;
+}
+
 </style>
+<script>
+function toggleDisplay(id) {
+  var x = document.getElementById(id);
+
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+</script>
 </head>
 <body>
 
@@ -238,6 +296,18 @@ table#x86jumps tr td:first-child {
           <li><a href="#flagsRegister">x86 FLAGS Register</a></li>
           <li><a href="#x86JumpReference">x86 JUMP Instruction Reference</a></li>
           <li><a href="#x86JumpTypes">x86 JUMP Instruction Types</a></li>
+        </ul>
+      </li>
+      <li class="tocTopic padTop">
+        <a href="#sse2Instructions">SSE2 Instructions</a>
+        <ul class="tocSubtopic">
+          <li class="padTop">
+            <a href="#sseRegisters">SSE Registers</a>
+          </li>
+          <li><a href="#sse2DataMovement">SSE2 Data Movement</a></li>
+          <li><a href="#sse2Shuffling">SSE2 Data Shuffling</a></li>
+          <li><a href="#sse2Logic">SSE2 Logic Instructions</a></li>
+          <li><a href="#sse2Compare">SSE2 Compare Instructions</a></li>
         </ul>
       </li>
     </ol>
@@ -932,6 +1002,519 @@ table#x86jumps tr td:first-child {
         <li>A jump to an instruction located in a different task</li>
         <li>Can only be executed in protected mode</li>
       </ul>
+    </dl>
+    </p>
+
+    <h2 id="sse2Instructions">SSE2 Instructions</h2>
+    <p>
+    SSE2 instructions give a lot of flexibility and power to the SIMD execution
+    model by allowing calclations with:
+    </p>
+    <ul>
+      <li>64-bit double-precision floating-point values</li>
+      <li>64-bit integer values</li>
+      <li>32-bit single-precision floating-point values</li>
+      <li>32-bit integer values</li>
+      <li>16-bit integer values</li>
+      <li>8-bit integer values</li>
+    </ul>
+
+    <h3 id="sseRegisters">SSE Registers</h3>
+    <p>
+    In the x86-64 architecture, there are sixteen 128-bit SSE registers
+    <code>XMM0</code>, <code>XMM1</code>, <code>XMM2</code>, <code>XMM3</code>,
+    <code>XMM4</code>, <code>XMM5</code>, <code>XMM6</code>, <code>XMM7</code>,
+    <code>XMM8</code>, <code>XMM9</code>, <code>XMM10</code>, <code>XMM11</code>,
+    <code>XMM12</code>, <code>XMM13</code>, <code>XMM14</code>, and <code>XMM15</code>
+    </p>
+
+    <table id="abiRegisters" class="center stripe">
+    <caption id="floatArgRegs">SSE Registers</caption>
+    <tr>
+      <td>xmm0</td>
+    </tr>
+    <tr>
+      <td>xmm1</td>
+    </tr>
+    <tr>
+      <td>xmm2</td>
+    </tr>
+    <tr>
+      <td>xmm3</td>
+    </tr>
+    <tr>
+      <td>xmm4</td>
+    </tr>
+    <tr>
+      <td>xmm5</td>
+    </tr>
+    <tr>
+      <td>xmm6</td>
+    </tr>
+    <tr>
+      <td>xmm7</td>
+    </tr>
+    <tr>
+      <td>xmm8</td>
+    </tr>
+    <tr>
+      <td>xmm9</td>
+    </tr>
+    <tr>
+      <td>xmm10</td>
+    </tr>
+    <tr>
+      <td>xmm11</td>
+    </tr>
+    <tr>
+      <td>xmm12</td>
+    </tr>
+    <tr>
+      <td>xmm13</td>
+    </tr>
+    <tr>
+      <td>xmm14</td>
+    </tr>
+    <tr>
+      <td>xmm15</td>
+    </tr>
+    </table>
+
+    <p>
+    The structure of each SSE2 register is as follows:
+    </p>
+
+    <table id="sse2Register" class="center">
+    <caption>SSE2 Register Layout</caption>
+    <thead>
+    <tr>
+      <th style="background: #FBFBFD; border: none;">&nbsp;</th>
+      <th class="center" colspan="8">Bytes 1-8</th>
+      <th class="center" colspan="8">Bytes 9-16</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td class="sse2">2</td>
+      <td class="sse2_64" colspan="8">64-bit floating-point<br>64-bit integer</td>
+      <td class="sse2_64" colspan="8">64-bit floating-point<br>64-bit integer</td>
+    </tr>
+    <tr>
+      <td class="sse2">4</td>
+      <td class="sse2_32" colspan="4">32-bit floating-point<br>32-bit integer</td>
+      <td class="sse2_32" colspan="4">32-bit floating-point<br>32-bit integer</td>
+      <td class="sse2_32" colspan="4">32-bit floating-point<br>32-bit integer</td>
+      <td class="sse2_32" colspan="4">32-bit floating-point<br>32-bit integer</td>
+    </tr>
+    <tr>
+      <td class="sse2">8</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+      <td class="sse2_16" colspan="2">16-bit</td>
+    </tr>
+    <tr>
+      <td class="sse2">16</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+      <td class="sse2_8">8-bit</td>
+    </tr>
+    </tbody>
+    </table>
+
+    <h3 id="sse2DataMovement">SSE2 Data Movement</h3>
+    <p>
+    The first thing to learn about SSE2 is how to move data into, out of, and
+    between the XMM registers:
+    <dl class="instruction">
+     <dt onclick="toggleDisplay('movd')"><b>movd</b> &boxh; move doubleword</dt>
+     <dd id="movd" style="display: none;">
+       <ul>
+         <li>Moves the value in a 32-bit register or memory location into the
+             bottom 32 bits of an XMM register; top 96 bits are cleared</li>
+         <li>Moves the value in the bottom 32 bits of an XMM register into a
+             32-bit register or memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movd &lt;xmm&gt;, &lt;reg32&#47;mem32&gt;</code><br>
+       <code>movd &lt;reg32&#47;mem32&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movd xmm0, eax</code><br>
+       <code>movd [rdi], xmm0</code>
+     </dd>
+     <dt onclick="toggleDisplay('movq')"><b>movq</b> &boxh; move quadword</dt>
+     <dd id="movq" style="display: none;">
+       <ul>
+         <li>Moves the value in a 64-bit register or memory location into the
+             bottom 64 bits of an XMM register; top 64 bits are cleared</li>
+         <li>Moves the value in the bottom 64 bits of an XMM register into a
+             64-bit register or memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movq &lt;xmm&gt;, &lt;reg64&#47;mem64&gt;</code><br>
+       <code>movq &lt;reg64&#47;mem64&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movq xmm0, rax</code><br>
+       <code>movq [rdi], xmm0</code>
+     </dd>
+     <dt onclick="toggleDisplay('movdqa')"><b>movdqa</b> &boxh; move aligned 128-bit integer</dt>
+     <dd id="movdqa" style="display: none;">
+       <ul>
+         <li>Moves a 128-bit integer value from an XMM register or 16-byte aligned
+             memory location into an XMM register</li>
+         <li>Moves the 128-bit integer value from an XMM register into another XMM
+             register or a 16-byte aligned memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movdqa &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
+       <code>movdqa &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movdqa xmm0, [rdi]</code><br>
+       <code>movdqa xmm1, xmm0</code><br>
+       <code>movdqa [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movdqu')"><b>movdqu</b> &boxh; move unaligned 128-bit integer</dt>
+     <dd id="movdqu" style="display: none;">
+       <ul>
+         <li>Moves a 128-bit integer value from an unaligned memory location into
+             an XMM register</li>
+         <li>Moves the 128-bit integer value from an XMM register into an unaligned
+             memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movdqu &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+       <code>movdqu &lt;mem128&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movdqu xmm0, [rdi]</code><br>
+       <code>movdqu [rdi], xmm0</code>
+     </dd>
+     <dt onclick="toggleDisplay('movapd')"><b>movapd</b> &boxh; move aligned packed double-precision floating-point values</dt>
+     <dd id="movapd" style="display: none;">
+       <ul>
+         <li>Moves two 64-bit double-precision floating-point values from an
+             XMM register or 16-byte aligned memory location into an XMM register</li>
+         <li>Moves two 64-bit double-precision floating-point values from an
+             XMM register into another XMM register or a 16-byte aligned memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movapd &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
+       <code>movapd &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movapd xmm0, [rdi]</code><br>
+       <code>movapd xmm1, xmm0</code><br>
+       <code>movapd [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movupd')"><b>movupd</b> &boxh; move unaligned packed double-precision floating-point values</dt>
+     <dd id="movupd" style="display: none;">
+       <ul>
+         <li>Moves two 64-bit double-precision floating-point values from an
+             unaligned memory location into an XMM register</li>
+         <li>Moves two 64-bit double-precision floating-point values from an
+             XMM register into an unaligned memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movupd &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+       <code>movupd &lt;mem128&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movupd xmm0, [rdi]</code><br>
+       <code>movupd [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movaps')"><b>movaps</b> &boxh; move aligned packed single-precision floating-point values</dt>
+     <dd id="movaps" style="display: none;">
+       <ul>
+         <li>Moves four 32-bit single-precision floating-point values from an
+             XMM register or 16-byte aligned memory location into an XMM register</li>
+         <li>Moves four 32-bit single-precision floating-point values from an
+             XMM register into another XMM register or a 16-byte aligned memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movaps &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
+       <code>movaps &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movaps xmm0, [rdi]</code><br>
+       <code>movaps xmm1, xmm0</code><br>
+       <code>movaps [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movups')"><b>movups</b> &boxh; move unaligned packed single-precision floating-point values</dt>
+     <dd id="movups" style="display: none;">
+       <ul>
+         <li>Moves four 32-bit single-precision floating-point values from an
+             unaligned memory location into an XMM register</li>
+         <li>Moves four 32-bit single-precision floating-point values from an
+             XMM register into an unaligned memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movups &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+       <code>movups &lt;mem128&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movups xmm0, [rdi]</code><br>
+       <code>movups [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movhps')"><b>movhps</b> &boxh; move high packed single-precision floating-point values</dt>
+     <dd id="movhps" style="display: none;">
+       <ul>
+         <li>Moves two 32-bit single-precision floating-point values from a
+             64-bit memory location into the top 64 bits of the XMM register</li>
+         <li>Moves the top 64 bits of an XMM register into the 64-bit memory
+             location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movhps &lt;xmm&gt;, &lt;mem64&gt;</code><br>
+       <code>movhps &lt;mem64&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movhps xmm0, [rdi]</code><br>
+       <code>movhps [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movlps')"><b>movlps</b> &boxh; move low packed single-precision floating-point values</dt>
+     <dd id="movlps" style="display: none;">
+       <ul>
+         <li>Moves two 32-bit single-precision floating-point values from a
+             64-bit memory location into the bottom 64 bits of the XMM register</li>
+         <li>Moves the bottom 64 bits of an XMM register into the 64-bit memory
+             location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movlps &lt;xmm&gt;, &lt;mem64&gt;</code><br>
+       <code>movlps &lt;mem64&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movlps xmm0, [rdi]</code><br>
+       <code>movlps [rdi], xmm1</code>
+     </dd>
+     <dt onclick="toggleDisplay('movhlps')"><b>movhlps</b> &boxh; move packed single-precision floating-point values high to low</dt>
+     <dd id="movhlps" style="display: none;">
+       <ul>
+         <li>Moves two 32-bit single-precision floating-point values from the top
+             64 bits of the source XMM register to the bottom 64 bits of the
+             destination XMM register</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movhlps &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movhlps xmm0, xmm1</code><br>
+     </dd>
+     <dt onclick="toggleDisplay('movlhps')"><b>movlhps</b> &boxh; move packed single-precision floating-point values low to high</dt>
+     <dd id="movlhps" style="display: none;">
+       <ul>
+         <li>Moves two 32-bit single-precision floating-point values from the bottom
+             64 bits of the source XMM register to the top 64 bits of the
+             destination XMM register</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movlhps &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movlhps xmm0, xmm1</code><br>
+     </dd>
+     <dt onclick="toggleDisplay('movss')"><b>movss</b> &boxh; move scalar single-precision floating-point value</dt>
+     <dd id="movss" style="display: none;">
+       <ul>
+         <li>Moves a 32-bit single-precision floating-point value from a memory
+             location into an XMM register</li>
+         <li>Moves the single lowest 32-bit single-precision floating-point value
+             from a source XMM register to a destination XMM register</li>
+         <li>Moves scalar 32-bit single-precision floating-point value
+             from a source XMM register into a memory location</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movss &lt;xmm&gt;, &lt;xmm&#47;mem32&gt;</code><br>
+       <code>movss &lt;xmm&#47;mem32&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movss xmm0, [rdi]</code><br>
+       <code>movss xmm0, xmm1</code><br>
+       <code>movss [rdi], xmm1</code><br>
+     </dd>
+     <dt onclick="toggleDisplay('movmskps')"><b>movmskps</b> &boxh; extract packed single-precision floating-point sign mask</dt>
+     <dd id="movmskps" style="display: none;">
+       <ul>
+         <li>Extracts the sign bits from the four packed 32-bit single-precision
+             floating-point values, formats them into a 4-bit mask, and stores
+             it in the 4 low-order bits of the general-purpose register</li>
+       </ul>
+       <br>
+       <em>Syntax</em><br>
+       <code>movmskps &lt;reg64&gt;, &lt;xmm&gt;</code><br>
+       <br>
+       <em>Examples</em><br>
+       <code>movmskps rax, xmm1</code><br>
+     </dd>
+    </dl>
+    </p>
+
+    <h3 id="sse2Shuffling">SSE2 Data Shuffling</h3>
+    <p>
+    A key concept about performing SIMD operations with SSE2 is the "multiple
+    data" part. Data shuffling allows 16-bit words / 32-bit doublewords / 64-bit
+    quadwords to be repackaged in a different way in an XMM register.
+    <dl class="instruction">
+      <dt onclick="toggleDisplay('pshufd')"><b>pshufd</b> &boxh; shuffle packed doublewords</dt>
+      <dd id="pshufd" style="display: none;">
+        <ul>
+          <li>Copies 32-bit doublewords from the source and inserts them into
+              the destination XMM register</li>
+          <li>The source may either be another XMM register or a 128-bit memory
+              location</li>
+          <li>The immediate operand is an 8-bit mask that selects which 32-bit
+              doublewords from the source are placed into the destination</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pshufd &lt;xmm&gt;, &lt;xmm&gt;, 01101100b</code><br>
+        <code>pshufd &lt;xmm&gt;, &lt;mem128&gt;, 10110110b</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pshufd xmm0, xmm0, 0b</code> &boxh; broadcast the lowest 32-bit doubleword in <code>XMM0</code><br>
+        <code>pshufd xmm0, [rdi], 10110110b</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('pshuflw')"><b>pshuflw</b> &boxh; shuffle packed low words</dt>
+      <dd id="pshuflw" style="display: none;">
+        <ul>
+          <li>Copies 16-bit words from the bottom 64 bits of the source and
+              inserts them into the bottom four 16-bit words of the destination
+              XMM register</li>
+          <li>The source may either be another XMM register or a 128-bit memory
+              location</li>
+          <li>The immediate operand is an 8-bit mask that selects which 16-bit
+              words from the source are placed into the destination</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pshuflw &lt;xmm&gt;, &lt;xmm&gt;, 01101100b</code><br>
+        <code>pshuflw &lt;xmm&gt;, &lt;mem128&gt;, 10110110b</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pshuflw xmm0, xmm0, 0b</code> &boxh; broadcast the lowest 16-bit word in <code>XMM0</code><br>
+        <code>pshuflw xmm0, [rdi], 10110110b</code><br>
+      </dd>
+    </dl>
+    </p>
+
+    <h3 id="sse2Logic">SSE2 Logic Instructions</h3>
+    <p>
+    The SSE2 logic instructions allow the capability to perform the usual bitwise
+    logic on XMM registers. Some logic instructions operate on the entire 128-bit
+    register as a whole, while other logic instructions perform operations on
+    packed values within the XMM register.
+    <dl class="instruction">
+      <dt onclick="toggleDisplay('pand')"><b>pand</b> &boxh; logical AND</dt>
+      <dd id="pand" style="display: none;">
+        <ul>
+          <li>Performs a 128-bit bitwise logical AND operation between the source
+              and destination XMM register</li>
+          <li>The source may either be another XMM register or a 128-bit memory
+              location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pand &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>pand &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pand xmm0, xmm1</code><br>
+        <code>pand xmm0, [rdi]</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('pxor')"><b>pxor</b> &boxh; logical exclusive OR</dt>
+      <dd id="pxor" style="display: none;">
+        <ul>
+          <li>Performs a 128-bit bitwise logical exclusive OR operation between
+              the source and destination XMM register</li>
+          <li>The source may either be another XMM register or a 128-bit memory
+              location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pxor &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>pxor &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pxor xmm0, xmm1</code><br>
+        <code>pxor xmm0, [rdi]</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('pandn')"><b>pandn</b> &boxh; logical AND NOT</dt>
+      <dd id="pandn" style="display: none;">
+        <ul>
+          <li>Performs a 128-bit bitwise logical NOT operation on the destination
+              XMM register and then performs a bitwise logical AND with the source</li>
+          <li>The source may either be another XMM register or a 128-bit memory
+              location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pandn &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>pandn &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pandn xmm0, xmm1</code><br>
+        <code>pandn xmm0, [rdi]</code><br>
+      </dd>
+    </dl>
+
+    <h3 id="sse2Compare">SSE2 Compare Instructions</h3>
+    <p>
+    SSE2 compare functionality is quite limited considering there are only a
+    couple compare operations for integers.
+    <dl class="instruction">
+      <dt onclick="toggleDisplay('pcmpeqb')"><b>pcmpeqb</b> &boxh; compare packed bytes for equal</dt>
+      <dd id="pcmpeqb" style="display: none;">
+        <ul>
+          <li>Performs a SIMD compare for equality of the packed bytes between the
+              destination XMM register and the source</li>
+          <li>If a pair of bytes are equal, the corresponding byte in the
+              destination XMM register is set to <code>0xff</code>; otherwise
+              it is set to <code>0x00</code></li>
+          <li>The source may either be another XMM register or a 128-bit memory
+              location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pcmpeqb &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>pcmpeqb &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pcmpeqb xmm0, xmm1</code><br>
+        <code>pcmpeqb xmm0, [rdi]</code><br>
+      </dd>
     </dl>
     </p>
 
