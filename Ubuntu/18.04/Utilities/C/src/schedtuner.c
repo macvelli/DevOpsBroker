@@ -132,12 +132,23 @@ static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams
 int main(int argc, char *argv[]) {
 
 	CPUID cpuid;
-	f618482d_getVendorID(&cpuid);
-	f618482d_getProcessorInfo(&cpuid);
+	f618482d_getCoreTopology(&cpuid);
+//	f618482d_getModelName(&cpuid);
+//	f618482d_getVendorID(&cpuid);
+//	f618482d_getProcessorInfo(&cpuid);
 
-	printf("CPU Vendor ID: %s\n", cpuid.vendorId);
-	printf("Max CPUID Level: %d\n", cpuid.maxCpuIdLevel);
-
+//	printf("CPU Model Name: %s\n", cpuid.modelName);
+//	printf("CPU Vendor ID: %s\n", cpuid.vendorId);
+//	printf("Max CPUID Level: %d\n", cpuid.maxCpuIdLevel);
+//	printf("CPU Family: %d\n", cpuid.family);
+//	printf("Model: %d\n", cpuid.model);
+//	printf("Stepping ID: %d\n", cpuid.steppingId);
+//	printf("Brand Index: %d\n", cpuid.brandIndex);
+//	printf("CLFLUSH Size: %d\n", cpuid.clflushSize);
+	printf("Number of Logical Processors: %d\n", cpuid.numLogicalProcs);
+//	printf("Local APIC ID: %d\n", cpuid.localAPICId);
+	printf("Number of Physical Cores: %d\n", cpuid.numPhysicalCores);
+/*
 	printf("Has x87 FPU: %d\n", cpuid.hasx87Fpu);
 	printf("Has virtual 8086 mode extensions: %d\n", cpuid.hasVirtual8086Mode);
 	printf("Has debugging extensions: %d\n", cpuid.hasDebugExtensions);
@@ -198,7 +209,7 @@ int main(int argc, char *argv[]) {
 	printf("Has Advanced Vector Extensions: %d\n", cpuid.hasAVX);
 	printf("Has F16C: %d\n", cpuid.hasF16C);
 	printf("Has RDRAND: %d\n", cpuid.hasRDRAND);
-
+*/
 	programName = "schedtuner";
 	c7c88e52_ensureUserIsRoot();
 

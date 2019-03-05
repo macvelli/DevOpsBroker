@@ -59,6 +59,30 @@ scriptName='snippet'
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateAssembly
+# Description:  Performs validation for the asm command
+# -----------------------------------------------------------------------------
+function validateAssembly() {
+	# Display error if snippet name parameter is missing
+	if [ -z "$snippetName" ]; then
+		printError $scriptName 'Missing snippet name parameter'
+		echo
+		printUsage "$scriptName $command { multiplyadd }"
+
+		exit 1
+	fi
+
+	# Display error if snippet name parameter is invalid
+	if [[ ! "$snippetName" =~ ^(multiplyadd)$ ]]; then
+		printError $scriptName "Invalid $command snippet: '$snippetName'"
+		echo
+		printUsage "$scriptName $command { multiplyadd }"
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     validateBash
 # Description:  Performs validation for the bash command
 # -----------------------------------------------------------------------------
@@ -89,9 +113,9 @@ command=${1:-}
 snippetName=${2:-}
 
 ## Variables
-validCommands=('bash')
+validCommands=('asm' 'bash')
 
-usageMessage="$scriptName { bash } SNIPPET_NAME"
+usageMessage="$scriptName { asm | bash } SNIPPET_NAME"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -112,7 +136,16 @@ fi
 
 ################################### Actions ###################################
 
-if [ $command == 'bash' ]; then
+if [ $command == 'asm' ]; then
+	validateAssembly
+
+	if [ $snippetName == 'multiplyadd' ]; then
+		echo '	mov        cl, dl                 ; value = (value * 10) + digit'
+		echo '	lea        eax, [eax+eax*4]'
+		echo '	lea        eax, [ecx+eax*2]'
+	fi
+
+elif [ $command == 'bash' ]; then
 	validateBash
 
 	if [ $snippetName == 'arraylength' ]; then

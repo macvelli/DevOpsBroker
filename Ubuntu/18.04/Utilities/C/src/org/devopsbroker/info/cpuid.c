@@ -27,8 +27,6 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <stdlib.h>
-
 #include "cpuid.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
@@ -45,21 +43,12 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 /*
-CPUID *61827450_createCPUID() {
-	CPUID *cPUID = malloc(sizeof(CPUID));
+void f618482d_getCoreTopology(CPUID *cpuid) {
+	char buffer[8];
 
-	// TODO: Fill in with struct initialization code
+	e2f74138_readString("/sys/devices/system/cpu/cpu0/topology/core_siblings_list", buffer, 8);
 
-	return cPUID;
-}
-
-void 61827450_destroyCPUID(CPUID *cPUID) {
-	free(cPUID);
-}
-
-void 61827450_initCPUID(CPUID *cPUID) {
-
-	// TODO: Fill in with struct initialization code
-
+	puts(buffer);
+	cpuid->numLogicalProcs = e2f74138_readUint32Hex("/sys/devices/system/cpu/cpu0/topology/core_siblings");
 }
 */

@@ -1144,241 +1144,273 @@ function toggleDisplay(id) {
     The first thing to learn about SSE2 is how to move data into, out of, and
     between the XMM registers:
     <dl class="instruction">
-     <dt onclick="toggleDisplay('movd')"><b>movd</b> &boxh; move doubleword</dt>
-     <dd id="movd" style="display: none;">
-       <ul>
-         <li>Moves the value in a 32-bit register or memory location into the
-             bottom 32 bits of an XMM register; top 96 bits are cleared</li>
-         <li>Moves the value in the bottom 32 bits of an XMM register into a
-             32-bit register or memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movd &lt;xmm&gt;, &lt;reg32&#47;mem32&gt;</code><br>
-       <code>movd &lt;reg32&#47;mem32&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movd xmm0, eax</code><br>
-       <code>movd [rdi], xmm0</code>
-     </dd>
-     <dt onclick="toggleDisplay('movq')"><b>movq</b> &boxh; move quadword</dt>
-     <dd id="movq" style="display: none;">
-       <ul>
-         <li>Moves the value in a 64-bit register or memory location into the
-             bottom 64 bits of an XMM register; top 64 bits are cleared</li>
-         <li>Moves the value in the bottom 64 bits of an XMM register into a
-             64-bit register or memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movq &lt;xmm&gt;, &lt;reg64&#47;mem64&gt;</code><br>
-       <code>movq &lt;reg64&#47;mem64&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movq xmm0, rax</code><br>
-       <code>movq [rdi], xmm0</code>
-     </dd>
-     <dt onclick="toggleDisplay('movdqa')"><b>movdqa</b> &boxh; move aligned 128-bit integer</dt>
-     <dd id="movdqa" style="display: none;">
-       <ul>
-         <li>Moves a 128-bit integer value from an XMM register or 16-byte aligned
-             memory location into an XMM register</li>
-         <li>Moves the 128-bit integer value from an XMM register into another XMM
-             register or a 16-byte aligned memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movdqa &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
-       <code>movdqa &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movdqa xmm0, [rdi]</code><br>
-       <code>movdqa xmm1, xmm0</code><br>
-       <code>movdqa [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movdqu')"><b>movdqu</b> &boxh; move unaligned 128-bit integer</dt>
-     <dd id="movdqu" style="display: none;">
-       <ul>
-         <li>Moves a 128-bit integer value from an unaligned memory location into
-             an XMM register</li>
-         <li>Moves the 128-bit integer value from an XMM register into an unaligned
-             memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movdqu &lt;xmm&gt;, &lt;mem128&gt;</code><br>
-       <code>movdqu &lt;mem128&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movdqu xmm0, [rdi]</code><br>
-       <code>movdqu [rdi], xmm0</code>
-     </dd>
-     <dt onclick="toggleDisplay('movapd')"><b>movapd</b> &boxh; move aligned packed double-precision floating-point values</dt>
-     <dd id="movapd" style="display: none;">
-       <ul>
-         <li>Moves two 64-bit double-precision floating-point values from an
-             XMM register or 16-byte aligned memory location into an XMM register</li>
-         <li>Moves two 64-bit double-precision floating-point values from an
-             XMM register into another XMM register or a 16-byte aligned memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movapd &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
-       <code>movapd &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movapd xmm0, [rdi]</code><br>
-       <code>movapd xmm1, xmm0</code><br>
-       <code>movapd [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movupd')"><b>movupd</b> &boxh; move unaligned packed double-precision floating-point values</dt>
-     <dd id="movupd" style="display: none;">
-       <ul>
-         <li>Moves two 64-bit double-precision floating-point values from an
-             unaligned memory location into an XMM register</li>
-         <li>Moves two 64-bit double-precision floating-point values from an
-             XMM register into an unaligned memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movupd &lt;xmm&gt;, &lt;mem128&gt;</code><br>
-       <code>movupd &lt;mem128&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movupd xmm0, [rdi]</code><br>
-       <code>movupd [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movaps')"><b>movaps</b> &boxh; move aligned packed single-precision floating-point values</dt>
-     <dd id="movaps" style="display: none;">
-       <ul>
-         <li>Moves four 32-bit single-precision floating-point values from an
-             XMM register or 16-byte aligned memory location into an XMM register</li>
-         <li>Moves four 32-bit single-precision floating-point values from an
-             XMM register into another XMM register or a 16-byte aligned memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movaps &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
-       <code>movaps &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movaps xmm0, [rdi]</code><br>
-       <code>movaps xmm1, xmm0</code><br>
-       <code>movaps [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movups')"><b>movups</b> &boxh; move unaligned packed single-precision floating-point values</dt>
-     <dd id="movups" style="display: none;">
-       <ul>
-         <li>Moves four 32-bit single-precision floating-point values from an
-             unaligned memory location into an XMM register</li>
-         <li>Moves four 32-bit single-precision floating-point values from an
-             XMM register into an unaligned memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movups &lt;xmm&gt;, &lt;mem128&gt;</code><br>
-       <code>movups &lt;mem128&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movups xmm0, [rdi]</code><br>
-       <code>movups [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movhps')"><b>movhps</b> &boxh; move high packed single-precision floating-point values</dt>
-     <dd id="movhps" style="display: none;">
-       <ul>
-         <li>Moves two 32-bit single-precision floating-point values from a
-             64-bit memory location into the top 64 bits of the XMM register</li>
-         <li>Moves the top 64 bits of an XMM register into the 64-bit memory
-             location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movhps &lt;xmm&gt;, &lt;mem64&gt;</code><br>
-       <code>movhps &lt;mem64&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movhps xmm0, [rdi]</code><br>
-       <code>movhps [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movlps')"><b>movlps</b> &boxh; move low packed single-precision floating-point values</dt>
-     <dd id="movlps" style="display: none;">
-       <ul>
-         <li>Moves two 32-bit single-precision floating-point values from a
-             64-bit memory location into the bottom 64 bits of the XMM register</li>
-         <li>Moves the bottom 64 bits of an XMM register into the 64-bit memory
-             location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movlps &lt;xmm&gt;, &lt;mem64&gt;</code><br>
-       <code>movlps &lt;mem64&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movlps xmm0, [rdi]</code><br>
-       <code>movlps [rdi], xmm1</code>
-     </dd>
-     <dt onclick="toggleDisplay('movhlps')"><b>movhlps</b> &boxh; move packed single-precision floating-point values high to low</dt>
-     <dd id="movhlps" style="display: none;">
-       <ul>
-         <li>Moves two 32-bit single-precision floating-point values from the top
-             64 bits of the source XMM register to the bottom 64 bits of the
-             destination XMM register</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movhlps &lt;xmm&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movhlps xmm0, xmm1</code><br>
-     </dd>
-     <dt onclick="toggleDisplay('movlhps')"><b>movlhps</b> &boxh; move packed single-precision floating-point values low to high</dt>
-     <dd id="movlhps" style="display: none;">
-       <ul>
-         <li>Moves two 32-bit single-precision floating-point values from the bottom
-             64 bits of the source XMM register to the top 64 bits of the
-             destination XMM register</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movlhps &lt;xmm&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movlhps xmm0, xmm1</code><br>
-     </dd>
-     <dt onclick="toggleDisplay('movss')"><b>movss</b> &boxh; move scalar single-precision floating-point value</dt>
-     <dd id="movss" style="display: none;">
-       <ul>
-         <li>Moves a 32-bit single-precision floating-point value from a memory
-             location into an XMM register</li>
-         <li>Moves the single lowest 32-bit single-precision floating-point value
-             from a source XMM register to a destination XMM register</li>
-         <li>Moves scalar 32-bit single-precision floating-point value
-             from a source XMM register into a memory location</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movss &lt;xmm&gt;, &lt;xmm&#47;mem32&gt;</code><br>
-       <code>movss &lt;xmm&#47;mem32&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movss xmm0, [rdi]</code><br>
-       <code>movss xmm0, xmm1</code><br>
-       <code>movss [rdi], xmm1</code><br>
-     </dd>
-     <dt onclick="toggleDisplay('movmskps')"><b>movmskps</b> &boxh; extract packed single-precision floating-point sign mask</dt>
-     <dd id="movmskps" style="display: none;">
-       <ul>
-         <li>Extracts the sign bits from the four packed 32-bit single-precision
-             floating-point values, formats them into a 4-bit mask, and stores
-             it in the 4 low-order bits of the general-purpose register</li>
-       </ul>
-       <br>
-       <em>Syntax</em><br>
-       <code>movmskps &lt;reg64&gt;, &lt;xmm&gt;</code><br>
-       <br>
-       <em>Examples</em><br>
-       <code>movmskps rax, xmm1</code><br>
-     </dd>
+      <dt onclick="toggleDisplay('movd')"><b>movd</b> &boxh; move doubleword</dt>
+      <dd id="movd" style="display: none;">
+        <ul>
+          <li>Moves the value in a 32-bit register or memory location into the
+              bottom 32 bits of an XMM register; top 96 bits are cleared</li>
+          <li>Moves the value in the bottom 32 bits of an XMM register into a
+              32-bit register or memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movd &lt;xmm&gt;, &lt;reg32&#47;mem32&gt;</code><br>
+        <code>movd &lt;reg32&#47;mem32&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movd xmm0, eax</code><br>
+        <code>movd [rdi], xmm0</code>
+      </dd>
+      <dt onclick="toggleDisplay('movq')"><b>movq</b> &boxh; move quadword</dt>
+      <dd id="movq" style="display: none;">
+        <ul>
+          <li>Moves the value in a 64-bit register or memory location into the
+              bottom 64 bits of an XMM register; top 64 bits are cleared</li>
+          <li>Moves the value in the bottom 64 bits of an XMM register into a
+              64-bit register or memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movq &lt;xmm&gt;, &lt;reg64&#47;mem64&gt;</code><br>
+        <code>movq &lt;reg64&#47;mem64&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movq xmm0, rax</code><br>
+        <code>movq [rdi], xmm0</code>
+      </dd>
+      <dt onclick="toggleDisplay('movdqa')"><b>movdqa</b> &boxh; move aligned 128-bit integer</dt>
+      <dd id="movdqa" style="display: none;">
+        <ul>
+          <li>Moves a 128-bit integer value from an XMM register or 16-byte aligned
+              memory location into an XMM register</li>
+          <li>Moves the 128-bit integer value from an XMM register into another XMM
+              register or a 16-byte aligned memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movdqa &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
+        <code>movdqa &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movdqa xmm0, [rdi]</code><br>
+        <code>movdqa xmm1, xmm0</code><br>
+        <code>movdqa [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movdqu')"><b>movdqu</b> &boxh; move unaligned 128-bit integer</dt>
+      <dd id="movdqu" style="display: none;">
+        <ul>
+          <li>Moves a 128-bit integer value from an unaligned memory location
+              into an XMM register</li>
+          <li>Moves the 128-bit integer value from an XMM register into an
+              unaligned memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movdqu &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <code>movdqu &lt;mem128&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movdqu xmm0, [rdi]</code><br>
+        <code>movdqu [rdi], xmm0</code>
+      </dd>
+      <dt onclick="toggleDisplay('movapd')"><b>movapd</b> &boxh; move aligned packed double-precision floating-point values</dt>
+      <dd id="movapd" style="display: none;">
+        <ul>
+          <li>Moves two 64-bit double-precision floating-point values from an
+              XMM register or 16-byte aligned memory location into an XMM register</li>
+          <li>Moves two 64-bit double-precision floating-point values from an
+              XMM register into another XMM register or a 16-byte aligned memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movapd &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
+        <code>movapd &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movapd xmm0, [rdi]</code><br>
+        <code>movapd xmm1, xmm0</code><br>
+        <code>movapd [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movupd')"><b>movupd</b> &boxh; move unaligned packed double-precision floating-point values</dt>
+      <dd id="movupd" style="display: none;">
+        <ul>
+          <li>Moves two 64-bit double-precision floating-point values from an
+              unaligned memory location into an XMM register</li>
+          <li>Moves two 64-bit double-precision floating-point values from an
+              XMM register into an unaligned memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movupd &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <code>movupd &lt;mem128&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movupd xmm0, [rdi]</code><br>
+        <code>movupd [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movaps')"><b>movaps</b> &boxh; move aligned packed single-precision floating-point values</dt>
+      <dd id="movaps" style="display: none;">
+        <ul>
+          <li>Moves four 32-bit single-precision floating-point values from an
+              XMM register or 16-byte aligned memory location into an XMM register</li>
+          <li>Moves four 32-bit single-precision floating-point values from an
+              XMM register into another XMM register or a 16-byte aligned memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movaps &lt;xmm&gt;, &lt;xmm&#47;mem128&gt;</code><br>
+        <code>movaps &lt;xmm&#47;mem128&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movaps xmm0, [rdi]</code><br>
+        <code>movaps xmm1, xmm0</code><br>
+        <code>movaps [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movups')"><b>movups</b> &boxh; move unaligned packed single-precision floating-point values</dt>
+      <dd id="movups" style="display: none;">
+        <ul>
+          <li>Moves four 32-bit single-precision floating-point values from an
+              unaligned memory location into an XMM register</li>
+          <li>Moves four 32-bit single-precision floating-point values from an
+              XMM register into an unaligned memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movups &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <code>movups &lt;mem128&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movups xmm0, [rdi]</code><br>
+        <code>movups [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movhps')"><b>movhps</b> &boxh; move high packed single-precision floating-point values</dt>
+      <dd id="movhps" style="display: none;">
+        <ul>
+          <li>Moves two 32-bit single-precision floating-point values from a
+              64-bit memory location into the top 64 bits of the XMM register</li>
+          <li>Moves the top 64 bits of an XMM register into the 64-bit memory
+              location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movhps &lt;xmm&gt;, &lt;mem64&gt;</code><br>
+        <code>movhps &lt;mem64&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movhps xmm0, [rdi]</code><br>
+        <code>movhps [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movlps')"><b>movlps</b> &boxh; move low packed single-precision floating-point values</dt>
+      <dd id="movlps" style="display: none;">
+        <ul>
+          <li>Moves two 32-bit single-precision floating-point values from a
+              64-bit memory location into the bottom 64 bits of the XMM register</li>
+          <li>Moves the bottom 64 bits of an XMM register into the 64-bit memory
+              location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movlps &lt;xmm&gt;, &lt;mem64&gt;</code><br>
+        <code>movlps &lt;mem64&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movlps xmm0, [rdi]</code><br>
+        <code>movlps [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movhlps')"><b>movhlps</b> &boxh; move packed single-precision floating-point values high to low</dt>
+      <dd id="movhlps" style="display: none;">
+        <ul>
+          <li>Moves two 32-bit single-precision floating-point values from the
+              top 64 bits of the source XMM register to the bottom 64 bits of
+              the destination XMM register</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movhlps &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movhlps xmm0, xmm1</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('movlhps')"><b>movlhps</b> &boxh; move packed single-precision floating-point values low to high</dt>
+      <dd id="movlhps" style="display: none;">
+        <ul>
+          <li>Moves two 32-bit single-precision floating-point values from the
+              bottom 64 bits of the source XMM register to the top 64 bits of
+              the destination XMM register</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movlhps &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movlhps xmm0, xmm1</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('movss')"><b>movss</b> &boxh; move scalar single-precision floating-point value</dt>
+      <dd id="movss" style="display: none;">
+        <ul>
+          <li>Moves a 32-bit single-precision floating-point value from a memory
+              location into an XMM register</li>
+          <li>Moves the single lowest 32-bit single-precision floating-point
+              value from a source XMM register to a destination XMM register</li>
+          <li>Moves scalar 32-bit single-precision floating-point value
+              from a source XMM register into a memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movss &lt;xmm&gt;, &lt;xmm&#47;mem32&gt;</code><br>
+        <code>movss &lt;xmm&#47;mem32&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movss xmm0, [rdi]</code><br>
+        <code>movss xmm0, xmm1</code><br>
+        <code>movss [rdi], xmm1</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('movmskps')"><b>movmskps</b> &boxh; extract packed single-precision floating-point sign mask</dt>
+      <dd id="movmskps" style="display: none;">
+        <ul>
+          <li>Extracts the sign bits from the four packed 32-bit single-precision
+              floating-point values, formats them into a 4-bit mask, and stores
+              it in the 4 low-order bits of the general-purpose register</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movmskps &lt;reg64&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movmskps rax, xmm1</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('pextrw')"><b>pextrw</b> &boxh; extract word</dt>
+      <dd id="pextrw" style="display: none;">
+        <ul>
+          <li>Extracts the 16-bit word from the source XMM register denoted by
+              the 8-bit location mask into the bottom 16 bits of a
+              general-purpose register</li>
+          <li>Bits 16-63 are cleared in the destination register</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pextrw &lt;reg32&#47;reg64&gt;, &lt;xmm&gt;, imm8</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pextrw eax, xmm1, 2</code> &boxh; extract 3<sup>rd</sup> word of <code>XMM1</code> to <code>EAX</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('pinsrw')"><b>pinsrw</b> &boxh; insert word</dt>
+      <dd id="pinsrw" style="display: none;">
+        <ul>
+          <li>Extracts the bottom 16-bit word from the source general-purpose
+              register and inserts it into the destination XMM register at the
+              location specified by the 8-bit mask</li>
+          <li>All other 16-bit words in the destination XMM register are not
+              modified</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>pinsrw &lt;xmm&gt;, &lt;reg32&gt;, imm8</code><br>
+        <code>pinsrw &lt;xmm&gt;, &lt;mem16&gt;, imm8</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>pinsrw xmm0, eax, 0</code> &boxh; insert <code>AX</code> into the 1<sup>st</sup> word of <code>XMM0</code><br>
+      </dd>
     </dl>
     </p>
 
@@ -1400,8 +1432,8 @@ function toggleDisplay(id) {
         </ul>
         <br>
         <em>Syntax</em><br>
-        <code>pshufd &lt;xmm&gt;, &lt;xmm&gt;, 01101100b</code><br>
-        <code>pshufd &lt;xmm&gt;, &lt;mem128&gt;, 10110110b</code><br>
+        <code>pshufd &lt;xmm&gt;, &lt;xmm&gt;, imm8</code><br>
+        <code>pshufd &lt;xmm&gt;, &lt;mem128&gt;, imm8</code><br>
         <br>
         <em>Examples</em><br>
         <code>pshufd xmm0, xmm0, 0b</code> &boxh; broadcast the lowest 32-bit doubleword in <code>XMM0</code><br>
@@ -1420,8 +1452,8 @@ function toggleDisplay(id) {
         </ul>
         <br>
         <em>Syntax</em><br>
-        <code>pshuflw &lt;xmm&gt;, &lt;xmm&gt;, 01101100b</code><br>
-        <code>pshuflw &lt;xmm&gt;, &lt;mem128&gt;, 10110110b</code><br>
+        <code>pshuflw &lt;xmm&gt;, &lt;xmm&gt;, imm8</code><br>
+        <code>pshuflw &lt;xmm&gt;, &lt;mem128&gt;, imm8</code><br>
         <br>
         <em>Examples</em><br>
         <code>pshuflw xmm0, xmm0, 0b</code> &boxh; broadcast the lowest 16-bit word in <code>XMM0</code><br>

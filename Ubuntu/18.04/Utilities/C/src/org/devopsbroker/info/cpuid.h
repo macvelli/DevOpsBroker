@@ -38,6 +38,7 @@
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 typedef struct CPUID {
+	char modelName[48];
 	char vendorId[16];
 //	uint64_t processorInfo;
 //	uint64_t featureFlags;
@@ -45,6 +46,10 @@ typedef struct CPUID {
 	int family;
 	int model;
 	int steppingId;
+	int brandIndex;
+	int clflushSize;
+	int numLogicalProcs;
+	int numPhysicalCores;
 	bool hasx87Fpu;
 	bool hasVirtual8086Mode;
 	bool hasDebugExtensions;
@@ -111,7 +116,7 @@ typedef struct CPUID {
 	bool alwaysZero;
 } CPUID __attribute__ ((aligned (16)));;
 
-static_assert(sizeof(CPUID) == 96, "Check your assumptions");
+static_assert(sizeof(CPUID) == 160, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -121,12 +126,33 @@ static_assert(sizeof(CPUID) == 96, "Check your assumptions");
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f618482d_getCoreTopology
+ * Description: Populates the CPUID struct with the number of physical and
+ *              logical cores in the CPU
+ *
+ * Parameters:
+ *   cpuid      A pointer to the CPUID struct instance to populate
+ * ----------------------------------------------------------------------------
+ */
+void f618482d_getCoreTopology(CPUID *cpuid);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f618482d_getModelName
+ * Description: Populates the CPUID struct with the CPU model name
+ *
+ * Parameters:
+ *   cpuid      A pointer to the CPUID struct instance to populate
+ * ----------------------------------------------------------------------------
+ */
+void f618482d_getModelName(CPUID *cpuid);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f618482d_getProcessorInfo
  * Description: Populates the CPUID struct with the CPU processor information
  *              and feature flags
  *
  * Parameters:
- *   cpuid          A pointer to the CPUID struct instance to populate
+ *   cpuid      A pointer to the CPUID struct instance to populate
  * ----------------------------------------------------------------------------
  */
 void f618482d_getProcessorInfo(CPUID *cpuid);
@@ -137,7 +163,7 @@ void f618482d_getProcessorInfo(CPUID *cpuid);
  *              maximum basic leaf available for the CPUID instruction
  *
  * Parameters:
- *   cpuid          A pointer to the CPUID struct instance to populate
+ *   cpuid      A pointer to the CPUID struct instance to populate
  * ----------------------------------------------------------------------------
  */
 void f618482d_getVendorID(CPUID *cpuid);

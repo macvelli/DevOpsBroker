@@ -1,7 +1,7 @@
 /*
  * file.h - DevOpsBroker C header file for providing file-handling functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -45,6 +45,12 @@
 
 // sys/stat.h
 typedef struct stat FileStatus;
+
+typedef enum FileAccessMode {                                       // open(2)
+	MODE_READONLY = O_RDONLY,    // Open file as read-only
+	MODE_WRITEONLY = O_WRONLY,   // Open file as write-only
+	MODE_READWRITE = O_RDWR      // Open file as read-write
+} FileAccessMode;
 
 // ════════════════════════════ Function Prototypes ═══════════════════════════
 
@@ -175,6 +181,31 @@ ssize_t e2f74138_readFile(const int fd, void *buffer, size_t count, const char *
  * ----------------------------------------------------------------------------
  */
 char *e2f74138_readlink(const char *pathName, const ssize_t fileSize);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_readString
+ * Description: Populates the character buffer with up to bufSize characters
+ *              from the specified file
+ *
+ * Parameters:
+ *   pathName   The path name of the file
+ *   buffer     The string buffer to populate
+ *   bufSize    The size of the buffer
+ * Returns:     The number of bytes read
+ * ----------------------------------------------------------------------------
+ */
+uint32_t e2f74138_readString(char *pathName, char *buffer, uint32_t bufSize);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e2f74138_readUint32Hex
+ * Description: Returns the unsigned int value from the specified file
+ *
+ * Parameters:
+ *   pathName   The path name of the file
+ * Returns:     The unsigned int value from the specified file
+ * ----------------------------------------------------------------------------
+ */
+uint32_t e2f74138_readUint32Hex(char *pathName);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e2f74138_read_uint64
