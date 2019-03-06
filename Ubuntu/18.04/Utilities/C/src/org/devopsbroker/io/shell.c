@@ -1,7 +1,7 @@
 /*
- * cpuid.c - DevOpsBroker C source file for the org.devopsbroker.info.CPUID struct
+ * shell.c - C source file for the org.devopsbroker.io.Shell struct
  *
- * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -27,9 +27,9 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include "cpuid.h"
+#include "shell.h"
 
-#include "../io/shell.h"
+#include "../lang/error.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -45,16 +45,35 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-void f618482d_getCoreTopology(CPUID *cpuid) {
-	int numThreadsPerCore;
+void f6843e7e_openShellForRead(Shell *shell, const char *command) {
+	shell->file = popen(command, "r");
 
-	Shell lscpu;
-	f6843e7e_openShellForRead(&lscpu, "/usr/bin/lscpu | /usr/bin/awk '/(Thread... per core:|Core... per socket:)/{ print $4 }'");
+	if (shell->file == NULL) {
+		printf("Cannot open file\n");
+		exit(EXIT_FAILURE);
+	}
+}
 
-	numThreadsPerCore = f6843e7e_readInt(&lscpu);
-	cpuid->numPhysicalCores = f6843e7e_readInt(&lscpu);
+void f6843e7e_closeShell(Shell *shell) {
+	pclose(shell->file);
+}
 
-	f6843e7e_closeShell(&lscpu);
+int f6843e7e_readInt(Shell *shell) {
+	int status, value;
 
-	cpuid->numLogicalProcs = numThreadsPerCore * cpuid->numPhysicalCores;
+	status = fscanf(shell->file, "%d", &value);
+
+	if (status == EOF) {
+		exit(EXIT_FAILURE);
+	}
+
+	return value;
+}
+
+void f6843e7e_readString(Shell *shell, char *buffer) {
+	int status = fscanf(shell->file, "%s", buffer);
+
+	if (status == EOF) {
+		exit(EXIT_FAILURE);
+	}
 }

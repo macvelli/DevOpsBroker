@@ -181,6 +181,9 @@ installSystemUtility movedir
 # Install pms system administration utility
 installSystemUtility pms
 
+# Install reportcrash system administration utility
+installSystemUtility reportcrash
+
 # Install schedtuner system administration utility
 installSystemUtility schedtuner
 

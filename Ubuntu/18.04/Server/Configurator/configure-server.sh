@@ -225,10 +225,12 @@ function uninstallPackage() {
 EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 EXEC_DMESG=/bin/dmesg
 EXEC_JOURNALCTL=/bin/journalctl
+EXEC_LSCPU=/usr/bin/lscpu
 
 ## Variables
 DEFAULT_NIC=''
 DEPLOY_ENV=''
+IS_AMD=0
 IS_KVM=0
 IS_VM_GUEST=0
 IPTABLES_SCRIPT=''
@@ -245,6 +247,11 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Configurator" 'true'
 
 # Detect whether Ubuntu Server is running as a guest in a virtual machine
 detectVirtualization
+
+# Detect if we are running on an AMD CPU
+if [ "$($EXEC_LSCPU | $EXEC_AWK '/Vendor ID:/{ print $3 }')" == 'AuthenticAMD' ]; then
+	IS_AMD=1
+fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -399,6 +406,13 @@ installPackage '/usr/bin/systool' 'sysfsutils'
 
 # Install sysstat
 #installPackage '/usr/bin/iostat' 'sysstat'
+
+# Uninstall thermald if running on AMD
+if [ $IS_AMD -eq 1 ]; then
+	uninstallPackage '/usr/sbin/thermald' 'thermald'
+else
+	installPackage '/usr/sbin/thermald' 'thermald'
+fi
 
 # Install tree
 installPackage '/usr/bin/tree' 'tree'

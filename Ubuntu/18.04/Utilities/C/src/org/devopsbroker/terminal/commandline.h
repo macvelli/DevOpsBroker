@@ -93,6 +93,19 @@ float d7ad7024_getFloat(CmdLineParam *cmdLineParam, char *paramName, int i);
 char *d7ad7024_getString(CmdLineParam *cmdLineParam, char *paramName, int i);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    d7ad7024_getUint32
+ * Description: Retrieves an unsigned int value from the information in CmdLineParam at index i
+ *
+ * Parameters:
+ *   cmdLineParam   A pointer to the CmdLineParam instance
+ *   paramName      The name of the parameter
+ *   i              The current command-line parameter index
+ * Returns:         The unsigned int command-line parameter value
+ * ----------------------------------------------------------------------------
+ */
+uint32_t d7ad7024_getUint32(CmdLineParam *cmdLineParam, char *paramName, int i);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    d7ad7024_getUint64
  * Description: Retrieves an unsigned long value from the information in CmdLineParam at index i
  *

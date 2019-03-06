@@ -22,7 +22,6 @@
 ; This file implements the following x86-64 assembly language functions for the
 ; org.devopsbroker.info.cpuid.h header file:
 ;
-;   o void f618482d_getCoreTopology(CPUID *cpuid);
 ;   o void f618482d_getModelName(CPUID *cpuid);
 ;   o void f618482d_getProcessorInfo(CPUID *cpuid);
 ;   o void f618482d_getVendorID(CPUID *cpuid);
@@ -62,12 +61,12 @@ threadSiblingsList:  db "/sys/devices/system/cpu/cpu0/topology/thread_siblings_l
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~ f618482d_getCoreTopology ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	global  f618482d_getCoreTopology:function
-	extern  open
-	extern  read
-	extern  close
-	section .text
-f618482d_getCoreTopology:
+;	global  f618482d_getCoreTopology:function
+;	extern  open
+;	extern  read
+;	extern  close
+;	section .text
+;f618482d_getCoreTopology:
 ; Parameters:
 ;	rdi : CPUID *cpuid
 ; Local Variables:
@@ -75,74 +74,76 @@ f618482d_getCoreTopology:
 ;	ebx : additional feature information
 ;	edx : feature information bits 0-31
 ;	ecx : feature information bits 32-61
-
-.prologue:                            ; functions typically have a prologue
-	mov        eax, GET_FEATURES      ; retrieve feature information
-	push       rbx                    ; preserve rbx value
-
-.getNumLogicalProcs:
-	cpuid
-
-	test       edx, HAS_HYPERTHREAD   ; if (hasHyperThreading == true)
-	jnz        .hyperthreading
-
-.singleCore:
-	mov        rbx, 0x100000001
-	jmp        .epilogue
-
-.hyperthreading:
-	prefetcht0 [rel threadSiblingsList]
-
-	shr        ebx, 16
-	and        bx, 0x00ff
-	push       rbx                    ; save numLogicalProcs
-
-.openFile:
-	push       rdi                    ; save CPUID *cpuid
-
-	mov        rdi, [rel threadSiblingsList]
-	xor        rsi, rsi
-	call       open WRT ..plt         ; open(pathname, O_RDONLY);
-
-	test       eax, ERROR_CODE        ; if (fileDescriptor == -1)
-	je         .invalidFilename
-
-.readFile:
-	sub        rsp, 16                ; char *buffer
-	mov        [rsp], dword 0x00
-
-	mov        edi, eax               ; edi = fileDescriptor
-	mov        rsi, rsp               ; rsi = stack pointer
-	mov        edx, 16                ; edx = 16
-	call       read WRT ..plt         ; read(fileDescriptor, buffer, bufSize);
-
-.closeFile:
-	call       close WRT ..plt        ; close(fileDescriptor);
-
-.checkSMTStatus:
-	mov        eax, [rsp]             ; put first four characters into eax
-	add        rsp, 16                ; destroy char *buffer
-	pop        rdi                    ; retrieve CPUID *cpuid
-	pop        rbx                    ; retrieve numLogicalProcs
-	mov        edx, ebx               ; numPhysicalCores = numLogicalProcs
-
-	test       ah, 0x2d               ; if (buffer[1] == '-')
-	jne        .smtDisabled
-
-	shr        edx, 1                 ; numPhysicalCores = numLogicalProcs / 2
-
-.smtDisabled:
-	shl        rdx, 32
-	or         rbx, rdx
-
-.epilogue:                            ; functions typically have an epilogue
-	mov        [rdi+88], rbx          ; set cpuid->numLogicalProcs and cpuid->numPhysicalCores
-	pop        rbx                    ; restore rbx value
-	ret                               ; pop return address from stack and jump there
-
-.invalidFilename:
-	; TODO
-	ret
+;
+;.prologue:                            ; functions typically have a prologue
+;	mov        eax, GET_FEATURES      ; retrieve feature information
+;	push       rbx                    ; preserve rbx value
+;
+;.getNumLogicalProcs:
+;	cpuid
+;
+;	shr        ebx, 16                ; extract numLogicalProcs
+;	and        bx, 0x00ff
+;
+;	test       edx, HAS_HYPERTHREAD   ; if (hasHyperThreading == true)
+;	jnz        .hyperthreading
+;
+;	mov        edx, ebx               ; numPhysicalCores = numLogicalProcs
+;	jmp        .smtDisabled
+;
+;.hyperthreading:
+;	prefetcht0 [rel threadSiblingsList]
+;
+;.openFile:
+;	push       rbx                    ; save numLogicalProcs
+;	push       rdi                    ; save CPUID *cpuid
+;
+;	mov        rdi, [rel threadSiblingsList]
+;	xor        rsi, rsi
+;	call       open WRT ..plt         ; open(pathname, O_RDONLY);
+;
+;	test       eax, ERROR_CODE        ; if (fileDescriptor == -1)
+;	je         .invalidFilename
+;
+;.readFile:
+;	sub        rsp, 16                ; char *buffer
+;	mov        [rsp], dword 0x00
+;
+;	mov        edi, eax               ; edi = fileDescriptor
+;	mov        rsi, rsp               ; rsi = stack pointer
+;	mov        edx, 16                ; edx = 16
+;	call       read WRT ..plt         ; read(fileDescriptor, buffer, bufSize);
+;
+;.closeFile:
+;	call       close WRT ..plt        ; close(fileDescriptor);
+;
+;.checkSMTStatus:
+;	mov        eax, [rsp]             ; put first four characters into eax
+;	add        rsp, 16                ; destroy char *buffer
+;	pop        rdi                    ; retrieve CPUID *cpuid
+;	pop        rbx                    ; retrieve numLogicalProcs
+;	mov        edx, ebx               ; numPhysicalCores = numLogicalProcs
+;
+;	test       ah, 0x2d               ; if (buffer[1] == '-')
+;	jne        .smtDisabled
+;
+;	shr        edx, 1                 ; numPhysicalCores = numLogicalProcs / 2
+;
+;.smtDisabled:
+;	shl        rdx, 32
+;	or         rbx, rdx
+;
+;.epilogue:                            ; functions typically have an epilogue
+;	mov        [rdi+88], rbx          ; set cpuid->numLogicalProcs and cpuid->numPhysicalCores
+;	pop        rbx                    ; restore rbx value
+;	ret                               ; pop return address from stack and jump there
+;
+;.invalidFilename:
+;	pop        rdi                    ; retrieve CPUID *cpuid
+;	pop        rbx                    ; retrieve numLogicalProcs
+;
+;	mov        edx, ebx               ; numPhysicalCores = numLogicalProcs
+;	jmp        .smtDisabled
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~ f618482d_getModelName ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -133,10 +133,6 @@ static inline void setSpeed(register uint64_t *attribute, register char *attrNam
 	char *attrValue = f6215943_search(attrName, *data);
 	*data = terminate(attrValue, ' ');
 	*attribute = db0acb04_parse_uint64(attrValue);
-
-	if (f6215943_startsWith("MHz", *data) || f6215943_startsWith("MT/s", *data)) {
-		*attribute *= UNITS_MHz;
-	}
 }
 
 static inline char *getStringValue(register char *attrName,register char **data) {
@@ -296,7 +292,7 @@ StringBuilder *f004d1bd_toStringMemoryArray(MemoryArray *memoryArray) {
 	char *errorInfoHandle = f45efac2_toStringHex_uint32(memoryArray->errorInfoHandle, 4);
 	char *numDevices = f45efac2_toString_uint32(memoryArray->numDevices);
 	char *numInstalled = f45efac2_toString_uint32(memoryArray->numInstalled);
-	char *speed = db0acb04_toString_uint64(memoryArray->minSpeed / UNITS_MHz);
+	char *speed = db0acb04_toString_uint64(memoryArray->minSpeed);
 	char *numChannelsInUse = f45efac2_toString_uint32(memoryArray->numChannelsInUse);
 
 	c598a24c_append_string(strBuilder, "Physical Memory Array");
@@ -341,9 +337,9 @@ StringBuilder *f004d1bd_toStringMemoryArray(MemoryArray *memoryArray) {
 			char *totalWidth = f45efac2_toString_uint32(memoryDevice->totalWidth);
 			char *dataWidth = f45efac2_toString_uint32(memoryDevice->dataWidth);
 			char *size = db0acb04_toString_uint64(memoryDevice->size / UNITS_MiB);
-			speed = db0acb04_toString_uint64(memoryDevice->speed / UNITS_MHz);
+			speed = db0acb04_toString_uint64(memoryDevice->speed);
 			char *rank = f45efac2_toString_uint32(memoryDevice->rank);
-			char *configClockSpeed = db0acb04_toString_uint64(memoryDevice->configClockSpeed / UNITS_MHz);
+			char *configClockSpeed = db0acb04_toString_uint64(memoryDevice->configClockSpeed);
 
 			c598a24c_append_string_varg(strBuilder, "\n\tTotal Width: ", totalWidth, " bits", NULL);
 			c598a24c_append_string_varg(strBuilder, "\n\tData Width: ", dataWidth, " bits", NULL);
