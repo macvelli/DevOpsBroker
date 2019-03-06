@@ -157,6 +157,10 @@ fi
 # Install /etc/modules
 installConfig 'modules' "$SCRIPT_DIR" /etc
 
+if [ "$INSTALL_CONFIG" == 'true' ]; then
+	updateInitramfs=true
+fi
+
 # Install /etc/ntp.conf
 installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 

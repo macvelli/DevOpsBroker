@@ -26,12 +26,3 @@
 
 # Enable tcp_lp congestion control algorithm
 tcp_lp
-
-# Load Fair Queuing Controlled Delay (FQ_Codel) Scheduler
-sch_fq_codel
-
-# Load Kyber I/O Scheduler
-kyber-iosched
-
-# Load BFQ I/O Scheduler
-bfq

@@ -79,6 +79,7 @@ zswapMaxPoolPct=${1:-}
 
 ## Variables
 YEAR=$($EXEC_DATE +'%Y')
+IS_VM_GUEST=0
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -101,13 +102,22 @@ fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Detect whether Ubuntu Server is running as a guest in a virtual machine
+detectVirtualization
+
 ## Template variables
 isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
 efiReboot=$([ "$isEfiBoot" == 'true' ] && echo -n 'reboot=efi' || echo -n '')
 
 defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct"
 defaultCmdLine="$defaultCmdLine nmi_watchdog=0 nohz=on rcu_nocbs=$ONLINE_CPUS"
-defaultCmdLine="$defaultCmdLine rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
+defaultCmdLine="$defaultCmdLine rcu_nocb_poll vdso=1"
+
+if [ $IS_VM_GUEST -eq 0 ]; then
+	defaultCmdLine="$defaultCmdLine scsi_mod.use_blk_mq=1"
+else
+	defaultCmdLine="$defaultCmdLine elevator=noop"
+fi
 
 if [ "$isEfiBoot" = 'true' ]; then
 	defaultCmdLine="acpi=force $defaultCmdLine"
