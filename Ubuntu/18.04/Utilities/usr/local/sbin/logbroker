@@ -53,6 +53,15 @@ if [ "$USER" != 'root' ]; then
 	exit 1
 fi
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
+scriptName='logbroker'
+
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -67,7 +76,54 @@ function getVarLogDirectory() {
 	fi
 
 	echo "/var/log/logbroker/$logName"
+}
 
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateDmesg
+# Description:  Performs validation for the dmesg log name
+# -----------------------------------------------------------------------------
+function validateDmesg() {
+	# Display error if command parameter is missing
+	if [ -z "$command" ]; then
+		printError $scriptName 'Missing command parameter'
+		echo
+		printUsage "$scriptName $logName { clear | reset | save }"
+
+		exit 1
+	fi
+
+	# Display error if command parameter is invalid
+	if [[ ! "$command" =~ ^(clear|reset|save)$ ]]; then
+		printError $scriptName "Invalid command: '$command'"
+		echo
+		printUsage "$scriptName $logName { clear | reset | save }"
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateJournal
+# Description:  Performs validation for the journal log name
+# -----------------------------------------------------------------------------
+function validateJournal() {
+	# Display error if command parameter is missing
+	if [ -z "$command" ]; then
+		printError $scriptName 'Missing command parameter'
+		echo
+		printUsage "$scriptName $logName { delete | size | verify }"
+
+		exit 1
+	fi
+
+	# Display error if command parameter is invalid
+	if [[ ! "$command" =~ ^(delete|size|verify)$ ]]; then
+		printError $scriptName "Invalid command: '$command'"
+		echo
+		printUsage "$scriptName $logName { delete | size | verify }"
+
+		exit 1
+	fi
 }
 
 ################################## Variables ##################################
@@ -75,43 +131,30 @@ function getVarLogDirectory() {
 ## Bash exec variables
 EXEC_DMESG=/bin/dmesg
 EXEC_GZIP=/bin/gzip
+EXEC_JOURNALCTL=/bin/journalctl
 
 ## Options
-command="$1"
-logName="$2"
+logName=${1:-}
+command=${2:-}
 
 ## Variables
-validCommands=('clear' 'reset' 'save')
-validLogs=('dmesg')
+validLogNames=('dmesg' 'journal')
+
+usageMessage="$scriptName { dmesg | journal } COMMAND"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
-if [ -z "$command" ]; then
-	printUsage 'logbroker { clear | reset | save }'
-	exit 1
-fi
-
-# Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError 'logbroker' "Invalid command: '$command'"
-	echo
-	printUsage 'logbroker { clear | reset | save }'
-
-	exit 1
-fi
-
-# Display usage if missing log name parameter
 if [ -z "$logName" ]; then
-	printUsage "logbroker $command { dmesg }"
+	printUsage $usageMessage
 	exit 1
 fi
 
 # Display error if invalid log name
-if [ $(containsElement "$logName" "${validLogs[@]}") != '0' ]; then
-	printError 'logbroker' "Invalid log name: '$logName'"
+if [ $(containsElement "$logName" "${validLogNames[@]}") != '0' ]; then
+	printError $scriptName "Invalid log name: '$logName'"
 	echo
-	printUsage "logbroker $command { dmesg }"
+	printUsage $usageMessage
 
 	exit 1
 fi
@@ -124,7 +167,8 @@ if [ ! -d /var/log/logbroker ]; then
 	$EXEC_CHOWN --changes root:adm /var/log/logbroker
 fi
 
-if [ "$logName" == 'dmesg' ]; then
+if [ $logName == 'dmesg' ]; then
+	validateDmesg
 
 	if [ "$command" == 'save' ] || [ "$command" == 'reset' ]; then
 		logFilename="$(getVarLogDirectory)/$($EXEC_DATE '+%Y-%m-%d')-dmesg.log.gz"
@@ -139,6 +183,23 @@ if [ "$logName" == 'dmesg' ]; then
 		$EXEC_DMESG -C
 	fi
 
+elif [ $logName == 'journal' ]; then
+	validateJournal
+
+
+	if [ "$command" == 'delete' ]; then
+
+		$EXEC_JOURNALCTL --vacuum-time=5days
+
+	elif [ "$command" == 'size' ]; then
+
+		$EXEC_JOURNALCTL --disk-usage
+
+	elif [ "$command" == 'verify' ]; then
+
+		$EXEC_JOURNALCTL --verify
+
+	fi
 fi
 
 exit 0

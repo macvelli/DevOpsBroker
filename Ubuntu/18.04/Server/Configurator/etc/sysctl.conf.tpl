@@ -89,6 +89,8 @@ NIC="${1:-$($EXEC_IP -4 route show default | $EXEC_SORT -k9 -n | $EXEC_HEAD -1 |
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
 YEAR=$($EXEC_DATE +'%Y')
+IS_VM_GUEST=0
+SCHED_TUNING=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -116,6 +118,36 @@ RAM_TOTAL=$(getRamTotal)
 
 # Amount of RAM available in GB
 RAM_GB=$[ ($RAM_TOTAL + 1048575) / 1048576 ]
+
+# Detect whether Ubuntu Server is running as a guest in a virtual machine
+detectVirtualization
+
+if [ $IS_VM_GUEST -eq 0 ]; then
+
+	SCHED_TUNING="$($EXEC_SCHEDTUNER)"
+
+else
+	CPU_MAX_FREQ=''
+	MEM_BUS_SPEED=''
+
+	while [ -z "$CPU_MAX_FREQ" ]; do
+		read -p 'What is the CPU maximum frequency?: ' CPU_MAX_FREQ
+
+		if [[ ! "$CPU_MAX_FREQ" =~ ^[0-9]+$ ]]; then
+			CPU_MAX_FREQ=''
+		fi
+	done
+
+	while [ -z "$MEM_BUS_SPEED" ]; do
+		read -p 'What is the memory bus speed?: ' MEM_BUS_SPEED
+
+		if [[ ! "$MEM_BUS_SPEED" =~ ^[0-9]+$ ]]; then
+			MEM_BUS_SPEED=''
+		fi
+	done
+
+	SCHED_TUNING="$($EXEC_SCHEDTUNER -f $CPU_MAX_FREQ -m $MEM_BUS_SPEED)"
+fi
 
 # --------------------------- Filesystem Information --------------------------
 
@@ -219,7 +251,7 @@ kernel.perf_cpu_time_max_percent = 5
 kernel.pid_max = 1048576
 
 # Kernel Task Scheduler Optimizations
-$($EXEC_SCHEDTUNER)
+$SCHED_TUNING
 
 # Disable Magic SysRq Key
 kernel.sysrq = 0

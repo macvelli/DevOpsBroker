@@ -100,7 +100,7 @@ function getGroupID() {
 # Returns:  The ip link information for the given device
 # -----------------------------------------------------------------------------
 function getLinkInfo() {
-	echo "$($EXEC_IP -o link show $1)"
+	echo "$($EXEC_IP -o link show $1 2>/dev/null)"
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -420,6 +420,62 @@ function validateStart() {
 	bridgeSlaveList=( ${array[@]} )
 }
 
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateStop
+# Description:  Performs validation for the stop command
+# -----------------------------------------------------------------------------
+function validateStop() {
+	# Display notice if NetworkManager is not installed
+	if [ ! -f $EXEC_NMCLI ]; then
+		printNotice $scriptName "Stop command is only valid for NetworkManager systems"
+		exit 0
+	fi
+
+	validateBridgeName "$scriptName $command BRIDGE_NAME"
+
+	local bridgeInfo="$(getLinkInfo $bridgeName)"
+
+	# Display notice if bridge interface has already been stopped
+	if [ -z "$bridgeInfo" ]; then
+		printNotice $scriptName "Bridge interface '$bridgeName' has already been stopped"
+		exit 0
+	fi
+
+	bridgeSlaveList=( $($EXEC_NMCLI connection show | $EXEC_GREP ^bridge-slave || true) )
+
+	# Display error if no network interfaces have been configured as a bridge slave
+	if [ ${#bridgeSlaveList[@]} -eq 0 ]; then
+		printError $scriptName "Incomplete bridge '$bridgeName': No bridge slaves exist"
+		echo
+		printUsage "$scriptName add link LINK_NAME $bridgeName"
+
+		exit 1
+	fi
+
+	local master=''
+	local array=()
+	for bridgeSlave in "${bridgeSlaveList[@]}"; do
+		IFS=' '; bridgeSlave=( $bridgeSlave ); IFS=$'\n\t'
+
+		master=$($EXEC_NMCLI -f connection.master connection show $bridgeSlave | $EXEC_AWK '{ print $2 }')
+
+		if [ $master == $bridgeName ]; then
+			array+=( $bridgeSlave )
+		fi
+	done
+
+	# Display error if no network interfaces have been configured as a slave for the bridge
+	if [ ${#array[@]} -eq 0 ]; then
+		printError $scriptName "Incomplete bridge '$bridgeName': No bridge slaves exist"
+		echo
+		printUsage "$scriptName add link LINK_NAME $bridgeName"
+
+		exit 1
+	fi
+
+	bridgeSlaveList=( ${array[@]} )
+}
+
 ################################## Variables ##################################
 
 ## Bash exec variables
@@ -431,10 +487,10 @@ EXEC_SYSCTL=/sbin/sysctl
 command=${1:-}
 
 ## Variables
-sudoCommands=('add' 'create' 'delete' 'exists' 'remove' 'start')
+sudoCommands=('add' 'create' 'delete' 'exists' 'remove' 'start' 'stop')
 validCommands=(${sudoCommands[@]})
 
-usageMessage="$scriptName { add ${gold}{ link | tap }${yellow} | create | delete | exists | remove ${gold}{ link | tap }${yellow} | start }"
+usageMessage="$scriptName { add ${gold}{ link | tap }${yellow} | create | delete | exists | remove ${gold}{ link | tap }${yellow} | start | stop }"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -608,6 +664,25 @@ elif [ $command == 'start' ]; then
 		IFS=' '; linkName=( $tapSlave ); IFS=$'\n\t'
 
 		$EXEC_IP link set $linkName txqueuelen 64
+	done
+
+elif [ $command == 'stop' ]; then
+	bridgeName=${2:-}
+	validateStop
+
+	printInfo "Bringing down bridge interface '$bridgeName'"
+	$EXEC_NMCLI connection down id $bridgeName
+
+	# Bring up each network interface connection that was part of the bridge
+	for bridgeSlave in "${bridgeSlaveList[@]}"; do
+		IFS='-'; linkName=( $bridgeSlave ); IFS=$'\n\t'
+
+		linkName=${linkName[2]}
+
+		getConnectionInfo $linkName
+
+		printInfo "Bringing up network interface '$linkName'"
+		$EXEC_NMCLI connection up id ${connInfo[1]}
 	done
 fi
 

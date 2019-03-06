@@ -40,7 +40,6 @@
 #   o Performs user configuration
 #
 # Unnstalls the following packages:
-#   o bind9-host
 #   o cloud-guest-utils (if VM guest)
 #   o cloud-init (if VM guest)
 #   o dnsmasq
@@ -166,22 +165,6 @@ fi
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-# Function:     detectVirtualization
-# Description:  Detect whether Ubuntu Server is running as a virtual machine guest
-# -----------------------------------------------------------------------------
-function detectVirtualization() {
-	local journalEntry="$($EXEC_JOURNALCTL -b | $EXEC_GREP -F --max-count=1 'Detected virtualization' || true)"
-
-	if [ "$journalEntry" ]; then
-		IS_VM_GUEST=1
-
-		if [[ "$journalEntry" =~ (Detected virtualization kvm) ]]; then
-			IS_KVM=1
-		fi
-	fi
-}
-
-# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     installPackage
 # Description:  Installs the specified package, if not already installed
 #
@@ -224,7 +207,6 @@ function uninstallPackage() {
 ## Bash exec variables
 EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 EXEC_DMESG=/bin/dmesg
-EXEC_JOURNALCTL=/bin/journalctl
 EXEC_LSCPU=/usr/bin/lscpu
 
 ## Variables
