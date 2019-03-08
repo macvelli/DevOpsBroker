@@ -208,6 +208,9 @@ createSymlink /usr/local/sbin/configure-fstab "$INSTALL_DIR"/etc/configure-fstab
 # Make symlink to etc/configure-kernel.sh
 createSymlink /usr/local/sbin/configure-kernel "$INSTALL_DIR"/etc/configure-kernel.sh
 
+# Make symlink to etc/configure-nvidia.sh
+createSymlink /usr/local/sbin/configure-nvidia "$INSTALL_DIR"/etc/configure-nvidia.sh
+
 # Make symlink to etc/configure-system.sh
 createSymlink /usr/local/sbin/configure-system "$INSTALL_DIR"/etc/configure-system.sh
 
