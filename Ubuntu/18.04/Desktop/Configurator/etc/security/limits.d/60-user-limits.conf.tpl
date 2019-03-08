@@ -59,6 +59,11 @@ fi
 
 ################################## Variables ##################################
 
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ## Configuration
 RAM_TOTAL=$(getRamTotal)
 
@@ -71,14 +76,12 @@ FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
 USER_FILE_MAX_SOFT=$[ $FS_FILE_MAX / 4 ]
 USER_FILE_MAX_HARD=$[ $FS_FILE_MAX / 2 ]
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 ## Template
 /bin/cat << EOF
 #
 # 60-user-limits.conf - DevOpsBroker configuration for user limits (bash ulimit)
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) $YEAR Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software

@@ -77,6 +77,7 @@ DEFAULT_NIC=${1:-"$($EXEC_IP -4 route show default | $EXEC_AWK '{ print $5 }')"}
 
 ## Variables
 NIC_SUBNET=$($EXEC_IP -4 -o addr show dev $DEFAULT_NIC | $EXEC_AWK '{ print $4 }' | $EXEC_GREP -Eo '^[0-9]+\.[0-9]+\.[0-9]+\.')
+YEAR=$($EXEC_DATE +'%Y')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -85,7 +86,7 @@ NIC_SUBNET=$($EXEC_IP -4 -o addr show dev $DEFAULT_NIC | $EXEC_AWK '{ print $4 }
 #
 # smb.conf - DevOpsBroker configuration for Samba; see smb.conf(5) for help
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) $YEAR Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software

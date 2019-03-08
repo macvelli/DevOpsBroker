@@ -157,10 +157,10 @@ FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
 # ---------------------------- Network Information ----------------------------
 
 # Internet Download speed
-INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+INET_DL_SPEED=$($EXEC_AWK '/Download:/{ print $2 }' /etc/devops/speedtest.info)
 
 # Internet Upload speed
-INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+INET_UL_SPEED=$($EXEC_AWK '/Upload:/{ print $2 }' /etc/devops/speedtest.info)
 
 # ------------------------- Virtual Memory Information ------------------------
 

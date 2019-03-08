@@ -70,6 +70,7 @@ deviceNode="$1"
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
+YEAR=$($EXEC_DATE +'%Y')
 ioPoll=1
 ncqPrioEnable=0
 rqAffinity=2
@@ -186,7 +187,7 @@ scsiDriverKernel=$($EXEC_BASENAME $($EXEC_DIRNAME $($EXEC_DIRNAME $devPath)))
 #
 # $udevRuleFile
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) $YEAR Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software

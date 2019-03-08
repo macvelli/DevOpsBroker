@@ -79,6 +79,9 @@ NIC="${1:-$($EXEC_IP -4 route show default | $EXEC_SORT -k9 -n | $EXEC_HEAD -1 |
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
+YEAR=$($EXEC_DATE +'%Y')
+IS_VM_GUEST=0
+SCHED_TUNING=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -107,6 +110,36 @@ RAM_TOTAL=$(getRamTotal)
 # Amount of RAM available in GB
 RAM_GB=$[ ($RAM_TOTAL + 1048575) / 1048576 ]
 
+# Detect whether Ubuntu Server is running as a guest in a virtual machine
+detectVirtualization
+
+if [ $IS_VM_GUEST -eq 0 ]; then
+
+	SCHED_TUNING="$($EXEC_SCHEDTUNER)"
+
+else
+	CPU_MAX_FREQ=''
+	MEM_BUS_SPEED=''
+
+	while [ -z "$CPU_MAX_FREQ" ]; do
+		read -p 'What is the CPU maximum frequency?: ' CPU_MAX_FREQ
+
+		if [[ ! "$CPU_MAX_FREQ" =~ ^[0-9]+$ ]]; then
+			CPU_MAX_FREQ=''
+		fi
+	done
+
+	while [ -z "$MEM_BUS_SPEED" ]; do
+		read -p 'What is the memory bus speed?: ' MEM_BUS_SPEED
+
+		if [[ ! "$MEM_BUS_SPEED" =~ ^[0-9]+$ ]]; then
+			MEM_BUS_SPEED=''
+		fi
+	done
+
+	SCHED_TUNING="$($EXEC_SCHEDTUNER -f $CPU_MAX_FREQ -m $MEM_BUS_SPEED)"
+fi
+
 # --------------------------- Filesystem Information --------------------------
 
 # Global Maximum Number Simultaneous Open Files
@@ -115,10 +148,10 @@ FS_FILE_MAX=$[ $RAM_TOTAL / 10 ]
 # ---------------------------- Network Information ----------------------------
 
 # Internet Download speed
-INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+INET_DL_SPEED=$($EXEC_AWK '/Download:/{ print $2 }' /etc/devops/speedtest.info)
 
 # Internet Upload speed
-INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+INET_UL_SPEED=$($EXEC_AWK '/Upload:/{ print $2 }' /etc/devops/speedtest.info)
 
 # ------------------------- Virtual Memory Information ------------------------
 
@@ -164,7 +197,7 @@ VM_MIN_FREE_KB=$[ $RAM_TOTAL / 100 ]
 #
 # sysctl.conf - DevOpsBroker Linux kernel tuning configuration file
 #
-# Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) $YEAR Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -209,7 +242,7 @@ kernel.perf_cpu_time_max_percent = 5
 kernel.pid_max = 1048576
 
 # Kernel Task Scheduler Optimizations
-$($EXEC_SCHEDTUNER)
+$SCHED_TUNING
 
 # Disable Magic SysRq Key
 kernel.sysrq = 0

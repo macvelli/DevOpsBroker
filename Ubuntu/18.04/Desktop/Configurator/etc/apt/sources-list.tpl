@@ -58,7 +58,10 @@ fi
 ################################## Variables ##################################
 
 ## Options
-aptMirrorSite="$1"
+aptMirrorSite=${1:-}
+
+## Variables
+YEAR=$($EXEC_DATE +'%Y')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -84,7 +87,7 @@ cat << EOF
 #
 # sources.list - DevOpsBroker configuration for /etc/apt/sources.list
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) $YEAR Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
