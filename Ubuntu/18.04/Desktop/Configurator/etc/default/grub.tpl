@@ -3,7 +3,7 @@
 #
 # grub.tpl - DevOpsBroker script for generating /etc/default/grub configuration
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -55,9 +55,18 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
+scriptName='grub.tpl'
+
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError 'grub.tpl' 'Permission denied (you must be root)'
+	printError $scriptName 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -67,17 +76,17 @@ fi
 ONLINE_CPUS=$($EXEC_CAT /sys/devices/system/cpu/online)
 
 ## Options
-zswapMaxPoolPct="$1"
+zswapMaxPoolPct=${1:-}
 
 ## Variables
 YEAR=$($EXEC_DATE +'%Y')
+IS_VM_GUEST=0
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 # Display usage if no parameters given
 if [ -z "$zswapMaxPoolPct" ]; then
-	printUsage "grub.tpl ZSWAP_MAX_POOL_PCT"
+	printUsage "$scriptName ZSWAP_MAX_POOL_PCT"
 	exit 1
 fi
 
@@ -85,23 +94,31 @@ fi
 if [[ ! "$zswapMaxPoolPct" =~ ^[0-9]+$ ]] || \
 		[ "$zswapMaxPoolPct" -lt 0 ] || \
 		[ "$zswapMaxPoolPct" -gt 100 ]; then
-	printError 'grub.tpl' "Invalid ZSwap max pool percentage $zswapMaxPoolPct"
+	printError $scriptName "Invalid ZSwap max pool percentage $zswapMaxPoolPct"
 	echo
-	printUsage 'grub.tpl ZSWAP_MAX_POOL_PCT'
+	printUsage "$scriptName ZSWAP_MAX_POOL_PCT"
 
 	exit 1
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Detect whether Ubuntu Server is running as a guest in a virtual machine
+detectVirtualization
+
 ## Template variables
 isEfiBoot=$([ -d /sys/firmware/efi ] && echo -n 'true' || echo -n 'false')
 efiReboot=$([ "$isEfiBoot" == 'true' ] && echo -n 'reboot=efi' || echo -n '')
 
 defaultCmdLine="zswap.enabled=1 zswap.compressor=lz4 zswap.zpool=z3fold zswap.max_pool_percent=$zswapMaxPoolPct"
-defaultCmdLine="$defaultCmdLine iommu=memaper=3,noagp,allowdac"
 defaultCmdLine="$defaultCmdLine nmi_watchdog=0 nohz=on rcu_nocbs=$ONLINE_CPUS"
-defaultCmdLine="$defaultCmdLine rcu_nocb_poll scsi_mod.use_blk_mq=1 vdso=1"
+defaultCmdLine="$defaultCmdLine rcu_nocb_poll vdso=1"
+
+if [ $IS_VM_GUEST -eq 0 ]; then
+	defaultCmdLine="$defaultCmdLine scsi_mod.use_blk_mq=1"
+else
+	defaultCmdLine="$defaultCmdLine elevator=noop"
+fi
 
 if [ "$isEfiBoot" = 'true' ]; then
 	defaultCmdLine="acpi=force $defaultCmdLine"

@@ -66,6 +66,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-admin.conf if FUNC_ADMIN_CONFIG is unset
+if [ -z "$FUNC_ADMIN_CONFIG" ] && [ -f /etc/devops/functions-admin.conf ]; then
+	source /etc/devops/functions-admin.conf
+fi
+
+${FUNC_ADMIN_CONFIG?"[1;91mCannot load '/etc/devops/functions-admin.conf': No such file[0m"}
+
 # Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
 if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
 	source /etc/devops/functions-io.conf
@@ -81,7 +88,7 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
@@ -144,7 +151,7 @@ installConfig '60-io-schedulers.rules' "$SCRIPT_DIR"/rules.d /etc/udev/rules.d
 mapfile -t blockDeviceList < <($EXEC_LSBLK -dnp --exclude 7 --output NAME,SERIAL)
 
 for blockDevice in "${blockDeviceList[@]}"; do
-	attributeList=( $blockDevice )
+	IFS=' '; attributeList=( $blockDevice ); IFS=$'\n\t'
 
 	if [ ! -f "/etc/udev/rules.d/65-diskio-${attributeList[1]}.rules" ] || \
 		[ "$tuneDiskIOTpl" -nt "/etc/udev/rules.d/65-diskio-${attributeList[1]}.rules" ]; then

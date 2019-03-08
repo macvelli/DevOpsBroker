@@ -108,7 +108,7 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Microsoft ClearType Fonts Installer" 'tru
 if [ ! -d /usr/share/fonts/truetype/mscleartype ]; then
 	printInfo 'Creating /usr/share/fonts/truetype/mscleartype directory'
 
-	$EXEC_MKDIR --mode=0755 /usr/share/fonts/truetype/mscleartype
+	$EXEC_MKDIR --parents --mode=0755 /usr/share/fonts/truetype/mscleartype
 fi
 
 printInfo 'Select directory containing the Microsoft ClearType Fonts to install'

@@ -47,6 +47,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
@@ -54,7 +61,7 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -74,7 +81,7 @@ function createSymlink() {
 	if [ ! -L "$symlink" ]; then
 		printInfo "Creating symbolic link $symlink"
 		$EXEC_LN -s "$targetFile" "$symlink"
-		$EXEC_CHOWN --no-dereference root:users "$symlink"
+		$EXEC_CHOWN --changes --no-dereference root:users "$symlink"
 		echoOnExit=true
 	fi
 }
@@ -230,6 +237,9 @@ installSystemUtility movedir
 # Install pms system administration utility
 installSystemUtility pms
 
+# Install reportcrash system administration utility
+installSystemUtility reportcrash
+
 # Install schedtuner system administration utility
 installSystemUtility schedtuner
 
@@ -245,8 +255,8 @@ installSystemUtility wipedisk
 if [ ! -d /usr/local/sbin/services ]; then
 	printInfo 'Creating /usr/local/sbin/services directory'
 
-	$EXEC_MKDIR --mode=0750 /usr/local/sbin/services
-	$EXEC_CHOWN root:sudo /usr/local/sbin/services
+	$EXEC_MKDIR --parents --mode=0750 /usr/local/sbin/services
+	$EXEC_CHOWN --changes root:sudo /usr/local/sbin/services
 	echoOnExit=true
 fi
 
@@ -406,8 +416,8 @@ installUserUtility verifyip
 if [ ! -d /usr/local/bin/template ]; then
 	printInfo 'Creating /usr/local/bin/template directory'
 
-	$EXEC_MKDIR --mode=755 /usr/local/bin/template
-	$EXEC_CHOWN root:users /usr/local/bin/template
+	$EXEC_MKDIR --parents --mode=755 /usr/local/bin/template
+	$EXEC_CHOWN --changes root:users /usr/local/bin/template
 	echoOnExit=true
 fi
 

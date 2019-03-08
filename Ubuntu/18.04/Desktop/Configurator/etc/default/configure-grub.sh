@@ -3,7 +3,7 @@
 #
 # configure-grub.sh - DevOpsBroker script for configuring GRUB boot loader
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -64,7 +64,7 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 

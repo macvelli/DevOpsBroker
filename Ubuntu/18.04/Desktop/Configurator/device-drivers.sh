@@ -96,7 +96,7 @@ fi
 
 # Make the /etc/devops directory
 if [ ! -d /etc/devops ]; then
-	$EXEC_MKDIR --mode=0755 /etc/devops
+	$EXEC_MKDIR --parents --mode=0755 /etc/devops
 fi
 
 printInfo 'Gathering devices with available drivers to install'

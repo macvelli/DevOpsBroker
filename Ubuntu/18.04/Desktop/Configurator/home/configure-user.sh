@@ -102,6 +102,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
@@ -109,7 +116,7 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -128,8 +135,8 @@ function createDirectory() {
 	if [ ! -d "$dirName" ]; then
 		printInfo "Creating $dirName directory"
 
-		$EXEC_MKDIR --mode=$mode "$dirName"
-		/bin/chown $username:$username "$dirName"
+		$EXEC_MKDIR --parents --mode=$mode "$dirName"
+		$EXEC_CHOWN --changes $username:$username "$dirName"
 	fi
 }
 
@@ -232,7 +239,7 @@ username=${1:-$SUDO_USER}
 
 ## Variables
 export TMPDIR=${TMPDIR:-'/tmp'}
-vgaDevice=$($EXEC_LSPCI | $EXEC_GREP -F --max-count 1 'VGA')
+vgaDevice=$($EXEC_LSPCI | $EXEC_GREP -F --max-count 1 'VGA' || true)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -347,12 +354,12 @@ installTemplate 'New Text Document.txt'
 
 # Create /etc/skel/.config/gtk-3.0 directory
 if [ ! -d /etc/skel/.config/gtk-3.0 ]; then
-	$EXEC_MKDIR --mode=0755 /etc/skel/.config/gtk-3.0
+	$EXEC_MKDIR --parents --mode=0755 /etc/skel/.config/gtk-3.0
 fi
 
 # Create /etc/skel/.config/PulseEffects directory
 if [ ! -d /etc/skel/.config/PulseEffects ]; then
-	$EXEC_MKDIR --mode=0755 /etc/skel/.config/PulseEffects
+	$EXEC_MKDIR --parents --mode=0755 /etc/skel/.config/PulseEffects
 fi
 
 # Install /etc/skel/.bash_aliases
@@ -421,8 +428,8 @@ if [ ! -d "/mnt/ramdisk/$username/mozilla/firefox" ] && [ -d "$userhome"/.cache/
 	printInfo 'Moving Firefox cache to /mnt/ramdisk'
 
 	# Create Firefox cache directory for the user in /mnt/ramdisk
-	$EXEC_MKDIR --mode=0700 /mnt/ramdisk/$username/mozilla/firefox
-	$EXEC_CHOWN -R $username:$username /mnt/ramdisk/$username
+	$EXEC_MKDIR --parents --mode=0700 /mnt/ramdisk/$username/mozilla/firefox
+	$EXEC_CHOWN --changes -R $username:$username /mnt/ramdisk/$username
 
 	# Create symlink to Firefox cache in /mnt/ramdisk
 	$EXEC_CP -a "$userhome"/.cache/mozilla/firefox/* "/mnt/ramdisk/$username/mozilla/firefox"
@@ -512,22 +519,20 @@ fi
 
 printInfo "Changing any root:root files and directories to '$username:$username'"
 
-$EXEC_FIND "$userhome" -xdev -user root -group root -execdir $EXEC_CHOWN $username:$username {} +
+$EXEC_FIND "$userhome" -xdev -user root -group root -execdir $EXEC_CHOWN --changes $username:$username {} +
 
 printInfo "Applying stricter directory security settings to $userhome"
 
 # Configure all hidden directories with drwx------ privileges
-$EXEC_FIND "$userhome" -xdev -maxdepth 1 -type d -path "$userhome/.*" -perm /077 -exec $EXEC_CHMOD 700 {} +
+$EXEC_FIND "$userhome" -xdev -maxdepth 1 -type d -path "$userhome/.*" -perm /077 -exec $EXEC_CHMOD --changes 700 {} +
 
 # Configure all normal directories with drwxr-x--- privileges
-$EXEC_FIND "$userhome" -xdev -type d -perm /027 -exec $EXEC_CHMOD 750 {} + 2>/dev/null
+$EXEC_FIND "$userhome" -xdev -type d -perm /027 -exec $EXEC_CHMOD --changes 750 {} + 2>/dev/null
 
 printInfo "Applying stricter file security settings to $userhome"
 
-excludeDirs="-type d ( -name '.git' -o -name '.svn' ) -prune"
-
 # Remove ----w-rwx file privileges
-$EXEC_FIND "$userhome" -xdev $excludeDirs -o -type f -perm /027 -exec $EXEC_CHMOD g-w,o-rwx {} +
+$EXEC_FIND "$userhome" -xdev -type d \( -name ".git" -o -name ".svn" \) -prune -o -type f -perm /027 -exec $EXEC_CHMOD --changes g-w,o-rwx {} +
 
 #
 # NVIDIA Settings

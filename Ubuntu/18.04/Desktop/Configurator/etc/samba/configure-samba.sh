@@ -52,6 +52,13 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-admin.conf if FUNC_ADMIN_CONFIG is unset
+if [ -z "$FUNC_ADMIN_CONFIG" ] && [ -f /etc/devops/functions-admin.conf ]; then
+	source /etc/devops/functions-admin.conf
+fi
+
+${FUNC_ADMIN_CONFIG?"[1;91mCannot load '/etc/devops/functions-admin.conf': No such file[0m"}
+
 # Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
 if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
 	source /etc/devops/functions-io.conf
@@ -67,7 +74,7 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
@@ -152,7 +159,8 @@ elif [ "$smbConfTpl" -nt /etc/samba/smb.conf ]; then
 fi
 
 # Disable nmbd service
-if ! $EXEC_SYSTEMCTL status nmbd | $EXEC_GREP -Fq 'Active: inactive (dead)'; then
+set +o errexit
+if $EXEC_SYSTEMCTL status nmbd.service | $EXEC_GREP -Fq 'Active: active (running)'; then
 	printInfo 'Disabling Samba NetBIOS nameserver'
 
 	# Stop and disable nmbd service
@@ -161,6 +169,7 @@ if ! $EXEC_SYSTEMCTL status nmbd | $EXEC_GREP -Fq 'Active: inactive (dead)'; the
 
 	echoOnExit=true
 fi
+set -o errexit
 
 if [ "$echoOnExit" == 'true' ]; then
 	echo

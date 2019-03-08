@@ -89,7 +89,7 @@ function tuneReservedBlocks() {
 	mapfile -t ext4DeviceList < <($EXEC_FINDMNT -bno SOURCE,SIZE -t ext4)
 
 	for ext4Device in "${ext4DeviceList[@]}"; do
-		local deviceInfo=( $ext4Device )
+		IFS=' '; local deviceInfo=( $ext4Device ); IFS=$'\n\t'
 		local partitionName=${deviceInfo[0]}
 		local partitionSize=${deviceInfo[1]}
 

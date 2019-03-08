@@ -91,9 +91,9 @@ function createSymlink() {
 		$EXEC_LN -s "$targetFile" "$symlink"
 
 		if [[ "$symlink" == /usr/local/sbin* ]]; then
-			$EXEC_CHOWN --no-dereference root:devops "$symlink"
+			$EXEC_CHOWN --changes --no-dereference root:devops "$symlink"
 		elif [[ "$symlink" == /usr/local/bin* ]]; then
-			$EXEC_CHOWN --no-dereference root:users "$symlink"
+			$EXEC_CHOWN --changes --no-dereference root:users "$symlink"
 		fi
 	fi
 }
@@ -114,35 +114,36 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Configurator Installer" 'true'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+devopsGroup="$($EXEC_GETENT group devops)"
+
 # Add devops group
-if [ -z "$($EXEC_GETENT group devops)" ]; then
+if [ -z "$devopsGroup" ]; then
 	printInfo 'Adding devops group'
 	$EXEC_ADDGROUP 'devops'
 	echo
 fi
 
 # Add user to devops group, if necessary
-userGroups=$($EXEC_GROUPS $SUDO_USER)
-
-if [[ ! "$userGroups" =~ [[:blank:]]devops[[:blank:]] ]]; then
+if [ -z "$devopsGroup" ] || [ $(echo "$devopsGroup" | $EXEC_GREP -Fc $SUDO_USER || true ) -eq 0 ]; then
 	printInfo "Adding $SUDO_USER to the 'devops' group"
 	$EXEC_ADDUSER $SUDO_USER 'devops'
+	echo
 fi
 
 # Create /cache directory for user cache
 if [ ! -d /cache ]; then
 	printInfo 'Creating /cache directory'
 
-	$EXEC_MKDIR --mode=0755 /cache
-	$EXEC_CHOWN root:users /cache
+	$EXEC_MKDIR --parents --mode=0755 /cache
+	$EXEC_CHOWN --changes root:users /cache
 fi
 
 # Create /opt/devopsbroker/bionic/desktop/configurator directory
 if [ ! -d $INSTALL_DIR ]; then
 	printInfo "Creating $INSTALL_DIR directory"
 
-	$EXEC_MKDIR --mode=2755 $INSTALL_DIR
-	$EXEC_CHOWN -R root:devops /opt/devopsbroker
+	$EXEC_MKDIR --parents --mode=2755 $INSTALL_DIR
+	$EXEC_CHOWN --changes -R root:devops /opt/devopsbroker
 fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Installation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -150,31 +151,38 @@ fi
 # Copy files into the /opt/devopsbroker/bionic/desktop/configurator directory
 printBanner "Copying files to $INSTALL_DIR/"
 
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/configure-desktop.sh "$INSTALL_DIR"
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/device-drivers.sh "$INSTALL_DIR"
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/ttf-msclearfonts.sh "$INSTALL_DIR"
-/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR"/update-utils.sh "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR/configure-desktop.sh" "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR/device-drivers.sh" "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR/ttf-msclearfonts.sh" "$INSTALL_DIR"
+/bin/cp -uv --preserve=timestamps "$SCRIPT_DIR/update-utils.sh" "$INSTALL_DIR"
 
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/archives "$INSTALL_DIR"
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/doc "$INSTALL_DIR"
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/etc "$INSTALL_DIR"
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/home "$INSTALL_DIR"
-/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR"/perf "$INSTALL_DIR"
-/bin/cp -ruvL --preserve=timestamps "$SCRIPT_DIR"/usr "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR/archives" "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR/doc" "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR/etc" "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR/home" "$INSTALL_DIR"
+/bin/cp -ruv --preserve=timestamps "$SCRIPT_DIR/perf" "$INSTALL_DIR"
+/bin/cp -ruvL --preserve=timestamps "$SCRIPT_DIR/usr" "$INSTALL_DIR"
 
 echo
-$EXEC_FIND "$INSTALL_DIR"/ -type f \( ! -name "*.sh" ! -name "*.tpl" \) -exec $EXEC_CHMOD 640 {} + 2>/dev/null || true
+$EXEC_FIND "$INSTALL_DIR"/ -type f \( ! -name "*.sh" ! -name "*.tpl" \) -exec $EXEC_CHMOD --changes 640 {} + 2>/dev/null || true
 echo
-$EXEC_FIND "$INSTALL_DIR"/ -type f \( -name "*.sh" -o -name "*.tpl" \) -exec $EXEC_CHMOD 750 {} + 2>/dev/null || true
+$EXEC_FIND "$INSTALL_DIR"/ -type f \( -name "*.sh" -o -name "*.tpl" \) -exec $EXEC_CHMOD --changes 750 {} + 2>/dev/null || true
 echo
-$EXEC_CHOWN -R root:devops "$INSTALL_DIR"/ 2>/dev/null || true
+$EXEC_CHOWN --changes -R root:devops "$INSTALL_DIR"/ 2>/dev/null || true
 echo
 
 # Copy scriptinfo to /usr/local/bin
 CP_OUTPUT="$(/bin/cp -uv --preserve=timestamps "$INSTALL_DIR"/usr/local/bin/scriptinfo /usr/local/bin)"
 if [ ! -z "$CP_OUTPUT" ]  ; then
-	/bin/chmod -c 755 /usr/local/bin/scriptinfo
-	/bin/chown -c root:users /usr/local/bin/scriptinfo
+	$EXEC_CHMOD --changes 755 /usr/local/bin/scriptinfo
+	$EXEC_CHOWN --changes root:users /usr/local/bin/scriptinfo
+fi
+
+# Copy derivesubnet to /usr/local/bin
+CP_OUTPUT="$(/bin/cp -uv --preserve=timestamps "$INSTALL_DIR"/usr/local/bin/derivesubnet /usr/local/bin)"
+if [ ! -z "$CP_OUTPUT" ]  ; then
+	$EXEC_CHMOD --changes 755 /usr/local/bin/derivesubnet
+	$EXEC_CHOWN --changes root:users /usr/local/bin/derivesubnet
 fi
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Shell Scripts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -239,7 +247,7 @@ createSymlink /usr/local/sbin/configure-user "$INSTALL_DIR"/home/configure-user.
 # Create /etc/devops directory
 if [ ! -d /etc/devops ]; then
 	printInfo 'Creating /etc/devops directory'
-	$EXEC_MKDIR --mode=0755 /etc/devops
+	$EXEC_MKDIR --parents --mode=0755 /etc/devops
 fi
 
 # Install /etc/devops/ansi.conf

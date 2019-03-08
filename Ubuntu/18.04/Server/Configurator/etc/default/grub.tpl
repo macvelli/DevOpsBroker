@@ -85,7 +85,7 @@ IS_VM_GUEST=0
 
 # Display usage if no parameters given
 if [ -z "$zswapMaxPoolPct" ]; then
-	printUsage "grub.tpl ZSWAP_MAX_POOL_PCT"
+	printUsage "$scriptName ZSWAP_MAX_POOL_PCT"
 	exit 1
 fi
 
@@ -93,9 +93,9 @@ fi
 if [[ ! "$zswapMaxPoolPct" =~ ^[0-9]+$ ]] || \
 		[ "$zswapMaxPoolPct" -lt 0 ] || \
 		[ "$zswapMaxPoolPct" -gt 100 ]; then
-	printError 'grub.tpl' "Invalid ZSwap max pool percentage $zswapMaxPoolPct"
+	printError $scriptName "Invalid ZSwap max pool percentage $zswapMaxPoolPct"
 	echo
-	printUsage 'grub.tpl ZSWAP_MAX_POOL_PCT'
+	printUsage "$scriptName ZSWAP_MAX_POOL_PCT"
 
 	exit 1
 fi

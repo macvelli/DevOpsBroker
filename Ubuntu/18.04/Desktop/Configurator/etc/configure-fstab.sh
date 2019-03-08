@@ -66,7 +66,7 @@ set -o pipefail                # Exit if any statement in a pipeline returns a n
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
 ## Script information
-IFS=' '; SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") ); IFS=$'\n\t'
+SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
 SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
@@ -89,7 +89,7 @@ function tuneReservedBlocks() {
 	mapfile -t ext4DeviceList < <($EXEC_FINDMNT -bno SOURCE,SIZE -t ext4)
 
 	for ext4Device in "${ext4DeviceList[@]}"; do
-		local deviceInfo=( $ext4Device )
+		IFS=' '; local deviceInfo=( $ext4Device ); IFS=$'\n\t'
 		local partitionName=${deviceInfo[0]}
 		local partitionSize=${deviceInfo[1]}
 
@@ -137,7 +137,7 @@ fi
 printBox "DevOpsBroker $UBUNTU_RELEASE /etc/fstab Configurator" 'true'
 
 # Exit if /etc/fstab already configured
-if [ -f /etc/fstab.orig ] && [ "$1" != '-f' ]; then
+if [ -f /etc/fstab.orig ] && [ "${1:-}" != '-f' ]; then
 	printInfo '/etc/fstab already configured'
 	echo
 	printUsage "$SCRIPT_EXEC ${gold}[-f]"
@@ -157,7 +157,7 @@ if [ ! -d /mnt/ramdisk ]; then
 	printInfo 'Creating RAM Disk'
 
 	# Make the /mnt/ramdisk directory
-	$EXEC_MKDIR --mode=0777 /mnt/ramdisk
+	$EXEC_MKDIR --parents --mode=0777 /mnt/ramdisk
 
 	# Add entry to /etc/fstab to mount ramdisk
 	echo '# ramdisk is on /mnt/ramdisk' >> /etc/fstab

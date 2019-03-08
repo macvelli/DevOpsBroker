@@ -84,6 +84,27 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-admin.conf if FUNC_ADMIN_CONFIG is unset
+if [ -z "$FUNC_ADMIN_CONFIG" ] && [ -f /etc/devops/functions-admin.conf ]; then
+	source /etc/devops/functions-admin.conf
+fi
+
+${FUNC_ADMIN_CONFIG?"[1;91mCannot load '/etc/devops/functions-admin.conf': No such file[0m"}
+
+# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
+if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
+	source /etc/devops/functions-io.conf
+fi
+
+${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
 ## Script information
 SCRIPT_INFO=( $($EXEC_SCRIPTINFO "$BASH_SOURCE") )
 SCRIPT_DIR="${SCRIPT_INFO[0]}"
@@ -91,7 +112,7 @@ SCRIPT_EXEC="${SCRIPT_INFO[1]}"
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
-	printError "$SCRIPT_EXEC" 'Permission denied (you must be root)'
+	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
 
@@ -108,7 +129,7 @@ EXEC_UPDATE_INITRAMFS=/usr/sbin/update-initramfs
 export TMPDIR=${TMPDIR:-'/tmp'}
 echoOnExit=false
 updateInitramfs=false
-vgaDevice=$($EXEC_LSPCI | $EXEC_GREP -F --max-count 1 'VGA')
+vgaDevice=$($EXEC_LSPCI | $EXEC_GREP -F --max-count 1 'VGA' || true)
 
 ################################### Actions ###################################
 
@@ -128,6 +149,10 @@ installConfig 'bash.bashrc' "$SCRIPT_DIR" /etc
 # Install /etc/modules
 installConfig 'modules' "$SCRIPT_DIR" /etc
 
+if [ "$INSTALL_CONFIG" == 'true' ]; then
+	updateInitramfs=true
+fi
+
 # Install /etc/ntp.conf
 installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
@@ -142,7 +167,7 @@ installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/lo
 
 # Install /etc/bash_completion.d/*
 $EXEC_CP -uv "$SCRIPT_DIR"/bash_completion.d/* /etc/bash_completion.d
-$EXEC_CHMOD 644 /etc/bash_completion.d/*
+$EXEC_CHMOD --changes 644 /etc/bash_completion.d/*
 
 # Install /etc/default/resolvconf
 installConfig 'resolvconf' "$SCRIPT_DIR"/default /etc/default
@@ -284,18 +309,18 @@ if $EXEC_GREP -Eq '^audio/.+=org\.gnome\.Totem\.desktop' /usr/share/applications
 	printInfo 'Changing default application for all audio files to Rhythmbox'
 
 	# Fix /usr/share/applications/defaults.list audio defaults
-	$EXEC_SED -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1rhythmbox.desktop/' /usr/share/applications/defaults.list
+	$EXEC_SED --regexp-extended -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1rhythmbox.desktop/' /usr/share/applications/defaults.list
 
 	# Fix /etc/gnome/defaults.list audio defaults
-	$EXEC_SED -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1rhythmbox.desktop/' /etc/gnome/defaults.list
+	$EXEC_SED --regexp-extended -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1rhythmbox.desktop/' /etc/gnome/defaults.list
 
 	printInfo 'Changing default application for all video files to VLC'
 
 	# Fix /usr/share/applications/defaults.list video defaults
-	$EXEC_SED -i 's/^(video\/.+=)org\.gnome\.Totem\.desktop/\1vlc.desktop/' /usr/share/applications/defaults.list
+	$EXEC_SED --regexp-extended -i 's/^(video\/.+=)org\.gnome\.Totem\.desktop/\1vlc.desktop/' /usr/share/applications/defaults.list
 
 	# Fix /etc/gnome/defaults.list video defaults
-	$EXEC_SED -i 's/^(video\/.+=)org\.gnome\.Totem\.desktop/\1vlc.desktop/' /etc/gnome/defaults.list
+	$EXEC_SED --regexp-extended -i 's/^(video\/.+=)org\.gnome\.Totem\.desktop/\1vlc.desktop/' /etc/gnome/defaults.list
 
 	echoOnExit=true
 fi
@@ -308,7 +333,7 @@ fi
 if $EXEC_GREP -Fq 'NoDisplay=true' /etc/xdg/autostart/*.desktop; then
 	printInfo 'Show hidden startup applications under Ubuntu Search -> Startup Applications'
 
-	$EXEC_SED -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
+	$EXEC_SED --regexp-extended -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
 
 	echoOnExit=true
 fi

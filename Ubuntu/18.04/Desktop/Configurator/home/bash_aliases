@@ -55,12 +55,12 @@ export MAKEFLAGS="--jobs=$NUM_CPUS --no-print-directory --output-sync --silent"
 if [ -x /usr/bin/dircolors ]; then
 	/usr/bin/test -r ~/.dircolors && eval "$(/usr/bin/dircolors -b ~/.dircolors)" || eval "$(/usr/bin/dircolors -b)"
 
-	alias ls='/bin/ls -lh --color=auto --group-directories-first'
-	alias la='/bin/ls -lha --color=auto --group-directories-first'
+	alias ls='/bin/ls -lh --color=always --group-directories-first'
+	alias la='/bin/ls -lha --color=always --group-directories-first'
 
-	alias grep='/bin/grep --color=auto'
-	alias fgrep='/bin/fgrep --color=auto'
-	alias egrep='/bin/egrep --color=auto'
+	alias grep='/bin/grep --color=always'
+	alias fgrep='/bin/fgrep --color=always'
+	alias egrep='/bin/egrep --color=always'
 else
 	alias ls='/bin/ls -lh --group-directories-first'
 	alias la='/bin/ls -lha --group-directories-first'

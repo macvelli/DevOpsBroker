@@ -208,6 +208,7 @@ EXEC_ADD_APT_REPO=/usr/bin/add-apt-repository
 
 ## Variables
 DEFAULT_NIC=''
+IS_AMD=0
 PKG_INSTALLED=false
 updateAptSources=false
 
@@ -219,6 +220,11 @@ if [ $SHLVL -eq 1 ]; then
 fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Configurator" 'true'
+
+# Detect if we are running on an AMD CPU
+if [ "$($EXEC_LSCPU | $EXEC_AWK '/Vendor ID:/{ print $3 }')" == 'AuthenticAMD' ]; then
+	IS_AMD=1
+fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -513,6 +519,13 @@ installPackage '/usr/bin/systool' 'sysfsutils'
 
 # Install sysstat
 #installPackage '/usr/bin/iostat' 'sysstat'
+
+# Uninstall thermald if running on AMD
+if [ $IS_AMD -eq 1 ]; then
+	uninstallPackage '/usr/sbin/thermald' 'thermald'
+else
+	installPackage '/usr/sbin/thermald' 'thermald'
+fi
 
 # Install latest version of tidy from .deb file
 if [ ! -f /usr/lib/libtidy.so.5.6.0 ]; then
