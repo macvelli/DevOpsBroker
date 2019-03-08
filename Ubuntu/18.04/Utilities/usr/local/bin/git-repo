@@ -104,6 +104,7 @@ function showHelp() {
 		printUsage 'false' "$scriptName discard ${gold}FILE"
 		printUsage 'false' "$scriptName history ${gold}[FILE]"
 		printUsage 'false' "$scriptName list-branches"
+		printUsage 'false' "$scriptName list-commits"
 		printUsage 'false' "$scriptName list-config"
 		printUsage 'false' "$scriptName list-tags ${gold}[PATTERN]"
 		printUsage 'false' "$scriptName release ${gold}BRANCH_NAME"
@@ -149,6 +150,10 @@ function showHelp() {
 		printUsage "$scriptName list-branches"
 		echo ${romantic}
 		echo 'List existing branches in the current Git repository'${reset}
+	elif [ "$command" == 'list-commits' ]; then
+		printUsage "$scriptName list-commits"
+		echo ${romantic}
+		echo 'List local commits that have not yet been pushed to the remote server'${reset}
 	elif [ "$command" == 'list-config' ]; then
 		printUsage "$scriptName list-config"
 		echo ${romantic}
@@ -488,7 +493,7 @@ function validateUpdate() {
 EXEC_GIT=/usr/bin/git
 EXEC_SSH=/usr/bin/ssh
 
-repoCommands=('amend' 'config' 'create-branch' 'delete-branch' 'diff' 'discard' 'history' 'list-branches' 'list-config' 'list-tags' 'release' 'restore' 'stat' 'update')
+repoCommands=('amend' 'config' 'create-branch' 'delete-branch' 'diff' 'discard' 'history' 'list-branches' 'list-commits' 'list-config' 'list-tags' 'release' 'restore' 'stat' 'update')
 validCommands=(${repoCommands[@]} 'test-ssh')
 
 ## Options
@@ -654,6 +659,10 @@ elif [ $command == 'history' ]; then
 elif [ $command == 'list-branches' ]; then
 
 	$EXEC_GIT branch --list
+
+elif [ $command == 'list-commits' ]; then
+
+	$EXEC_GIT cherry -v
 
 elif [ $command == 'list-config' ]; then
 

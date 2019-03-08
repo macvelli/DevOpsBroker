@@ -534,6 +534,7 @@ if [ $command == 'add' ]; then
 					ifname $linkName con-name $linkName \
 					connection.slave-type bridge \
 					connection.master $bridgeName \
+					connection.autoconnect no \
 					mode tap group $(getGroupID 'kvm')
 			else
 				$EXEC_IP tuntap add dev $linkName mode tap group kvm
@@ -559,6 +560,7 @@ elif [ $command == 'create' ]; then
 	if [ -f $EXEC_NMCLI ]; then
 		$EXEC_NMCLI connection add type bridge \
 			ifname $bridgeName con-name $bridgeName \
+			connection.autoconnect no \
 			bridge.forward-delay 4 bridge.stp no
 	else
 		$EXEC_IP link add $bridgeName type bridge forward_delay 4 stp_state 0

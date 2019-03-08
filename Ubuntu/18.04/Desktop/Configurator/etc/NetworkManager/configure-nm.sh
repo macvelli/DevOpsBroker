@@ -174,11 +174,15 @@ fi
 
 # ---------------------------- Network Information ----------------------------
 
+set +o errexit
+
 # Internet Download speed
 INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
 
 # Internet Upload speed
 INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+
+set -o errexit
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Tasks ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

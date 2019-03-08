@@ -226,7 +226,7 @@ fi
 
 if [ "$command" == 'add-repo' ]; then
 
-	ppa="$2"
+	ppa=${2:-}
 
 	# Display usage if no PPA parameter given
 	if [ -z "$ppa" ]; then
@@ -266,7 +266,7 @@ elif [ "$command" == 'upgrade' ] || [ "$command" == 'full-upgrade' ]; then
 elif [ $command == 'depends' ]; then
 
 	# Display usage if no package name parameter given
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms depends package-name'
 		exit 1
 	fi
@@ -276,11 +276,12 @@ elif [ $command == 'depends' ]; then
 elif [ $command == 'info' ]; then
 
 	# Display usage if no package/snap name parameter given
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms info { package-name | snap-name }'
 		exit 1
 	fi
 
+	set +o errexit
 	name="$2"
 
 	# Check for Snap information first
@@ -309,12 +310,13 @@ elif [ $command == 'info' ]; then
 elif [ $command == 'install' ]; then
 
 	# Display usage if no package/snap name parameter given
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms install { package-name | snap-name | file.deb }'
 		exit 1
 	fi
 
 	# Gather all package names from the command-line
+	set +o errexit
 	shift
 	debList=()
 	packageList=()
@@ -359,7 +361,7 @@ elif [ $command == 'install' ]; then
 			# Check Snap next
 			mapfile -t snapInfo < <($EXEC_SNAP list $name 2>/dev/null)
 
-			if [ ! -z "$snapInfo" ]; then
+			if [ "${snapInfo:-}" ]; then
 				printInfo "Snap '$name' already installed"
 				continue
 			else
@@ -373,15 +375,15 @@ elif [ $command == 'install' ]; then
 				printError 'pms' "Cannot find '$name': No such package/snap"
 				continue
 
-			elif [ ! -z "$pkgInfo" ] && [ -z "$snapInfo" ]; then
+			elif [ ! -z "$pkgInfo" ] && [ -z "${snapInfo:-}" ]; then
 
 				packageList+=( "$name" )
 
-			elif [ -z "$pkgInfo" ] && [ ! -z "$snapInfo" ]; then
+			elif [ -z "$pkgInfo" ] && [ "${snapInfo:-}" ]; then
 
 				snapList+=( "$name" )
 
-			elif [ ! -z "$pkgInfo" ] && [ ! -z "$snapInfo" ]; then
+			elif [ ! -z "$pkgInfo" ] && [ "${snapInfo:-}" ]; then
 				echo ${bold}
 				echo $name="$2"{purple}"Which $name version do you want to install?"${white}
 				select version in "${pkgInfo[1]} (APT)" "${snapInfo[1]} (Snap)"; do
@@ -421,7 +423,7 @@ elif [ $command == 'install' ]; then
 elif [ $command == 'list' ]; then
 
 	# List all installed packages if no package name given
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 
 		printBanner 'Installed APT packages'
 		$EXEC_APT list --installed
@@ -467,7 +469,7 @@ elif [ $command == 'list' ]; then
 
 elif [ $command == 'reconfigure' ]; then
 
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms reconfigure package-name'
 		exit 1
 	fi
@@ -477,7 +479,7 @@ elif [ $command == 'reconfigure' ]; then
 elif [ $command == 'refresh' ]; then
 
 	# Update all snap applications
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		$EXEC_SNAP refresh
 	else
 		# Gather all snap names from the command-line
@@ -489,7 +491,7 @@ elif [ $command == 'refresh' ]; then
 
 elif [ $command == 'reinstall' ]; then
 
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms reinstall package-name'
 		exit 1
 	fi
@@ -498,7 +500,7 @@ elif [ $command == 'reinstall' ]; then
 
 elif [ $command == 'remove' ]; then
 
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms remove { package-name | snap-name }'
 		exit 1
 	fi
@@ -521,7 +523,7 @@ elif [ $command == 'remove' ]; then
 
 elif [ $command == 'test' ]; then
 
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms test package-name'
 		exit 1
 	fi
@@ -532,7 +534,7 @@ elif [ $command == 'test' ]; then
 
 elif [ $command == 'uninstall' ]; then
 
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms uninstall package-name'
 		exit 1
 	fi
@@ -547,7 +549,7 @@ elif [ $command == 'uninstall' ]; then
 
 elif [ $command == 'which' ]; then
 
-	if [ -z "$2" ]; then
+	if [ -z "${2:-}" ]; then
 		printUsage 'pms which FILE'
 		exit 1
 	fi
