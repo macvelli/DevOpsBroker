@@ -72,16 +72,23 @@ scriptName='qemu-config'
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'image' ]; then
-		printUsage "qemu-config image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
+	if [ -z "$command" ]; then
+		printUsage "$scriptName COMMAND ${gold}[OPTION...]"
+		echo
+		printUsage 'false' "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
+		printUsage 'false' "$scriptName info ${gold}[OPTION...]"
+		printUsage 'false' "$scriptName init ${gold}[-d directory]"
+		echo
+	elif [ "$command" == 'image' ]; then
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
 		echo ${romantic}
 		echo 'Creates a new QEMU image file IMG_FILE of SIZE'${reset}
 	elif [ "$command" == 'info' ]; then
-		printUsage "qemu-config info ${gold}[OPTION]..."
+		printUsage "$scriptName info ${gold}[OPTION...]"
 		echo ${romantic}
 		echo 'Easily review help information for various QEMU components'${reset}
 	elif [ "$command" == 'init' ]; then
-		printUsage "qemu-config init ${gold}[-d directory]"
+		printUsage "$scriptName init ${gold}[-d directory]"
 		echo ${romantic}
 		echo 'Copies OVMF UEFI BIOS, keymap, and generates a random MAC Address and UUID'${reset}
 	fi
@@ -89,96 +96,56 @@ function showHelp() {
 	# END showHelp function
 }
 
-################################## Variables ##################################
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateImage
+# Description:  Performs validation for the image command
+# -----------------------------------------------------------------------------
+function validateImage() {
+	local option="${1:-}"
 
-## Bash exec variables
-EXEC_QEMU=/usr/bin/qemu-system-x86_64
-EXEC_QEMU_IMG=/usr/bin/qemu-img
-EXEC_MACADDR=/usr/local/bin/macaddr
-EXEC_UUID=/usr/local/bin/uuid
+	if [ -z "$option" ]; then
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
+	fi
 
-# Options
-command="$1"
-QEMU_DIR='.'
+	# Process command-line options, if present
+	while [[ "$option" =~ ^- ]]; do
 
-## Variables
-showCommandHelp=false
-validCommands=('image' 'info' 'init')
+		if [ "$option" == '-d' ]; then
 
-declare -A usageMsgMap
+			errorMessage=$(isValidDirectory $scriptName "${2:-}")
 
-usageMsgMap['image']="qemu-config image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
-usageMsgMap['init']="qemu-config init ${gold}[-d directory]"
+			# Display error if directory parameter is missing or invalid
+			if [ "$errorMessage" != '0' ]; then
+				echo "$errorMessage"
+				echo
+				printUsage "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+				exit 1
+			fi
 
-if [ "$command" == 'help' ]; then
-	showCommandHelp=true
-	command="$2"
-	shift
-fi
+			# Use virtual machine image directory provided by user
+			QEMU_DIR="$2"
+			shift 2
+			option="${1:-}"
 
-# Display usage if no parameters given
-if [ -z "$command" ]; then
-	printUsage "qemu-config ${gold}[help]${yellow} { image | info | init }"
-	exit 1
-fi
-
-# Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError 'qemu-config' "Invalid command: '$command'"
-	echo
-	printUsage "qemu-config ${gold}[help]${yellow} { image | info | init }"
-
-	exit 1
-fi
-
-if [ "$showCommandHelp" == 'true' ]; then
-	showHelp
-	exit 0
-fi
-
-# Process command-line options, if present
-while [[ "$2" =~ ^- ]]; do
-
-	if [ "$2" = '-d' ]; then
-
-		errorMessage=$(isValidDirectory 'qemu-config' "$3")
-
-		# Display error if directory parameter is missing or invalid
-		if [ "$errorMessage" != '0' ]; then
-			echo "$errorMessage"
+		else
+			# Display usage and error if option parameter is not valid
+			printError $scriptName "Invalid option: $option"
 			echo
-			printUsage "${usageMsgMap[$command]}"
+			printUsage "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
 
 			exit 1
 		fi
+	done
 
-		# Use virtual machine image directory provided by user
-		QEMU_DIR="$3"
-		shift 2
-
-	else
-		# Display usage and error if option parameter is not valid
-		printError 'qemu-config' "Invalid option: $2"
-		echo
-		printUsage "${usageMsgMap[$command]}"
-
-		exit 1
-	fi
-
-done
-
-if [ $command == 'image' ]; then
-
-	IMG_FILE="$2"
-	IMG_SIZE="$3"
+	IMG_FILE="${1:-}"
+	IMG_SIZE="${2:-}"
 
 	# Display error if no file parameter given
 	if [ -z "$IMG_FILE" ]; then
-		printError 'qemu-config' 'Missing file parameter'
+		printError $scriptName 'Missing file parameter'
 		echo
-		printUsage "qemu-config image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
 
 		exit 1
 	fi
@@ -190,27 +157,27 @@ if [ $command == 'image' ]; then
 
 	# Display error if image file already exists
 	if [ -f "$QEMU_DIR/$IMG_FILE" ]; then
-		printError 'qemu-config' "Invalid image file '$IMG_FILE': File already exists"
+		printError $scriptName "Invalid image file '$IMG_FILE': File already exists"
 		echo
-		printUsage "qemu-config image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}IMG_FILE SIZE"
 
 		exit 1
 	fi
 
 	# Display error if no image size parameter given
 	if [ -z "$IMG_SIZE" ]; then
-		printError 'qemu-config' 'Missing QEMU image file size parameter'
+		printError $scriptName 'Missing QEMU image file size parameter'
 		echo
-		printUsage "qemu-config image ${gold}[-d directory] ${yellow}$IMG_FILE SIZE"
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}$IMG_FILE SIZE"
 
 		exit 1
 	fi
 
 	# Display error if image size suffix is invalid
 	if [[ ! "$IMG_SIZE" =~ (k|K|M|G|T)$ ]]; then
-		printError 'qemu-config' "Invalid QEMU image size suffix: $IMG_SIZE"
+		printError $scriptName "Invalid QEMU image size suffix: $IMG_SIZE"
 		echo
-		printUsage "qemu-config image ${gold}[-d directory] ${yellow}$IMG_FILE SIZE"
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}$IMG_FILE SIZE"
 		echo ${bold}
 		echo "Valid Size Suffixes:${romantic}"
 		echo -e '  k or K\t'	'kilobyte, 1024'
@@ -224,38 +191,136 @@ if [ $command == 'image' ]; then
 
 	# Display error if image size is invalid
 	if [[ ! "$IMG_SIZE" =~ ^[0-9]+(k|K|M|G|T)$ ]]; then
-		printError 'qemu-config' "Invalid image size: $IMG_SIZE"
+		printError $scriptName "Invalid image size: $IMG_SIZE"
 		echo
-		printUsage "qemu-config image ${gold}[-d directory] ${yellow}$IMG_FILE SIZE"
+		printUsage "$scriptName image ${gold}[-d directory] ${yellow}$IMG_FILE SIZE"
 
 		exit 1
 	fi
+}
 
-	# END image command
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateInit
+# Description:  Performs validation for the init command
+# -----------------------------------------------------------------------------
+function validateInit() {
+	local option="${1:-}"
+
+	if [ "$option" ] && [[ ! "$option" =~ ^- ]]; then
+		printUsage "$scriptName init ${gold}[-d directory]"
+	fi
+
+	# Process command-line options, if present
+	while [[ "$option" =~ ^- ]]; do
+
+		if [ "$option" == '-d' ]; then
+
+			errorMessage=$(isValidDirectory $scriptName "${2:-}")
+
+			# Display error if directory parameter is missing or invalid
+			if [ "$errorMessage" != '0' ]; then
+				echo "$errorMessage"
+				echo
+				printUsage "$scriptName init ${gold}[-d directory]"
+
+				exit 1
+			fi
+
+			# Use virtual machine image directory provided by user
+			QEMU_DIR="$2"
+			shift 2
+			option="${1:-}"
+
+		else
+			# Display usage and error if option parameter is not valid
+			printError $scriptName "Invalid option: $option"
+			echo
+			printUsage "$scriptName init ${gold}[-d directory]"
+
+			exit 1
+		fi
+	done
+}
+
+################################## Variables ##################################
+
+## Bash exec variables
+EXEC_QEMU=/usr/bin/qemu-system-x86_64
+EXEC_QEMU_IMG=/usr/bin/qemu-img
+EXEC_MACADDR=/usr/local/bin/macaddr
+EXEC_UUID=/usr/local/bin/uuid
+
+# Options
+command=${1:-}
+QEMU_DIR='.'
+
+## Variables
+showCommandHelp=false
+validCommands=('image' 'info' 'init')
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+if [ "$command" == 'help' ]; then
+	showCommandHelp=true
+	command=${2:-}
+fi
+
+# Display error if invalid command
+if [ "$command" ] && [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+	printError $scriptName "Invalid command: '$command'"
+	echo
+	printUsage "$scriptName ${gold}[help]${yellow} COMMAND ${gold}[OPTION...]"
+
+	exit 1
+fi
+
+if [ "$showCommandHelp" == 'true' ]; then
+	showHelp
+	exit 0
 fi
 
 ################################### Actions ###################################
 
 if [ $command == 'image' ]; then
+	shift
+	validateImage "$@"
 
 	printInfo "Creating QEMU image $QEMU_DIR/$IMG_FILE"
 
 	$EXEC_QEMU_IMG create -f raw "$QEMU_DIR/$IMG_FILE" ${IMG_SIZE}
+
 	$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR"
+	$EXEC_CHMOD --changes 750 "$QEMU_DIR"
+
 	$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR/$IMG_FILE"
+	$EXEC_CHMOD --changes 660 "$QEMU_DIR/$IMG_FILE"
 
 elif [ $command == 'init' ]; then
+	validateInit
 
 	printBanner "Initializing QEMU Virtual Machine"
 
-	if [ ! -f "$QEMU_DIR"/bios.bin ]; then
+	if [ ! -f "$QEMU_DIR/bios.bin" ]; then
 		printInfo "Copying OVMF UEFI BIOS to $QEMU_DIR"
-		$EXEC_CP /usr/share/qemu/OVMF.fd "$QEMU_DIR"/bios.bin
+		$EXEC_CP /usr/share/qemu/OVMF.fd "$QEMU_DIR/bios.bin"
+
+		$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR/bios.bin"
+		$EXEC_CHMOD --changes 660 "$QEMU_DIR/bios.bin"
 	fi
 
-	if [ ! -f "$QEMU_DIR"/en-us ]; then
+	if [ ! -f "$QEMU_DIR/en-us" ]; then
 		printInfo "Copying en-us keymap to $QEMU_DIR"
-		$EXEC_CP /usr/share/qemu/keymaps/en-us "$QEMU_DIR"/
+		$EXEC_CP /usr/share/qemu/keymaps/en-us "$QEMU_DIR/en-us"
+
+		$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR/en-us"
+		$EXEC_CHMOD --changes 640 "$QEMU_DIR/en-us"
+	fi
+
+	if [ ! -d "$QEMU_DIR/shared" ]; then
+		printInfo "Creating $QEMU_DIR/shared directory"
+
+		$EXEC_MKDIR --parents --mode=0750 "$QEMU_DIR/shared"
+		$EXEC_CHOWN --changes $USER:kvm "$QEMU_DIR/shared"
 	fi
 
 	# qemu MAC address must begin with 52:54
@@ -266,50 +331,46 @@ elif [ $command == 'init' ]; then
 
 elif [ $command == 'info' ]; then
 
-	sortOutput=false
+	if [ -z "${2:-}" ]; then
 
-	if [ -z "$2" ]; then
+		mapfile -t helpOutput < <( $EXEC_QEMU --h )
 
-		helpArgs='--h'
+	elif [ "${2:-}" == 'audio' ]; then
 
-	elif [ "$2" == 'audio' ]; then
+		mapfile -t helpOutput < <( $EXEC_QEMU --audio-help )
 
-		helpArgs='--audio-help'
-
-	elif [ "$2" == 'chardev' ]; then
+	elif [ "${2:-}" == 'chardev' ]; then
 
 		mapfile chardevList < <($EXEC_QEMU --chardev help 2>&1)
 		unset chardevList[0]
-		sortedList=( $($EXEC_SORT <<<"${chardevList[@]}") )
+		unset IFS; sortedList=( $($EXEC_SORT <<<"${chardevList[@]}") ); IFS=$'\n\t'
 
 		echo ${bold}${white}'Available chardev backend types:'${reset}
 		printf "\n%s" "${sortedList[@]}"
 		printf "\n\n"
 		exit 0
 
-	elif [ "$2" == 'cpu' ]; then
+	elif [ "${2:-}" == 'cpu' ]; then
 
-		helpArgs='--cpu help'
+		mapfile -t helpOutput < <( $EXEC_QEMU --cpu help )
 
-	elif [ "$2" == 'device' ]; then
+	elif [ "${2:-}" == 'device' ]; then
 
-		if [ -z "$3" ]; then
-			helpArgs='--device help'
+		if [ -z "${3:-}" ]; then
+			mapfile -t helpOutput < <( $EXEC_QEMU --device help )
 		else
-			helpArgs="--device $3,help"
-			sortOutput=true
+			mapfile -t helpOutput < <( $EXEC_QEMU --device $3,help 2>&1 | $EXEC_SORT )
 		fi
 
-	elif [ "$2" == 'machine' ]; then
+	elif [ "${2:-}" == 'machine' ]; then
 
-		if [ -z "$3" ]; then
-			helpArgs='--machine help'
+		if [ -z "${3:-}" ]; then
+			mapfile -t helpOutput < <( $EXEC_QEMU --machine help )
 		else
-			helpArgs="--machine $3,help"
-			sortOutput=true
+			mapfile -t helpOutput < <( $EXEC_QEMU --machine $3,help 2>&1 | $EXEC_SORT )
 		fi
 
-	elif [ "$2" == 'nic' ]; then
+	elif [ "${2:-}" == 'nic' ]; then
 
 		mapfile nicModelList < <($EXEC_QEMU --net nic,model=help 2>&1 | $EXEC_GREP -Eo '[a-z0-9_]+(,[a-z0-9_]+)+$' | $EXEC_TR "','" "'\n'")
 		sortedList=( $($EXEC_SORT <<<"${nicModelList[@]}") )
@@ -319,25 +380,24 @@ elif [ $command == 'info' ]; then
 		printf "\n\n"
 		exit 0
 
-	elif [ "$2" == 'path' ]; then
+	elif [ "${2:-}" == 'path' ]; then
 
-		helpArgs='--L help'
-		sortOutput=true
+		mapfile -t helpOutput < <( $EXEC_QEMU --L help 2>&1 | $EXEC_SORT )
 
-	elif [ "$2" == 'soundhw' ]; then
+	elif [ "${2:-}" == 'soundhw' ]; then
 
-		helpArgs='--soundhw help'
+		mapfile -t helpOutput < <( $EXEC_QEMU --soundhw help )
 
-	elif [ "$2" == 'tpmdev' ]; then
+	elif [ "${2:-}" == 'tpmdev' ]; then
 
-		helpArgs='--tpmdev help'
+		mapfile -t helpOutput < <( $EXEC_QEMU --tpmdev help )
 
-	elif [ "$2" == 'watchdog' ]; then
+	elif [ "${2:-}" == 'watchdog' ]; then
 
-		helpArgs='--watchdog help'
+		mapfile -t helpOutput < <( $EXEC_QEMU --watchdog help )
 
 	else
-		printError 'qemu-config' "Invalid help topic: $2"
+		printError $scriptName "Invalid help topic: ${2:-}"
 		echo
 		echo ${bold}${white}'Valid Options:'${reset}
 		echo -e ${bold}${yellow}'  [none]\t\t'           ${romantic}'Display high-level QEMU help'
@@ -356,11 +416,9 @@ elif [ $command == 'info' ]; then
 		exit 1
 	fi
 
-	if [ "$sortOutput" == 'true' ]; then
-		$EXEC_QEMU $helpArgs 2>&1 | $EXEC_SORT
-	else
-		$EXEC_QEMU $helpArgs 2>&1
-	fi
+	for line in "${helpOutput[@]}"; do
+		echo $line
+	done
 
 fi
 
