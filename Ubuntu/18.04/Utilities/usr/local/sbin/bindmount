@@ -77,71 +77,54 @@ fi
 ################################## Variables ##################################
 
 ## Options
-SOURCE_DIR=${1:-}
-DEST_DIR=${2:-}
+FROM_DIR=${1:-}
+TO_DIR=${2:-}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-errorMessage=$(isValidDirectory $scriptName "$SOURCE_DIR")
+errorMessage=$(isValidDirectory $scriptName "$FROM_DIR")
 
 # Display error if source directory parameter is missing or invalid
 if [ "$errorMessage" != '0' ]; then
 	echo "$errorMessage"
 	echo
-	printUsage "$scriptName SOURCE_DIR DEST_DIR"
+	printUsage "$scriptName FROM_DIR TO_DIR"
 
 	exit 1
 fi
 
-errorMessage=$(isValidDirectory $scriptName "$DEST_DIR")
+errorMessage=$(isValidDirectory $scriptName "$TO_DIR")
 
 # Display error if destination directory parameter is missing or invalid
 if [ "$errorMessage" != '0' ]; then
 	echo "$errorMessage"
 	echo
-	printUsage "$scriptName $SOURCE_DIR DEST_DIR"
+	printUsage "$scriptName $FROM_DIR TO_DIR"
 
 	exit 1
 fi
 
+# Display notice if TO_DIR is not empty
+if [ "$($EXEC_LS -A $TO_DIR)" ]; then
+	printNotice $scriptName "The $TO_DIR directory is not empty"
+	exit 0
+fi
+
 # Load all bind mounts from /etc/fstab
-mapfile -t bindMountList < <($EXEC_GREP -E '\bbind\b' /etc/fstab)
+set +o errexit
+mapfile -t bindMountList < <($EXEC_GREP [[:blank:]]bind[[:blank:]] /etc/fstab)
+set -o errexit
 
 # Display message if source dirctory has already been moved
 for bindMount in "${bindMountList[@]}"; do
-	if [[ "$bindMount" =~ [[:blank:]]$SOURCE_DIR[[:blank:]] ]]; then
-		printInfo "Source directory '$SOURCE_DIR' has already been bind mounted"
+	if [[ "$bindMount" =~ [[:blank:]]$FROM_DIR[[:blank:]] ]]; then
+		printInfo "Source directory '$FROM_DIR' has already been bind mounted"
 		printInfo 'Exiting'
 		exit 0
 	fi
 done
 
 ################################### Actions ###################################
-
-# Check the status of the destination directory if the source directory is not empty
-if [ "$($EXEC_LS -A $SOURCE_DIR)" ]; then
-
-	if [ "$($EXEC_LS -A $DEST_DIR)" ]; then
-		echo "${bold}${yellow}Destination directory '${green}$DEST_DIR${yellow}' is not empty"
-		echo "Are you sure you want to delete all of its contents?${white}"
-		select confirmDelete in 'Yes' 'No'; do
-			if [ "$confirmDelete" == 'Yes' ]; then
-				echo
-				printInfo "Cleaning $DEST_DIR directory"
-				$EXEC_RM -rf "$DEST_DIR/*"
-			else
-				echo
-				printInfo "Exiting"
-				exit 0
-			fi
-			break;
-		done
-	fi
-
-	printInfo "Moving $SOURCE_DIR directory to $DEST_DIR"
-	$EXEC_CP -a "$SOURCE_DIR" "$DEST_DIR"
-	$EXEC_RM -rf "$SOURCE_DIR/*"
-fi
 
 # Backup existing /etc/fstab
 printInfo 'Backing up /etc/fstab'
@@ -153,10 +136,10 @@ if [ "${#bindMountList[@]}" -eq 0 ]; then
 	echo -e '\n# Bind mounts' >> /etc/fstab
 fi
 
-printInfo "Adding $DEST_DIR bind mount to /etc/fstab"
-echo "$DEST_DIR	$SOURCE_DIR	none	bind	0	0" >> /etc/fstab
+printInfo "Adding $TO_DIR bind mount to /etc/fstab"
+echo "$FROM_DIR	$TO_DIR	none	bind	0	0" >> /etc/fstab
 
-printInfo "Bind mounting $DEST_DIR directory to $SOURCE_DIR"
-$EXEC_MOUNT --bind "$DEST_DIR" "$SOURCE_DIR"
+printInfo "Bind mounting $FROM_DIR directory to $TO_DIR"
+$EXEC_MOUNT --bind "$FROM_DIR" "$TO_DIR"
 
 exit 0
