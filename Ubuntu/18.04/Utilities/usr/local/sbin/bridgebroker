@@ -647,10 +647,10 @@ elif [ $command == 'start' ]; then
 
 		linkName=${linkName[2]}
 
-		getConnectionInfo $linkName
-
 		printInfo "Bringing down network interface '$linkName'"
-		$EXEC_NMCLI connection down ${connInfo[1]}
+		set +o errexit
+		$EXEC_NMCLI connection down id $linkName
+		set -o errexit
 
 		printInfo "Bringing up bridge slave '$bridgeSlave'"
 		$EXEC_NMCLI connection up $bridgeSlave
@@ -662,10 +662,14 @@ elif [ $command == 'start' ]; then
 	tapList=( $($EXEC_NMCLI connection show | $EXEC_GREP [[:blank:]]tun[[:blank:]] || true) )
 
 	# Set the TX queue length on every tap interface
-	for tapSlave in "${tapList[@]}"; do
-		IFS=' '; linkName=( $tapSlave ); IFS=$'\n\t'
+	for tap in "${tapList[@]}"; do
+		IFS=' '; tapLink=( $tap ); IFS=$'\n\t'
 
-		$EXEC_IP link set $linkName txqueuelen 64
+		if [ $($EXEC_NMCLI -f connection.master connection show $tapLink | $EXEC_AWK '{ print $2 }') == "$bridgeName" ]; then
+			printInfo "Bringing up tap interface '$tapLink'"
+			$EXEC_NMCLI connection up $tapLink
+			$EXEC_IP link set $tapLink txqueuelen 64
+		fi
 	done
 
 elif [ $command == 'stop' ]; then
@@ -681,10 +685,8 @@ elif [ $command == 'stop' ]; then
 
 		linkName=${linkName[2]}
 
-		getConnectionInfo $linkName
-
 		printInfo "Bringing up network interface '$linkName'"
-		$EXEC_NMCLI connection up id ${connInfo[1]}
+		$EXEC_NMCLI connection up id $linkName
 	done
 fi
 
