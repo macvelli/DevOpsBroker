@@ -27,6 +27,7 @@
 ;   o int b7808f25_initIPv6Address(IPv6Address *ipv6Address, char *ipAddress);
 ;   o void b7808f25_deriveSubnetPrefix(IPv6Address *ipv6Address, IPv6Address *subnetPrefix);
 ;   o void b7808f25_extractString(IPv6Address *ipv6Address, char *buffer);
+;   o void b7808f25_isIpAddressZero(IPv6Address *ipv6Address);
 ;
 ; Recommended representation as text
 ;
@@ -322,6 +323,36 @@ processShorthandAddress:
 	ret                               ; pop return address from stack and jump there
 
 .makeAdjustments:
+	ret                               ; pop return address from stack and jump there
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_isIpAddressZero ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	global  b7808f25_isIpAddressZero:function
+b7808f25_isIpAddressZero:
+; Parameters:
+;	rdi : IPv6Address *ipv6Address
+; Local Variables:
+;	rax : IPv6 address buffer register
+
+.prologue:                            ; functions typically have a prologue
+	mov        rax, [rdi]
+
+	test       rax, rax               ; if (ipv6AddressPrefix == 0)
+	jz         .testIPv6Suffix
+
+.returnFalse:
+	xor        rax, rax               ; return value = 0
+	ret                               ; pop return address from stack and jump there
+
+.testIPv6Suffix:
+	mov        rax, [rdi+8]
+
+	test       rax, rax               ; if (ipv6AddressSuffix != 0)
+	jnz        .returnFalse
+
+.returnTrue:
+	xor        rax, rax               ; return value = 1
+	inc        al
 	ret                               ; pop return address from stack and jump there
 
 ; ~~~~~~~~~~~~~~~~~~~~ b7808f25_extractString (using SSE2) ~~~~~~~~~~~~~~~~~~~

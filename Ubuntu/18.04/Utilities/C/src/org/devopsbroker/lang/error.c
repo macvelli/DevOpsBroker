@@ -46,6 +46,10 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
+void c7c88e52_cannotPerformAction(const char *actionName, const char *option, const char *noSuchDesc) {
+	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "Cannot %s '%s': No such %s\n\n" ANSI_RESET, programName, actionName, option, noSuchDesc);
+}
+
 void c7c88e52_invalidOption(const char *option) {
 	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "Invalid option: '%s'\n\n" ANSI_RESET, programName, option);
 }
@@ -61,6 +65,10 @@ void c7c88e52_missingParam(const char *paramName) {
 void c7c88e52_printLibError(const char* errorMessage, int errorNumber) {
 	const char *errorStr = strerror(errorNumber);
 	fprintf(stderr, ANSI_BOLD "%s: " ANSI_RED "%s: %s\n" ANSI_RESET, programName, errorMessage, errorStr);
+}
+
+void c7c88e52_printNotice(const char* message) {
+	fprintf(stderr, ANSI_BOLD "%s: " ANSI_AQUA "%s\n" ANSI_RESET, programName, message);
 }
 
 void c7c88e52_printUsage(const char* message) {

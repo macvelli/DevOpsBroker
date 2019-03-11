@@ -222,6 +222,23 @@ typedef struct NetlinkAddressRequest {
 
 static_assert(sizeof(NetlinkAddressRequest) == 24, "Check your assumptions");
 
+typedef struct ifinfomsg NetlinkInfoMessage;
+/*	unsigned char  ifi_family;   // AF_UNSPEC
+	unsigned short ifi_type;     // Device type
+	int            ifi_index;    // Interface index
+	unsigned int   ifi_flags;    // Device flags
+	unsigned int   ifi_change;   // change mask
+*/
+
+static_assert(sizeof(NetlinkInfoMessage) == 16, "Check your assumptions");
+
+typedef struct NetlinkInfoRequest {
+	NetlinkMessageHeader msgHeader;
+	NetlinkInfoMessage msgBody;
+} NetlinkInfoRequest;
+
+static_assert(sizeof(NetlinkInfoRequest) == 32, "Check your assumptions");
+
 typedef struct rtmsg NetlinkRouteMessage;
 /*	unsigned char rtm_family;    // Address family of route
 	unsigned char rtm_dst_len;   // Length of destination
@@ -244,14 +261,6 @@ typedef struct NetlinkRouteRequest {
 } NetlinkRouteRequest;
 
 static_assert(sizeof(NetlinkRouteRequest) == 28, "Check your assumptions");
-
-typedef struct ifinfomsg NetlinkInfoMessage;
-/*	unsigned char  ifi_family;   // AF_UNSPEC
-	unsigned short ifi_type;     // Device type
-	int            ifi_index;    // Interface index
-	unsigned int   ifi_flags;    // Device flags
-	unsigned int   ifi_change;   // change mask
-*/
 
 typedef struct NetlinkSocket {
 	NetlinkAddress addr;
@@ -314,6 +323,17 @@ void e7173ad4_destroyNetlinkSocket(NetlinkSocket *netlinkSocket);
  * ----------------------------------------------------------------------------
  */
 void e7173ad4_initNetlinkAddressRequest(NetlinkAddressRequest *nlRequest, unsigned char addressType);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    e7173ad4_initNetlinkInfoRequest
+ * Description: Initializes an existing NetlinkInfoRequest struct
+ *
+ * Parameters:
+ *   infoRequest    A pointer to the NetlinkInfoRequest instance to initialize
+ *   ifaceIndex     The index of the network interface
+ * ----------------------------------------------------------------------------
+ */
+void e7173ad4_initNetlinkInfoRequest(NetlinkInfoRequest *infoRequest, int ifaceIndex);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    e7173ad4_initNetlinkRouteRequest

@@ -105,24 +105,24 @@ void f0185083_getIPv4Address(NetworkDevice *networkDevice, NetlinkSocket *netlin
 	e7173ad4_initReceiveMessageHeader(&response, netlinkSocket);
 	msgLen = a36b5966_receiveMessage(netlinkSocket->fd, &response, 0);
 
-	NetlinkMessageHeader *nlMsgHeader = (NetlinkMessageHeader *) netlinkSocket->ioBuffer->iov_base;
-	NetlinkAddressMessage *nlAddressMsg;
-	NetlinkAttribute *nlAttribute;
-	int nlAddressMsgLen;
+	NetlinkMessageHeader *msgHeader = (NetlinkMessageHeader *) netlinkSocket->ioBuffer->iov_base;
+	NetlinkAddressMessage *addrMessage;
+	NetlinkAttribute *attribute;
+	int messageLen;
 
-	while (nlMsgHeader->nlmsg_type != NLMSG_DONE) {
-		for(; NLMSG_OK(nlMsgHeader, msgLen); nlMsgHeader = NLMSG_NEXT(nlMsgHeader, msgLen)) {
-			nlAddressMsg = (NetlinkAddressMessage *) NLMSG_DATA(nlMsgHeader);
+	while (msgHeader->nlmsg_type != NLMSG_DONE) {
+		for(; NLMSG_OK(msgHeader, msgLen); msgHeader = NLMSG_NEXT(msgHeader, msgLen)) {
+			addrMessage = (NetlinkAddressMessage *) NLMSG_DATA(msgHeader);
 
-			if (nlAddressMsg->ifa_index == networkDevice->index) {
-				nlAttribute = (NetlinkAttribute *) IFA_RTA(nlAddressMsg);
-				nlAddressMsgLen = IFA_PAYLOAD(nlMsgHeader);
+			if (addrMessage->ifa_index == networkDevice->index) {
+				attribute = (NetlinkAttribute *) IFA_RTA(addrMessage);
+				messageLen = IFA_PAYLOAD(msgHeader);
 
-				for(; RTA_OK(nlAttribute, nlAddressMsgLen); nlAttribute = RTA_NEXT(nlAttribute, nlAddressMsgLen)) {
-					if (nlAttribute->rta_type == IFA_ADDRESS) {
-						if (nlAddressMsg->ifa_scope == RT_SCOPE_UNIVERSE) {
-							networkDevice->ipv4Address.address =  *((int *) RTA_DATA(nlAttribute));
-							networkDevice->ipv4Address.cidrSuffix = nlAddressMsg->ifa_prefixlen;
+				for(; RTA_OK(attribute, messageLen); attribute = RTA_NEXT(attribute, messageLen)) {
+					if (attribute->rta_type == IFA_ADDRESS) {
+						if (addrMessage->ifa_scope == RT_SCOPE_UNIVERSE) {
+							networkDevice->ipv4Address.address =  *((int *) RTA_DATA(attribute));
+							networkDevice->ipv4Address.cidrSuffix = addrMessage->ifa_prefixlen;
 							break;
 						}
 					}
@@ -131,7 +131,7 @@ void f0185083_getIPv4Address(NetworkDevice *networkDevice, NetlinkSocket *netlin
 		}
 
 		msgLen = a36b5966_receiveMessage(netlinkSocket->fd, &response, 0);
-		nlMsgHeader = (NetlinkMessageHeader *) netlinkSocket->ioBuffer->iov_base;
+		msgHeader = (NetlinkMessageHeader *) netlinkSocket->ioBuffer->iov_base;
 	}
 }
 

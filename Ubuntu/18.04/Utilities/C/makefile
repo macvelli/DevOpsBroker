@@ -173,9 +173,10 @@ bin/verifyclass: obj/verifyclass.o
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/verifyip: obj/verifyip.o
+bin/verifyip: obj/verifyip.o obj/verifyip.linux.o
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
+	/usr/bin/strip -s $@
 	$(call printInfo,Testing $(@) executable)
 	test/testVerifyIP.sh
 

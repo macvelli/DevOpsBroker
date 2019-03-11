@@ -88,6 +88,17 @@ void e7173ad4_initNetlinkAddressRequest(NetlinkAddressRequest *nlRequest, unsign
 	nlRequest->msgBody.ifa_family = addressType;
 }
 
+void e7173ad4_initNetlinkInfoRequest(NetlinkInfoRequest *infoRequest, int ifaceIndex) {
+	infoRequest->msgHeader.nlmsg_len = NLMSG_LENGTH(sizeof(NetlinkInfoMessage));
+	infoRequest->msgHeader.nlmsg_type = RTM_GETLINK;
+	infoRequest->msgHeader.nlmsg_flags = NLM_F_REQUEST;
+
+	f668c4bd_meminit(&infoRequest->msgBody, sizeof(NetlinkInfoMessage));
+	infoRequest->msgBody.ifi_family = AF_UNSPEC;
+	infoRequest->msgBody.ifi_index = ifaceIndex;
+	infoRequest->msgBody.ifi_change = 0xffffffff;
+}
+
 void e7173ad4_initNetlinkRouteRequest(NetlinkRouteRequest *request, SocketProtocol addressType) {
 	request->msgHeader.nlmsg_len = NLMSG_LENGTH(sizeof(NetlinkRouteMessage));
 	request->msgHeader.nlmsg_type = RTM_GETROUTE;

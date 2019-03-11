@@ -33,6 +33,7 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <assert.h>
@@ -112,10 +113,21 @@ void b7808f25_deriveSubnet(IPv6Address *ipv6Address, IPv6Address *ipv6Subnet);
  *              the IPv6 address
  *
  * Parameters:
- *   ipv4Address    A pointer to the IPv4Address instance to reference
+ *   ipv6Address    A pointer to the IPv4Address instance to reference
  *   buffer         The char *buffer to populate
  * ----------------------------------------------------------------------------
  */
 void b7808f25_extractString(IPv6Address *ipv6Address, char *buffer);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b7808f25_isIpAddressZero
+ * Description: Detects whether or not an IPv6 address is zero
+ *
+ * Parameters:
+ *   ipv6Address    A pointer to the IPv4Address instance to reference
+ * Returns:         True if the IPv6 address is zero, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool b7808f25_isIpAddressZero(IPv6Address *ipv6Address);
 
 #endif /* ORG_DEVOPSBROKER_NET_IPV6ADDRESS_H */

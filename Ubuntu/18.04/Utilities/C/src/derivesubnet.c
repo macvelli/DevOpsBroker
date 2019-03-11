@@ -144,10 +144,37 @@ int main(int argc, char *argv[]) {
 	e7173ad4_bind(netlinkSocket);
 
 	if (deviceParams.deriveIPv4Subnet) {
+		f668c4bd_meminit(&networkDevice.ipv4Address, sizeof(IPv4Address));
+
 		f0185083_getIPv4Address(&networkDevice, netlinkSocket);
+
+		if (networkDevice.ipv4Address.address == 0) {
+			c7c88e52_printNotice("Network device exists but cannot find IP address");
+
+			// Close Netlink socket
+			e7173ad4_close(netlinkSocket);
+			e7173ad4_destroyNetlinkSocket(netlinkSocket);
+
+			exit(EXIT_FAILURE);
+		}
+
 		f0185083_getIPv4Gateway(&networkDevice, netlinkSocket);
 	} else {
+		f668c4bd_meminit(&networkDevice.ipv6Global, sizeof(IPv6Address));
+		f668c4bd_meminit(&networkDevice.ipv6Local, sizeof(IPv6Address));
+
 		f0185083_getIPv6Addresses(&networkDevice, netlinkSocket);
+
+		if (b7808f25_isIpAddressZero(&networkDevice.ipv6Global)) {
+			c7c88e52_printNotice("Network device exists but cannot find IP address");
+
+			// Close Netlink socket
+			e7173ad4_close(netlinkSocket);
+			e7173ad4_destroyNetlinkSocket(netlinkSocket);
+
+			exit(EXIT_FAILURE);
+		}
+
 		f0185083_getIPv6Gateway(&networkDevice, netlinkSocket);
 	}
 

@@ -53,6 +53,18 @@ char* programName;
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c7c88e52_cannotPerformAction
+ * Description: Prints cannot perform action error message
+ *
+ * Parameters:
+ *   actionName     The name of the action that could not be performed
+ *   option         The invalid command-line option
+ *   noSuchDesc     The description of the option
+ * ----------------------------------------------------------------------------
+ */
+void c7c88e52_cannotPerformAction(const char *actionName, const char *option, const char *noSuchDesc);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c7c88e52_ensureUserIsRoot
  * Description: Ensures the executing user is root
  * ----------------------------------------------------------------------------
@@ -120,6 +132,16 @@ static inline void c7c88e52_printError_string(const char* errorMessage) {
  * ----------------------------------------------------------------------------
  */
 void c7c88e52_printLibError(const char* errorMessage, int errorNumber);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c7c88e52_printNotice
+ * Description: Prints notice message
+ *
+ * Parameters:
+ *   message    The notice message to print
+ * ----------------------------------------------------------------------------
+ */
+void c7c88e52_printNotice(const char* message);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c7c88e52_printUsage
