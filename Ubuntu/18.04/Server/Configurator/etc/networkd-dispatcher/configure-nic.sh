@@ -69,13 +69,6 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
-# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
-if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
-	source /etc/devops/functions-io.conf
-fi
-
-${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 set -o errexit                 # Exit if any statement returns a non-true value
@@ -93,9 +86,6 @@ if [ "$USER" != 'root' ]; then
 	printError $SCRIPT_EXEC 'Permission denied (you must be root)'
 	exit 1
 fi
-
-# Set tune-nic.tpl location and make it executable
-tuneNic=$(isExecutable "$SCRIPT_DIR"/if-up.d/tune-nic.tpl)
 
 ################################## Variables ##################################
 
@@ -140,50 +130,58 @@ fi
 # ---------------------------- Network Information ----------------------------
 
 # Internet Download speed
-INET_DL_SPEED=$($EXEC_GREP -F "Download: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+INET_DL_SPEED=$($EXEC_AWK '/Download:/{ print $2 }' /etc/devops/speedtest.info)
 
 # Internet Upload speed
-INET_UL_SPEED=$($EXEC_GREP -F "Upload: " /etc/devops/speedtest.info | $EXEC_AWK '{print $2}')
+INET_UL_SPEED=$($EXEC_AWK '/Upload:/{ print $2 }' /etc/devops/speedtest.info)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Tasks ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #
-# /etc/network/if-up.d/ Configuration
+# Create /etc/networkd-dispatcher/routable.d directory
+#
+if [ ! -d /etc/networkd-dispatcher/routable.d ]; then
+	printInfo 'Creating /etc/networkd-dispatcher/routable.d directory'
+	$EXEC_MKDIR --parents /etc/networkd-dispatcher/routable.d
+fi
+
+#
+# /etc/networkd-dispatcher/routable.d Configuration
 #
 
-if [ ! -f /etc/network/if-up.d/tune-$NIC ]; then
-	printInfo "Installing /etc/network/if-up.d/tune-$NIC"
+if [ ! -f /etc/networkd-dispatcher/routable.d/tune-$NIC ]; then
+	printInfo "Installing /etc/networkd-dispatcher/routable.d/tune-$NIC"
 
 	# Execute nettuner
-	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g iface $NIC > "$TMPDIR"/tune-$NIC)
+	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g networkd $NIC > "$TMPDIR"/tune-$NIC)
 
 	# Install as root:root with rwxr-xr-x privileges
-	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/network/if-up.d
+	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/networkd-dispatcher/routable.d
 
 	# Clean up
 	$EXEC_RM "$TMPDIR"/tune-$NIC
 
 	printInfo "Restarting $NIC interface"
 	echo
-	$EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
+	$EXEC_IP link set $NIC down && $EXEC_IP link set $NIC up
 
 	echoOnExit=true
 
-elif [ "$tuneNic" -nt /etc/network/if-up.d/tune-$NIC ]; then
-	printInfo "Updating /etc/network/if-up.d/tune-$NIC"
+elif [ "$EXEC_NETTUNER" -nt /etc/networkd-dispatcher/routable.d/tune-$NIC ]; then
+	printInfo "Updating /etc/networkd-dispatcher/routable.d/tune-$NIC"
 
 	# Execute nettuner
-	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g iface $NIC > "$TMPDIR"/tune-$NIC)
+	$($EXEC_NETTUNER -d $INET_DL_SPEED -u $INET_UL_SPEED -g networkd $NIC > "$TMPDIR"/tune-$NIC)
 
 	# Install as root:root with rwxr-xr-x privileges
-	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/network/if-up.d
+	$EXEC_INSTALL -o root -g root -m 755 "$TMPDIR"/tune-$NIC /etc/networkd-dispatcher/routable.d
 
 	# Clean up
 	$EXEC_RM "$TMPDIR"/tune-$NIC
 
 	printInfo "Restarting $NIC interface"
 	echo
-	$EXEC_IFDOWN $NIC && $EXEC_IFUP $NIC
+	$EXEC_IP link set $NIC down && $EXEC_IP link set $NIC up
 
 	echoOnExit=true
 fi

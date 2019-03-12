@@ -206,6 +206,9 @@ createSymlink /usr/local/sbin/iptables-private "$INSTALL_DIR"/etc/network/iptabl
 # Make symlink to etc/network/iptables-public.sh
 createSymlink /usr/local/sbin/iptables-public "$INSTALL_DIR"/etc/network/iptables-public.sh
 
+# Make symlink to etc/networkd-dispatcher/configure-nic.sh
+createSymlink /usr/local/sbin/configure-nic "$INSTALL_DIR"/etc/networkd-dispatcher/configure-nic.sh
+
 # Make symlink to etc/security/configure-security.sh
 createSymlink /usr/local/sbin/configure-security "$INSTALL_DIR"/etc/security/configure-security.sh
 

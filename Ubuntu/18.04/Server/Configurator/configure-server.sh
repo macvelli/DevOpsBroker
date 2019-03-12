@@ -33,7 +33,6 @@
 #   o Configures and optimizes GRUB
 #   o Manages DevOpsBroker configuration files (e.g. ansi.conf)
 #   o Tunes the default network interface card
-#   o Performs Samba configuration and optimization
 #   o Configures systemwide security configuration
 #   o Configures the Disk I/O schedulers and tunes each disk independently
 #   o Replaces dnsmasq with unbound for the local DNS cache server
@@ -359,6 +358,19 @@ fi
 # Install net-tools
 installPackage '/bin/netstat' 'net-tools'
 
+# Install networkd-dispatcher
+installPackage '/usr/bin/networkd-dispatcher' 'networkd-dispatcher'
+
+if [ "$INSTALL_PKG" == 'true' ]; then
+	$EXEC_SYSTEMCTL daemon-reload
+
+	printInfo 'Enabling networkd-dispatcher.service'
+	$EXEC_SYSTEMCTL enable networkd-dispatcher.service
+
+	printInfo 'Starting networkd-dispatcher.service'
+	$EXEC_SYSTEMCTL start networkd-dispatcher.service
+fi
+
 # Install nmap
 installPackage '/usr/bin/nmap' 'nmap'
 
@@ -443,8 +455,18 @@ installPackage '/usr/bin/whois' 'whois'
 "$SCRIPT_DIR"/etc/unbound/configure-unbound.sh
 
 #
-# TODO: Netplan Configuration
+# Netplan Configuration
 #
+
+# Configure /etc/netplan/50-network-init.yaml with configure-netplan.sh script
+"$SCRIPT_DIR"/etc/netplan/configure-netplan.sh
+
+#
+# Networkd-Dispatcher Configuration
+#
+
+# Configure /etc/networkd-dispatcher with configure-nic.sh script
+"$SCRIPT_DIR"/etc/networkd-dispatcher/configure-nic.sh $DEFAULT_NIC
 
 #
 # Systemwide Security Configuration

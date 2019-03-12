@@ -104,7 +104,7 @@ typedef struct TuningParams {
 	float    acceptableLatency;
 	uint32_t mtu;
 	uint32_t ramInGB;
-	bool     generateIfaceScript;
+	bool     generateNetworkdScript;
 	bool     generateNMScript;
 } TuningParams;
 
@@ -175,7 +175,7 @@ static void performTuningCalcs(TuningCalcs *tuningCalcs, TuningParams *tuningPar
 
 static void setTuningParams(TuningParams *tuningParams, Ethernet *ethDevice);
 
-static void generateIfaceTuningScript(char *deviceName, EthtoolSettings *ethtoolSettings);
+static void generateNetworkdTuningScript(char *deviceName, EthtoolSettings *ethtoolSettings);
 
 static void generateNetworkManagerTuningScript(char *deviceName, EthtoolSettings *ethtoolSettings);
 
@@ -215,8 +215,8 @@ static void processCmdLine(CmdLineParam *cmdLineParm, TuningParams *tuningParams
 			} else if (argv[i][1] == 'g') {
 				char *tuningScript = d7ad7024_getString(cmdLineParm, "tuning script type", i++);
 
-				if (f6215943_isEqual("iface", tuningScript)) {
-					tuningParams->generateIfaceScript = true;
+				if (f6215943_isEqual("networkd", tuningScript)) {
+					tuningParams->generateNetworkdScript = true;
 				} else if (f6215943_isEqual("nm", tuningScript)) {
 					tuningParams->generateNMScript = true;
 				} else {
@@ -275,8 +275,8 @@ int main(int argc, char *argv[]) {
 	performTuningCalcs(&tuningCalcs, &tuningParams);
 	calcEthtoolSettings(&ethtoolSettings, &tuningCalcs, &tuningParams);
 
-	if (tuningParams.generateIfaceScript) {
-		generateIfaceTuningScript(tuningParams.deviceName, &ethtoolSettings);
+	if (tuningParams.generateNetworkdScript) {
+		generateNetworkdTuningScript(tuningParams.deviceName, &ethtoolSettings);
 	} else if (tuningParams.generateNMScript) {
 		generateNetworkManagerTuningScript(tuningParams.deviceName, &ethtoolSettings);
 	} else {
@@ -426,7 +426,7 @@ static void performTuningCalcs(TuningCalcs *tuningCalcs, TuningParams *tuningPar
 	tuningCalcs->ulFramesPerSecond = (tuningParams->uploadSpeed * ONE_MEGABIT_BYTES) / tuningParams->mtu;
 }
 
-static void generateIfaceTuningScript(char * deviceName, EthtoolSettings *ethtoolSettings) {
+static void generateNetworkdTuningScript(char * deviceName, EthtoolSettings *ethtoolSettings) {
 	Time time;
 	a66923ff_initTime(&time, a66923ff_getTime());
 
@@ -461,17 +461,19 @@ static void generateIfaceTuningScript(char * deviceName, EthtoolSettings *ethtoo
 
 	puts(  "################################## Variables ##################################\n");
 
-	puts(  "if [ -z \"$IFACE\" ] && [ -z \"$MODE\" ] && [ -z \"$PHASE\" ]; then");
+	puts(  "## Script information");
+	puts(  "SCRIPT_INFO=( $( /usr/local/bin/scriptinfo \"$BASH_SOURCE\") )");
+	puts(  "SCRIPT_DIR=\"${SCRIPT_INFO[0]}\"");
+	puts(  "SCRIPT_EXEC=\"${SCRIPT_INFO[1]}\"\n");
+
+	puts(  "if [ -z \"$IFACE\" ]; then");
 	printf("	IFACE='%s'\n", deviceName);
-	puts(  "	MODE='start'");
-	puts(  "	PHASE='post-up'");
 	puts(  "fi\n");
 
 	puts(  "################################### Actions ###################################\n");
+	puts(  "/usr/bin/logger -p syslog.notice -i Called \"$SCRIPT_DIR/$SCRIPT_EXEC\" with interface \"$IFACE\";\n\n");
 
-	printf("/usr/bin/logger -p syslog.notice -i Called /etc/network/if-up.d/tune-%s with interface \"$IFACE\" mode \"$MODE\" and phase \"$PHASE\";\n\n", deviceName);
-
-	printf("if [ \"$IFACE\" == '%s' ] && [ \"$MODE\" == 'start' ] && [ \"$PHASE\" == 'post-up' ]; then\n", deviceName);
+	printf("if [ \"$IFACE\" == '%s' ]; then\n", deviceName);
 	puts(  "	# Optimize TX Queue Length");
 	printf("	/sbin/ip link set %s txqueuelen %u\n\n", deviceName, ethtoolSettings->txqueuelen);
 
@@ -737,13 +739,13 @@ static void printHelp() {
 	puts(ANSI_BOLD "\nExamples:" ANSI_RESET);
 	puts("  nettuner -d 320.33 -u 23.98 enp31s0");
 	puts("  nettuner -s 320.33 -l 0.05 enp31s0");
-	puts("  nettuner -g iface enp31s0");
+	puts("  nettuner -g networkd enp31s0");
 
 	puts(ANSI_BOLD "\nValid Options:\n");
 	puts(ANSI_YELLOW "  -d\t" ANSI_ROMANTIC "Specify the download speed");
 	puts(ANSI_BOLD ANSI_YELLOW "  -u\t" ANSI_ROMANTIC "Specify the upload speed");
 	puts(ANSI_BOLD ANSI_YELLOW "  -s\t" ANSI_ROMANTIC "Specify both the upload and download speed");
 	puts(ANSI_BOLD ANSI_YELLOW "  -l\t" ANSI_ROMANTIC "Specify the acceptable latency");
-	puts(ANSI_BOLD ANSI_YELLOW "  -g\t" ANSI_ROMANTIC "Generate tuning script" ANSI_BOLD ANSI_YELLOW " { nm | iface }");
+	puts(ANSI_BOLD ANSI_YELLOW "  -g\t" ANSI_ROMANTIC "Generate tuning script" ANSI_BOLD ANSI_YELLOW " { nm | networkd }");
 	puts(ANSI_BOLD ANSI_YELLOW "  -h\t" ANSI_ROMANTIC "Print this help message\n");
 }
