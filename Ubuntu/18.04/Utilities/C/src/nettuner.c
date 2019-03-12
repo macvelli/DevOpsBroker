@@ -588,9 +588,7 @@ void printNetworkKernelTuningConfig(SysctlSettings *sysctlSettings) {
 
 	puts(  "# Accept IPv6 Router Advertisements");
 	puts(  "net.ipv6.conf.all.accept_ra = 1");
-	puts(  "net.ipv6.conf.all.autoconf = 1");
-	puts(  "net.ipv6.conf.default.accept_ra = 1");
-	puts(  "net.ipv6.conf.default.autoconf = 1\n");
+	puts(  "net.ipv6.conf.default.accept_ra = 1\n");
 
 	puts(  "# Do not accept source routed packets");
 	puts(  "net.ipv4.conf.all.accept_source_route = 0");

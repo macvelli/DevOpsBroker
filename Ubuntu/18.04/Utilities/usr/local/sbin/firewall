@@ -52,7 +52,23 @@ fi
 
 ${FUNC_CONFIG?"[1;91mCannot load '/etc/devops/functions.conf': No such file[0m"}
 
+# Load /etc/devops/functions-io.conf if FUNC_IO_CONFIG is unset
+if [ -z "$FUNC_IO_CONFIG" ] && [ -f /etc/devops/functions-io.conf ]; then
+	source /etc/devops/functions-io.conf
+fi
+
+${FUNC_IO_CONFIG?"[1;91mCannot load '/etc/devops/functions-io.conf': No such file[0m"}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Robustness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set -o errexit                 # Exit if any statement returns a non-true value
+set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
+IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
+
+## Script information
 SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
+scriptName='firewall'
 
 ################################## Functions ##################################
 
@@ -63,12 +79,21 @@ SCRIPT_DIR=$( $EXEC_DIRNAME "$BASH_SOURCE" )
 function showHelp() {
 	# BEGIN showHelp function
 
-	if [ "$command" == 'enable' ]; then
-		printUsage 'firewall enable SERVICE_NAME'
+	if [ -z "$command" ]; then
+		printUsage "$scriptName COMMAND ${gold}[OPTION...]"
+		echo
+		printUsage 'false' "$scriptName enable SERVICE_NAME"
+		printUsage 'false' "$scriptName list ${gold}{ -4 | -6 } { raw | mangle | nat | filter } [CHAIN_NAME]"
+		printUsage 'false' "$scriptName log"
+		printUsage 'false' "$scriptName start { ipv4 | ipv6 } RULES_FILE"
+		printUsage 'false' "$scriptName stop { ipv4 | ipv6 }"
+		echo
+	elif [ "$command" == 'enable' ]; then
+		printUsage "$scriptName enable SERVICE_NAME"
 		echo ${romantic}
 		echo 'Enables the indicated service for the firewall'${reset}
 	elif [ "$command" == 'list' ]; then
-		printUsage "firewall list ${gold}[-4|-6] [raw|mangle|nat|filter] [CHAIN_NAME]"
+		printUsage "$scriptName list ${gold}{ -4 | -6 } { raw | mangle | nat | filter } [CHAIN_NAME]"
 		echo ${romantic}
 		echo 'List active iptables/ip6tables firewall rules'${reset}
 		echo
@@ -81,24 +106,90 @@ function showHelp() {
 		echo -e ${bold}${yellow}'  filter\t'  ${romantic}'Limit output to the FILTER table'
 		echo ${reset}
 	elif [ "$command" == 'log' ]; then
-		printUsage 'firewall log'
+		printUsage "$scriptName log"
 		echo ${romantic}
 		echo 'Display summary of packets blocked by the firewall'${reset}
+	elif [ "$command" == 'start' ]; then
+		printUsage "$scriptName start { ipv4 | ipv6 } RULES_FILE"
+		echo ${romantic}
+		echo 'Starts either iptables or ip6tables and loads the firewall rules from the specified file'${reset}
+	elif [ "$command" == 'stop' ]; then
+		printUsage "$scriptName stop { ipv4 | ipv6 }"
+		echo ${romantic}
+		echo 'Stops either iptables or ip6tables'${reset}
 	fi
 
 	# END showHelp function
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateStart
+# Description:  Performs validation for the start command
+# -----------------------------------------------------------------------------
+function validateStart() {
+	if [ -z "$ipType" ]; then
+		printError $scriptName "Missing IP protocol type"
+		echo
+		printUsage "$scriptName start { ipv4 | ipv6 } RULES_FILE"
+
+		exit 1
+	fi
+
+	if [[ ! "$ipType" =~ ^(ipv4|ipv6)$ ]]; then
+		printError $scriptName "Invalid IP protocol type: '$ipType'"
+		echo
+		printUsage "$scriptName start { ipv4 | ipv6 } RULES_FILE"
+
+		exit 1
+	fi
+
+	local errorMessage=$(isValidFile $scriptName "$rulesFile")
+
+	# Display error if file parameter is missing or invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage "$scriptName start { ipv4 | ipv6 } RULES_FILE"
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateStop
+# Description:  Performs validation for the stop command
+# -----------------------------------------------------------------------------
+function validateStop() {
+	if [ -z "$ipType" ]; then
+		printError $scriptName "Missing IP protocol type"
+		echo
+		printUsage "$scriptName stop { ipv4 | ipv6 }"
+
+		exit 1
+	fi
+
+	if [[ ! "$ipType" =~ ^(ipv4|ipv6)$ ]]; then
+		printError $scriptName "Invalid IP protocol type: '$ipType'"
+		echo
+		printUsage "$scriptName stop { ipv4 | ipv6 }"
+
+		exit 1
+	fi
 }
 
 ################################## Variables ##################################
 
 ## Bash exec variables
 EXEC_FIRELOG=/usr/local/bin/firelog
+EXEC_MODPROBE=/sbin/modprobe
 
 IPTABLES=/sbin/iptables
 IP6TABLES=/sbin/ip6tables
+IPTABLES_RESTORE=/sbin/iptables-restore
+IP6TABLES_RESTORE=/sbin/ip6tables-restore
 
 ## Options
-command="$1"
+command=${1:-}
 ipv4=true
 ipv6=true
 table=''
@@ -106,28 +197,27 @@ chain=''
 
 ## Variables
 showCommandHelp=false
-sudoCommands=('enable' 'list')
+sudoCommands=('enable' 'list' 'start' 'stop')
 validCommands=(${sudoCommands[@]} 'log')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if [ "$command" == 'help' ]; then
 	showCommandHelp=true
-	command="$2"
-	shift
+	command=${2:-}
 fi
 
 # Display usage if no parameters given
-if [ -z "$command" ]; then
-	printUsage 'firewall { enable | list | log }'
+if [ "$showCommandHelp" == 'false' ] && [ -z "$command" ]; then
+	printUsage "$scriptName { enable | list | log | start | stop }"
 	exit 1
 fi
 
 # Display error if invalid command
-if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError 'firewall' "Invalid command: '$command'"
+if [ "$command" ] && [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+	printError $scriptName "Invalid command: '$command'"
 	echo
-	printUsage 'firewall { enable | list | log }'
+	printUsage "$scriptName { enable | list | log | start | stop }"
 
 	exit 1
 fi
@@ -139,41 +229,43 @@ fi
 
 # Display error if not running as root
 if [ $(containsElement "$command" "${sudoCommands[@]}") == '0' ] && [ "$USER" != 'root' ]; then
-	printError 'firewall' 'Permission denied (you must be root)'
+	printError $scriptName 'Permission denied (you must be root)'
 	exit 1
 fi
 
 if [ "$command" == 'enable' ]; then
 
-	serviceName="$2"
+	serviceName=${2:-}
 
 	if [ -z "$serviceName" ]; then
-		printError 'firewall' "Missing SERVICE_NAME parameter"
+		printError $scriptName "Missing SERVICE_NAME parameter"
 		echo
-		printUsage 'firewall enable SERVICE_NAME'
+		printUsage "$scriptName enable SERVICE_NAME"
 
 		exit 1
 	elif [ ! -f "$SCRIPT_DIR/services/$serviceName" ]; then
-		printError 'firewall' "Invalid or unsupported service: '$serviceName'"
+		printError $scriptName "Invalid or unsupported service: '$serviceName'"
 		echo
-		printUsage 'firewall enable SERVICE_NAME'
+		printUsage "$scriptName enable SERVICE_NAME"
 
 		exit 1
 	fi
 
-else
-	# Process command-line options
-	while [[ "$2" == -* ]]; do
+elif [ "$command" == 'list' ]; then
+	option=${2:-}
 
-		if [ "$2" == '-4' ]; then
+	# Process command-line options
+	while [[ "$option" == -* ]]; do
+
+		if [ "$option" == '-4' ]; then
 			ipv4=true
 			ipv6=false
-		elif [ "$2" == '-6' ]; then
+		elif [ "$option" == '-6' ]; then
 			ipv4=false
 			ipv6=true
 		else
 			# Display error and help if option parameter is not valid
-			printError 'firewall' "Invalid option: '$2'"
+			printError $scriptName "Invalid option: '$option'"
 			echo
 			showHelp
 
@@ -181,6 +273,7 @@ else
 		fi
 
 		shift
+		option=${2:-}
 
 	done
 fi
@@ -195,7 +288,7 @@ elif [ $command == 'list' ]; then
 	# BEGIN list Command
 
 	# Process table/chain parameters
-	if [ ! -z "$2" ]; then
+	if [ "${2:-}" ]; then
 		table="${2,,}"
 
 		# Display usage and error if table parameter is not valid
@@ -207,7 +300,7 @@ elif [ $command == 'list' ]; then
 			exit 1
 		fi
 
-		if [ ! -z "$3" ]; then
+		if [ "${3:-}" ]; then
 			chain="$3"
 		fi
 	fi
@@ -281,6 +374,48 @@ elif [ $command == 'log' ]; then
 
 	$EXEC_FIRELOG
 
+elif [ $command == 'start' ]; then
+	ipType=${2:-}
+	rulesFile=${3:-}
+	validateStart
+
+	if [ "$ipType" == 'ipv6' ]; then
+		printInfo 'Loading ip6tables rules'
+		$IP6TABLES_RESTORE < "$rulesFile"
+	fi
+
+elif [ $command == 'stop' ]; then
+	ipType=${2:-}
+	validateStop
+
+	if [ "$ipType" == 'ipv6' ]; then
+		printInfo 'Clearing ip6tables RAW Table'
+		$IP6TABLES -t raw -P OUTPUT ACCEPT
+		$IP6TABLES -t raw -F
+		$IP6TABLES -t raw -X
+
+		printInfo 'Clearing ip6tables MANGLE Table'
+		$IP6TABLES -t mangle -P INPUT ACCEPT
+		$IP6TABLES -t mangle -P FORWARD ACCEPT
+		$IP6TABLES -t mangle -P OUTPUT ACCEPT
+		$IP6TABLES -t mangle -F
+		$IP6TABLES -t mangle -X
+
+		printInfo 'Clearing ip6tables NAT Table'
+		$IP6TABLES -t nat -P OUTPUT ACCEPT
+		$IP6TABLES -t nat -F
+		$IP6TABLES -t nat -X
+
+		printInfo 'Clearing ip6tables FILTER Table'
+		$IP6TABLES -t filter -P INPUT ACCEPT
+		$IP6TABLES -t filter -P FORWARD ACCEPT
+		$IP6TABLES -t filter -P OUTPUT ACCEPT
+		$IP6TABLES -t filter -F
+		$IP6TABLES -t filter -X
+
+		printInfo 'Unloading ip6tables kernel modules'
+		$EXEC_MODPROBE --remove ip6table_raw ip6table_mangle ip6table_nat ip6table_filter ip6t_frag ip6t_REJECT
+	fi
 fi
 
 exit 0

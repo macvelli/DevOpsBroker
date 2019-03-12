@@ -385,7 +385,8 @@ function validateStart() {
 		exit 0
 	fi
 
-	bridgeSlaveList=( $($EXEC_NMCLI connection show | $EXEC_GREP ^bridge-slave || true) )
+	set +o errexit
+	bridgeSlaveList=( $($EXEC_NMCLI connection show | $EXEC_AWK '/^bridge-slave/{ print $1 }') )
 
 	# Display error if no network interfaces have been configured as a bridge slave
 	if [ ${#bridgeSlaveList[@]} -eq 0 ]; then
@@ -397,27 +398,25 @@ function validateStart() {
 	fi
 
 	local master=''
-	local array=()
+	local hasSlave=false
 	for bridgeSlave in "${bridgeSlaveList[@]}"; do
-		IFS=' '; bridgeSlave=( $bridgeSlave ); IFS=$'\n\t'
-
 		master=$($EXEC_NMCLI -f connection.master connection show $bridgeSlave | $EXEC_AWK '{ print $2 }')
 
 		if [ $master == $bridgeName ]; then
-			array+=( $bridgeSlave )
+			hasSlave=true
+			break;
 		fi
 	done
 
 	# Display error if no network interfaces have been configured as a slave for the bridge
-	if [ ${#array[@]} -eq 0 ]; then
+	if [ "$hasSlave" == 'false' ]; then
 		printError $scriptName "Incomplete bridge '$bridgeName': No bridge slaves exist"
 		echo
 		printUsage "$scriptName add link LINK_NAME $bridgeName"
 
 		exit 1
 	fi
-
-	bridgeSlaveList=( ${array[@]} )
+	set -o errexit
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -440,40 +439,6 @@ function validateStop() {
 		printNotice $scriptName "Bridge interface '$bridgeName' has already been stopped"
 		exit 0
 	fi
-
-	bridgeSlaveList=( $($EXEC_NMCLI connection show | $EXEC_GREP ^bridge-slave || true) )
-
-	# Display error if no network interfaces have been configured as a bridge slave
-	if [ ${#bridgeSlaveList[@]} -eq 0 ]; then
-		printError $scriptName "Incomplete bridge '$bridgeName': No bridge slaves exist"
-		echo
-		printUsage "$scriptName add link LINK_NAME $bridgeName"
-
-		exit 1
-	fi
-
-	local master=''
-	local array=()
-	for bridgeSlave in "${bridgeSlaveList[@]}"; do
-		IFS=' '; bridgeSlave=( $bridgeSlave ); IFS=$'\n\t'
-
-		master=$($EXEC_NMCLI -f connection.master connection show $bridgeSlave | $EXEC_AWK '{ print $2 }')
-
-		if [ $master == $bridgeName ]; then
-			array+=( $bridgeSlave )
-		fi
-	done
-
-	# Display error if no network interfaces have been configured as a slave for the bridge
-	if [ ${#array[@]} -eq 0 ]; then
-		printError $scriptName "Incomplete bridge '$bridgeName': No bridge slaves exist"
-		echo
-		printUsage "$scriptName add link LINK_NAME $bridgeName"
-
-		exit 1
-	fi
-
-	bridgeSlaveList=( ${array[@]} )
 }
 
 ################################## Variables ##################################
@@ -522,7 +487,9 @@ if [ $command == 'add' ]; then
 		printInfo "Adding network interface '$linkName' to bridge interface '$bridgeName'"
 
 		if [ -f $EXEC_NMCLI ]; then
-			$EXEC_NMCLI connection add type bridge-slave ifname $linkName master $bridgeName
+			$EXEC_NMCLI connection add type bridge-slave \
+				ifname $linkName master $bridgeName \
+				connection.autoconnect no
 		fi
 	elif [ $interfaceType == 'tap' ]; then
 
@@ -561,6 +528,14 @@ elif [ $command == 'create' ]; then
 		$EXEC_NMCLI connection add type bridge \
 			ifname $bridgeName con-name $bridgeName \
 			connection.autoconnect no \
+			connection.autoconnect-slaves 1 \
+			ipv4.dns-priority 100 \
+			ipv4.route-metric 100 \
+			ipv4.ignore-auto-dns yes \
+			ipv6.dns-priority 100 \
+			ipv6.route-metric 100 \
+			ipv6.ignore-auto-dns yes \
+			ipv6.may-fail yes \
 			bridge.forward-delay 4 bridge.stp no
 	else
 		$EXEC_IP link add $bridgeName type bridge forward_delay 4 stp_state 0
@@ -641,34 +616,17 @@ elif [ $command == 'start' ]; then
 	bridgeName=${2:-}
 	validateStart
 
-	# Bring down each network interface connection that is a part of the bridge
-	for bridgeSlave in "${bridgeSlaveList[@]}"; do
-		IFS='-'; linkName=( $bridgeSlave ); IFS=$'\n\t'
-
-		linkName=${linkName[2]}
-
-		printInfo "Bringing down network interface '$linkName'"
-		set +o errexit
-		$EXEC_NMCLI connection down id $linkName
-		set -o errexit
-
-		printInfo "Bringing up bridge slave '$bridgeSlave'"
-		$EXEC_NMCLI connection up $bridgeSlave
-	done
-
 	printInfo "Bringing up bridge interface '$bridgeName'"
-	$EXEC_NMCLI connection up $bridgeName
+	$EXEC_NMCLI connection up id $bridgeName 1>/dev/null
+	sleep 1
 
-	tapList=( $($EXEC_NMCLI connection show | $EXEC_GREP [[:blank:]]tun[[:blank:]] || true) )
+	tapList=( $($EXEC_NMCLI connection show | $EXEC_AWK '/[[:blank:]]tun[[:blank:]]/{ print $1 }' || true) )
 
 	# Set the TX queue length on every tap interface
-	for tap in "${tapList[@]}"; do
-		IFS=' '; tapLink=( $tap ); IFS=$'\n\t'
-
+	for tapLink in "${tapList[@]}"; do
 		if [ $($EXEC_NMCLI -f connection.master connection show $tapLink | $EXEC_AWK '{ print $2 }') == "$bridgeName" ]; then
-			printInfo "Bringing up tap interface '$tapLink'"
-			$EXEC_NMCLI connection up $tapLink
-			$EXEC_IP link set $tapLink txqueuelen 64
+			printInfo "Configuring txqueuelen on tap interface '$tapLink'"
+			$EXEC_IP link set $tapLink txqueuelen 32
 		fi
 	done
 
@@ -677,17 +635,7 @@ elif [ $command == 'stop' ]; then
 	validateStop
 
 	printInfo "Bringing down bridge interface '$bridgeName'"
-	$EXEC_NMCLI connection down id $bridgeName
-
-	# Bring up each network interface connection that was part of the bridge
-	for bridgeSlave in "${bridgeSlaveList[@]}"; do
-		IFS='-'; linkName=( $bridgeSlave ); IFS=$'\n\t'
-
-		linkName=${linkName[2]}
-
-		printInfo "Bringing up network interface '$linkName'"
-		$EXEC_NMCLI connection up id $linkName
-	done
+	$EXEC_NMCLI connection down id $bridgeName 1>/dev/null
 fi
 
 exit 0
