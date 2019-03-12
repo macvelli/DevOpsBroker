@@ -28,11 +28,14 @@
 
 [Unit]
 Description=Load iptables and ip6tables firewall rules on system startup
+Wants=network-pre.target
+DefaultDependencies=no
 
 [Service]
 Type=oneshot
-ExecStart=/etc/network/load-firewall-rules.sh
-ExecStartPost=/etc/network/setup-nf-conntrack.sh
+RemainAfterExit=yes
+
+ExecStart=/etc/network/firewall-restore.sh
 
 [Install]
 WantedBy=network-pre.target

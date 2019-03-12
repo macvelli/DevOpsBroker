@@ -32,6 +32,7 @@
 
 set -o errexit                 # Exit if any statement returns a non-true value
 set -o nounset                 # Exit if use an uninitialised variable
+set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
 
 ################################## Variables ##################################
 
@@ -41,8 +42,8 @@ IP6TABLES_RESTORE=/sbin/ip6tables-restore
 EXEC_SYSCTL=/sbin/sysctl
 
 ## Variables
-NF_CONNTRACK_MAX=$(/bin/cat /sys/module/nf_conntrack/parameters/hashsize)
-NF_CONNTRACK_EXPECT_MAX=$(/bin/cat /sys/module/nf_conntrack/parameters/expect_hashsize)
+NF_CONNTRACK_MAX=''
+NF_CONNTRACK_EXPECT_MAX=''
 
 ################################### Actions ###################################
 
@@ -63,6 +64,9 @@ fi
 #
 
 /usr/bin/logger -p syslog.notice -i [20-nf_conntrack] Setting net.netfilter.nf_conntrack kernel parameters;
+
+NF_CONNTRACK_MAX=$(/bin/cat /sys/module/nf_conntrack/parameters/hashsize)
+NF_CONNTRACK_EXPECT_MAX=$(/bin/cat /sys/module/nf_conntrack/parameters/expect_hashsize)
 
 # Optimize generic timeout to 2 minutes
 $EXEC_SYSCTL -w net.netfilter.nf_conntrack_generic_timeout=120

@@ -36,10 +36,12 @@
 # o /etc/devops/functions-admin.conf
 # o /etc/devops/functions-io.conf
 # o /etc/modprobe.d/nf_conntrack.conf
+# o /etc/network/firewall-restore.sh
 # o /etc/pam.d/common-session
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
 # o /etc/sysctl.d/40-ipv6-enable.conf
+# o /etc/systemd/system/iptables.service
 #
 # Other configuration tasks include:
 # o Disable root login
@@ -205,6 +207,13 @@ if [ ! -f /etc/modprobe.d/nf_conntrack.conf ] || \
 	echoOnExit=true
 fi
 
+# Install /etc/network/firewall-restore.sh
+installConfig 'firewall-restore.sh' "$SCRIPT_DIR"/network /etc/network
+
+if [ "$INSTALL_CONFIG" == 'true' ]; then
+	$EXEC_CHMOD 755 /etc/network/firewall-restore.sh
+fi
+
 # Install /etc/pam.d/common-session
 installConfig 'common-session' "$SCRIPT_DIR"/pam.d /etc/pam.d
 
@@ -229,6 +238,19 @@ fi
 
 # Install /etc/sysctl.d/40-ipv6-enable.conf
 installConfig '40-ipv6-enable.conf' "$SCRIPT_DIR"/sysctl.d /etc/sysctl.d
+
+# Install /etc/systemd/system/iptables.service
+installConfig 'iptables.service' "$SCRIPT_DIR"/systemd/system /etc/systemd/system
+
+if [ "$INSTALL_CONFIG" == 'true' ]; then
+	$EXEC_SYSTEMCTL daemon-reload
+
+	printInfo 'Enabling iptables.service'
+	$EXEC_SYSTEMCTL enable iptables.service
+
+	printInfo 'Starting iptables.service'
+	$EXEC_SYSTEMCTL start iptables.service
+fi
 
 #
 # Disable root login
