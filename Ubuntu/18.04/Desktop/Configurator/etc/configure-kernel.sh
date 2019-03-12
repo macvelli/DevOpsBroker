@@ -162,12 +162,9 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
 	# Execute template script
 	"$sysctlConf" > "$TMPDIR"/sysctl.conf
 
-	if [ -f "$TMPDIR"/sysctl.conf ]; then
+	if [ -f "$TMPDIR/sysctl.conf" ] && [ -s "$TMPDIR/sysctl.conf" ]; then
 		# Install as root:root with rw-r--r-- privileges
 		$EXEC_INSTALL -b --suffix .orig -o root -g root -m 644 "$TMPDIR"/sysctl.conf /etc
-
-		# Clean up
-		$EXEC_RM "$TMPDIR"/sysctl.conf
 
 		printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
 		echo
@@ -175,6 +172,9 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/sysctl.conf; then
 
 		echoOnExit=true
 	fi
+
+	# Clean up
+	$EXEC_RM "$TMPDIR"/sysctl.conf
 
 elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "${1:-}" == '-f' ]; then
 
@@ -186,12 +186,9 @@ elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "${1:-}" == '-f' ]; then
 	# Execute template script
 	"$sysctlConf" > "$TMPDIR"/sysctl.conf
 
-	if [ -f "$TMPDIR"/sysctl.conf ]; then
+	if [ -f "$TMPDIR/sysctl.conf" ] && [ -s "$TMPDIR/sysctl.conf" ]; then
 		# Install as root:root with rw-r--r-- privileges
 		$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$TMPDIR"/sysctl.conf /etc
-
-		# Clean up
-		$EXEC_RM "$TMPDIR"/sysctl.conf
 
 		printInfo 'Load kernel tuning parameters from /etc/sysctl.conf'
 		echo
@@ -199,6 +196,9 @@ elif [ "$sysctlConf" -nt /etc/sysctl.conf ] || [ "${1:-}" == '-f' ]; then
 
 		echoOnExit=true
 	fi
+
+	# Clean up
+	$EXEC_RM "$TMPDIR"/sysctl.conf
 fi
 
 if [ "$echoOnExit" == 'true' ]; then

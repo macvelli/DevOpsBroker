@@ -191,6 +191,9 @@ createSymlink /usr/local/sbin/configure-apt-mirror "$INSTALL_DIR"/etc/apt/config
 # Make symlink to etc/default/configure-grub.sh
 createSymlink /usr/local/sbin/configure-grub "$INSTALL_DIR"/etc/default/configure-grub.sh
 
+# Make symlink to etc/netplan/configure-netplan.sh
+createSymlink /usr/local/sbin/configure-netplan "$INSTALL_DIR"/etc/netplan/configure-netplan.sh
+
 # Make symlink to etc/network/ip6tables-private.sh
 createSymlink /usr/local/sbin/ip6tables-private "$INSTALL_DIR"/etc/network/ip6tables-private.sh
 

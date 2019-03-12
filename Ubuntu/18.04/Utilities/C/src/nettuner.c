@@ -586,10 +586,6 @@ void printNetworkKernelTuningConfig(SysctlSettings *sysctlSettings) {
 	printf("net.core.wmem_default = %u\n", sysctlSettings->wmem_default);
 	printf("net.core.wmem_max = %u\n\n", sysctlSettings->wmem_max);
 
-	puts(  "# Accept IPv6 Router Advertisements");
-	puts(  "net.ipv6.conf.all.accept_ra = 1");
-	puts(  "net.ipv6.conf.default.accept_ra = 1\n");
-
 	puts(  "# Do not accept source routed packets");
 	puts(  "net.ipv4.conf.all.accept_source_route = 0");
 	puts(  "net.ipv6.conf.all.accept_source_route = 0");
