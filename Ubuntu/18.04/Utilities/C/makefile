@@ -168,6 +168,11 @@ bin/scriptinfo: obj/scriptinfo.o obj/scriptinfo.linux.o
 	/usr/bin/strip -s $@
 
 # Have to put the library at the end else the linker blows chunks
+bin/trim: obj/trim.o
+	$(call printInfo,Creating $(@) executable)
+	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+
+# Have to put the library at the end else the linker blows chunks
 bin/verifyclass: obj/verifyclass.o
 	$(call printInfo,Creating $(@) executable)
 	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@

@@ -99,7 +99,7 @@ function showMissingFilename() {
 EXEC_SHA256SUM=/usr/bin/sha256sum
 
 ## Options
-command="$1"
+command=${1:-}
 
 ## Variables
 validCommands=('pgp' 'sha256' 'sign')
@@ -123,31 +123,31 @@ fi
 
 if [ "$command" == 'sha256' ]; then
 	# File is the second parameter
-	fileName="$2"
+	fileName="${2:-}"
 
 	# SHA256 Hash is the third parameter
-	sha256Hash="$3"
+	sha256Hash=${3:-}
 
 elif [ "$command" == 'sign' ]; then
 
-	if [ "$2" == '-a' ]; then
+	if [ "${2:-}" == '-a' ]; then
 		asciiFormat='true'
 
 		# File is the third parameter
-		fileName="$3"
+		fileName="${3:-}"
 	else
 		asciiFormat='false'
 
 		# File is the second parameter
-		fileName="$2"
+		fileName="${2:-}"
 	fi
 
 elif [ "$command" == 'pgp' ]; then
 	# File is the second parameter
-	fileName="$2"
+	fileName="${2:-}"
 
 	# Signature file is the third parameter
-	sigFile="$3"
+	sigFile="${3:-}"
 
 	errorMessage=$(isValidFile 'verify' "$sigFile")
 

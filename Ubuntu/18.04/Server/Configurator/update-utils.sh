@@ -272,11 +272,14 @@ installUserUtility scriptinfo
 # Install showFileFormat user utility
 installUserUtility showFileFormat
 
-# Install ssh-key user utility
-installUserUtility ssh-key
+# Install sshbroker user utility
+installUserUtility sshbroker
 
 # Install symlink user utility
 installUserUtility symlink
+
+# Install trim user utility
+installUserUtility trim
 
 # Install udev user utility
 installUserUtility udev

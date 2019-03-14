@@ -91,16 +91,40 @@ function validateBash() {
 	if [ -z "$snippetName" ]; then
 		printError $scriptName 'Missing snippet name parameter'
 		echo
-		printUsage "$scriptName $command { arraylength | arrayloop | selectmenu }"
+		printUsage "$scriptName $command { arraylength | arrayloop | forloop | selectmenu }"
 
 		exit 1
 	fi
 
 	# Display error if snippet name parameter is invalid
-	if [[ ! "$snippetName" =~ ^(arraylength|arrayloop|selectmenu)$ ]]; then
+	if [[ ! "$snippetName" =~ ^(arraylength|arrayloop|forloop|selectmenu)$ ]]; then
 		printError $scriptName "Invalid $command snippet: '$snippetName'"
 		echo
-		printUsage "$scriptName $command { arraylength | arrayloop | selectmenu }"
+		printUsage "$scriptName $command { arraylength | arrayloop | forloop | selectmenu }"
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateGCC
+# Description:  Performs validation for the gcc command
+# -----------------------------------------------------------------------------
+function validateGCC() {
+	# Display error if snippet name parameter is missing
+	if [ -z "$snippetName" ]; then
+		printError $scriptName 'Missing snippet name parameter'
+		echo
+		printUsage "$scriptName $command { customlib }"
+
+		exit 1
+	fi
+
+	# Display error if snippet name parameter is invalid
+	if [[ ! "$snippetName" =~ ^(customlib)$ ]]; then
+		printError $scriptName "Invalid $command snippet: '$snippetName'"
+		echo
+		printUsage "$scriptName $command { customlib }"
 
 		exit 1
 	fi
@@ -113,9 +137,9 @@ command=${1:-}
 snippetName=${2:-}
 
 ## Variables
-validCommands=('asm' 'bash')
+validCommands=('asm' 'bash' 'gcc')
 
-usageMessage="$scriptName { asm | bash } SNIPPET_NAME"
+usageMessage="$scriptName { asm | bash | gcc } SNIPPET_NAME"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -154,6 +178,29 @@ elif [ $command == 'bash' ]; then
 		echo 'for i in "${array[@]}"; do'
 		echo '	echo $i'
 		echo 'done'
+	elif [ $snippetName == 'forloop' ]; then
+		echo 'for i in 1 2 3 4 5; do'
+		echo '	echo "Number: $i"'
+		echo 'done'
+		echo
+		echo 'for i in {1..5}; do'
+		echo '	echo "Number: $i"'
+		echo 'done'
+		echo
+		echo 'for i in {0..10..2}; do'
+		echo '	echo "Number: $i"'
+		echo 'done'
+		echo
+		echo 'for (( i=1; i<=5; i++ )); do'
+		echo '	echo "Index: $i"'
+		echo 'done'
+		echo
+		echo 'for file in /etc/*; do'
+		echo '	if [ "${file}" == "/etc/resolv.conf" ]; then'
+		echo '		echo "Found it!"'
+		echo '		break'
+		echo '	fi'
+		echo 'done'
 	elif [ $snippetName == 'selectmenu' ]; then
 		echo "select confirmDelete in 'Yes' 'No'; do"
 		echo "	if [ \$confirmDelete == 'Yes' ]; then"
@@ -161,6 +208,13 @@ elif [ $command == 'bash' ]; then
 		echo "	fi"
 		echo "	break;"
 		echo "done"
+	fi
+
+elif [ $command == 'gcc' ]; then
+	validateGCC
+
+	if [ $snippetName == 'customlib' ]; then
+		echo 'gcc foobar.c -Ldir -llib -o foobar'
 	fi
 fi
 

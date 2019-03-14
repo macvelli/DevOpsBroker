@@ -453,8 +453,8 @@ fi
 if [ ! -f "$userhome"/.ssh/config ]; then
 	printInfo 'Installing sample SSH client configuration'
 
-	# Install as $username:$username with rw-r----- privileges
-	$EXEC_INSTALL -o $username -g $username -m 640 "$SCRIPT_DIR"/ssh/config "$userhome"/.ssh
+	# Install as $username:$username with rw------- privileges
+	$EXEC_INSTALL -o $username -g $username -m 600 "$SCRIPT_DIR"/ssh/config "$userhome"/.ssh
 fi
 
 #
@@ -468,10 +468,12 @@ if [ ! -f "$userhome"/.config/systemd/user/ssh-agent.service ]; then
 	$EXEC_INSTALL -o $username -g $username -m 644 "$SCRIPT_DIR"/systemd/ssh-agent.service "$userhome"/.config/systemd/user
 
 	# Need XDG_RUNTIME_DIR and DBUS_SESSION_BUS_ADDRESS
-	printInfo 'Enable systemd user service ssh-agent.service'
+	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user daemon-reload
+
+	printInfo 'Enabling systemd user service ssh-agent.service'
 	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user enable ssh-agent.service
 
-	printInfo 'Start systemd user service ssh-agent.service'
+	printInfo 'Starting systemd user service ssh-agent.service'
 	$EXEC_SUDO -u $username XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" $EXEC_SYSTEMCTL --user start ssh-agent.service
 fi
 
