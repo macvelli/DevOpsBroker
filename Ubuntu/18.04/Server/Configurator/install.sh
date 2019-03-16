@@ -236,6 +236,9 @@ createSymlink /usr/local/sbin/configure-unbound "$INSTALL_DIR"/etc/unbound/confi
 # Make symlink to home/configure-user.sh
 createSymlink /usr/local/sbin/configure-user "$INSTALL_DIR"/home/configure-user.sh
 
+# Make symlink to usr/share/logwatch/default.conf/configure-logwatch.sh
+createSymlink /usr/local/sbin/configure-logwatch "$INSTALL_DIR"/usr/share/logwatch/default.conf/configure-logwatch.sh
+
 # Create /etc/devops directory
 if [ ! -d /etc/devops ]; then
 	printInfo 'Creating /etc/devops directory'

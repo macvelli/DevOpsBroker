@@ -146,6 +146,7 @@ installConfig 'adduser.conf' "$SCRIPT_DIR" /etc
 installConfig 'bash.bashrc' "$SCRIPT_DIR" /etc
 
 # Install /etc/hosts
+set +o errexit
 if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/hosts; then
 	printBanner 'Installing /etc/hosts'
 
@@ -158,6 +159,7 @@ if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/hosts; then
 	# Clean up
 	$EXEC_RM "$TMPDIR"/hosts
 fi
+set -o errexit
 
 # Install /etc/modules
 installConfig 'modules' "$SCRIPT_DIR" /etc

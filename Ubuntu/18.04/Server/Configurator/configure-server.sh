@@ -358,6 +358,9 @@ if [ -z "$isGCPKernel" ]; then
 	installPackage '/usr/share/doc/linux-generic-hwe-18.04/copyright' 'linux-generic-hwe-18.04'
 fi
 
+# Install logwatch
+installPackage '/usr/sbin/logwatch' 'logwatch'
+
 # Install mmdblookup
 installPackage '/usr/bin/mmdblookup' 'mmdb-bin'
 
@@ -513,6 +516,13 @@ fi
 
 # Configure the user with configure-user.sh script
 "$SCRIPT_DIR"/home/configure-user.sh $SUDO_USER
+
+#
+# LogWatch Configuration
+#
+
+# Configure LogWatch with configure-logwatch.sh script
+"$SCRIPT_DIR"/usr/share/logwatch/default.conf/configure-logwatch.sh
 
 # Uninstall dnsmasq
 uninstallPackage '/etc/dnsmasq.conf' 'dnsmasq'
