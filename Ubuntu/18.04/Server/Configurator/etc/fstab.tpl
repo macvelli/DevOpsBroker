@@ -73,7 +73,7 @@ fi
 # Description:  Prints the /etc/fstab entry list for the template
 # -----------------------------------------------------------------------------
 function printEntryList() {
-	for fstabEntry in "${fstabEntryList[@]}"; do
+	for fstabEntry in "${fstabOutputList[@]}"; do
 		echo -e "$fstabEntry"
 	done
 }
@@ -81,40 +81,34 @@ function printEntryList() {
 ################################## Variables ##################################
 
 ## Variables
-recordEntries=false
-captureEntryList=()
-index=0
 YEAR=$($EXEC_DATE +'%Y')
+fstabOutputList=()
+index=0
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Template ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Load current /etc/fstab settings
 mapfile -t fstabEntryList < <($EXEC_CAT /etc/fstab)
 
+lineNum=0
+numEntries=${#fstabEntryList[@]}
 for fstabEntry in "${fstabEntryList[@]}"; do
-	if [[ "$fstabEntry" == "# <file system>"* ]]; then
-		recordEntries=true
-	fi
+	lineNum=$[ lineNum + 1 ]
 
-	if [ "$recordEntries" == 'true' ]; then
-		captureEntryList[index]="$fstabEntry"
-		index=$((index + 1))
+	if [[ "$fstabEntry" =~ ^(# <file system>) ]]; then
+		index=$lineNum
+		break;
 	fi
 done
 
-# Clear fstabEntryList for reuse
-fstabEntryList=()
+# Process /etc/fstab entries
+for (( i=$index; i<$numEntries; i++ )); do
+	fstabEntry="${fstabEntryList[i]}"
 
-# Process captured entries
-for capturedEntry in "${captureEntryList[@]}"; do
-	if [[ "$capturedEntry" == "# <file system>"* ]]; then
-		header=( $capturedEntry )
-
-		fstabEntryList+=( "${header[0]} ${header[1]} ${header[2]}\t\t\t\t  ${header[3]} ${header[4]}   ${header[5]}\t${header[6]}\t\t${header[7]}\t${header[8]}" )
-	elif [[ "$capturedEntry" == "#"* ]]; then
-		fstabEntryList+=( "$capturedEntry" )
+	if [[ "$fstabEntry" =~ ^# ]]; then
+		fstabOutputList+=( "$fstabEntry" )
 	else
-		entryList=( $capturedEntry )
+		unset IFS; entryList=( $fstabEntry ); IFS=$'\n\t'
 
 		entry="${entryList[0]}"
 		entryLength=${#entry}
@@ -173,10 +167,9 @@ for capturedEntry in "${captureEntryList[@]}"; do
 
 		entry="$entry\t${entryList[5]}"
 
-		fstabEntryList+=( "$entry" )
+		fstabOutputList+=( "$entry" )
 	fi
 done
-
 
 ## Template
 /bin/cat << EOF
@@ -205,6 +198,7 @@ done
 # -----------------------------------------------------------------------------
 #
 
+# <file system>				  <mount point>   <type>	<options>		<dump>	<pass>
 $(printEntryList)
 
 EOF

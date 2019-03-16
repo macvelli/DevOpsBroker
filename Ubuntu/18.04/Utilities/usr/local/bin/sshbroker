@@ -147,6 +147,7 @@ function showHelp() {
 		printUsage 'false' "$scriptName clip"
 		printUsage 'false' "$scriptName connect username@remote_server ${gold}PORT"
 		printUsage 'false' "$scriptName copy username@remote_server ${gold}PORT"
+		printUsage 'false' "$scriptName download username@remote_server:REMOTE_FILE LOCAL_DIR"
 		printUsage 'false' "$scriptName edit { gcloud }"
 		printUsage 'false' "$scriptName fingerprint"
 		printUsage 'false' "$scriptName generate { dsa | ecdsa | ed25519 | rsa } ${gold}BITS"
@@ -167,6 +168,10 @@ function showHelp() {
 		printUsage "$scriptName $command username@remote_server ${gold}PORT"
 		echo ${romantic}
 		echo 'Copies a public SSH key to username@remote_server'${reset}
+	elif [ "$command" == 'download' ]; then
+		printUsage "$scriptName $command username@remote_server:REMOTE_FILE LOCAL_DIR"
+		echo ${romantic}
+		echo 'Downloads a remote file to the local machine'${reset}
 	elif [ "$command" == 'edit' ]; then
 		printUsage "$scriptName $command { gcloud }"
 		echo ${romantic}
@@ -235,6 +240,36 @@ function validateConnect() {
 
 			exit 1
 		fi
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateDownload
+# Description:  Performs validation for the download command
+#
+# Parameters:
+#   remoteFile  The source remote file or directory to download
+#   localDir    The local destination directory
+# -----------------------------------------------------------------------------
+function validateDownload() {
+	# Display error if remoteFile parameter is missing
+	if [ -z "$remoteFile" ]; then
+		printError $scriptName 'Missing remote file parameter'
+		echo
+		printUsage "$scriptName $command username@remote_server:REMOTE_FILE LOCAL_DIR"
+
+		exit 1
+	fi
+
+	errorMessage=$(isValidDirectory $scriptName "$localDir")
+
+	# Display error if localDir parameter is invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage "$scriptName $command $remoteFile LOCAL_DIR"
+
+		exit 1
 	fi
 }
 
@@ -409,7 +444,7 @@ EXEC_XCLIP=/usr/bin/xclip
 SSH_COPY_ID=/usr/bin/ssh-copy-id
 SSH_KEYGEN=/usr/bin/ssh-keygen
 
-validCommands=('clip' 'connect' 'copy' 'edit' 'fingerprint' 'generate' 'list' 'passphrase' 'removehost' 'upload')
+validCommands=('clip' 'connect' 'copy' 'download' 'edit' 'fingerprint' 'generate' 'list' 'passphrase' 'removehost' 'upload')
 
 ## Options
 command=${1:-}
@@ -498,6 +533,16 @@ elif [ $command == 'copy' ]; then
 	else
 		$SSH_COPY_ID -i "$publicKey" -p $sshPort "$userHost"
 	fi
+
+elif [ $command == 'download' ]; then
+	remoteFile=${2:-}
+	localDir=${3:-'./'}
+	validateDownload
+
+	# Find the private key the user wants to use to upload
+	findPrivateKey
+
+	$EXEC_SCP -i "$privateKey" -p "$remoteFile" "$localDir"
 
 elif [ $command == 'edit' ]; then
 	cloudHost=${2:-}

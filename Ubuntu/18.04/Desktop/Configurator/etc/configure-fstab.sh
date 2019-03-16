@@ -82,6 +82,38 @@ fstabTpl=$(isExecutable "$SCRIPT_DIR"/fstab.tpl)
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     calcRamdiskSize
+# Description:  Calculates the ramdisk size to use based on amount of RAM in the system
+# -----------------------------------------------------------------------------
+function calcRamdiskSize() {
+	local RAM_MB=$[ $(getRamTotal) / 1024 ]
+
+	if [ $RAM_MB -le 896 ]; then
+		RAMDISK_SIZE=256
+	else
+		RAMDISK_SIZE=512
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     calcSwapfileSize
+# Description:  Calculates the swapfile size to use based on amount of RAM in the system
+# -----------------------------------------------------------------------------
+function calcSwapfileSize() {
+	local RAM_GB=$[ ($(getRamTotal) + 1048575) / 1048576 ]
+
+	if [ $RAM_GB -ge 1 ] && [ $RAM_GB -le 3 ]; then
+		SWAPFILE_SIZE=1
+	elif [ $RAM_GB -ge 4 ] && [ $RAM_GB -le 7 ]; then
+		SWAPFILE_SIZE=2
+	elif [ $RAM_GB -ge 8 ] && [ $RAM_GB -le 15 ]; then
+		SWAPFILE_SIZE=3
+	else
+		SWAPFILE_SIZE=4
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     tuneReservedBlocks
 # Description:  Tunes the Reserved Blocks setting on ext4 filesystems
 # -----------------------------------------------------------------------------
@@ -120,7 +152,10 @@ function tuneReservedBlocks() {
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_FALLOCATE=/usr/bin/fallocate
 EXEC_FINDMNT=/bin/findmnt
+EXEC_MKSWAP=/sbin/mkswap
+EXEC_SWAPON=/sbin/swapon
 EXEC_TUNE2FS=/sbin/tune2fs
 
 ## Variables
@@ -151,27 +186,8 @@ if [ -f /etc/fstab.orig ] && [ "${1:-}" != '-f' ]; then
 fi
 
 #
-# Create RAM Disk
-#
-if [ ! -d /mnt/ramdisk ]; then
-	printInfo 'Creating RAM Disk'
-
-	# Make the /mnt/ramdisk directory
-	$EXEC_MKDIR --parents --mode=0777 /mnt/ramdisk
-
-	# Add entry to /etc/fstab to mount ramdisk
-	echo '# ramdisk is on /mnt/ramdisk' >> /etc/fstab
-	echo 'ramdisk	/mnt/ramdisk	tmpfs	nosuid,nodev,noatime,comment=x-gvfs-show,size=512M	0	0' >> /etc/fstab
-
-	# Need to remount all filesystems
-	remountAll=true
-fi
-
-#
 # /etc/fstab Configuration
 #
-
-# Configure /etc/fstab
 if [ ! -f /etc/fstab.orig ]; then
 	printBanner 'Configure /etc/fstab'
 
@@ -198,6 +214,61 @@ elif [ "$1" == '-f' ]; then
 
 	# Clean up
 	$EXEC_RM "$TMPDIR"/fstab
+
+	# Need to remount all filesystems
+	remountAll=true
+fi
+
+#
+# RAM Disk Configuration
+#
+if [ ! -d /mnt/ramdisk ]; then
+	printInfo 'Creating RAM Disk'
+
+	# Make the /mnt/ramdisk directory
+	$EXEC_MKDIR --parents --mode=0777 /mnt/ramdisk
+fi
+
+if [ -z "$($EXEC_GREP ^ramdisk /etc/fstab || true)" ]; then
+	calcRamdiskSize
+
+	# Add entry to /etc/fstab to mount ramdisk
+	printInfo 'Adding ramdisk entry to /etc/fstab'
+	echo -e '\n# ramdisk is on /mnt/ramdisk' >> /etc/fstab
+
+	if [ "${XDG_CURRENT_DESKTOP:-}" == 'ubuntu:GNOME' ]; then
+		echo "ramdisk					  /mnt/ramdisk	  tmpfs		nosuid,nodev,noatime,comment=x-gvfs-show,size=${RAMDISK_SIZE}M	0	0" >> /etc/fstab
+	else
+		echo "ramdisk					  /mnt/ramdisk	  tmpfs		nosuid,nodev,noatime,size=${RAMDISK_SIZE}M	0	0" >> /etc/fstab
+	fi
+
+	# Need to remount all filesystems
+	remountAll=true
+fi
+
+#
+# swapfile Configuration
+#
+if [ -z "$($EXEC_GREP -F 'swap' /etc/fstab || true)" ]; then
+
+	if [ ! -f /swapfile ]; then
+		calcSwapfileSize
+
+		printBanner "Creating ${SWAPFILE_SIZE}G swapfile"
+
+		$EXEC_FALLOCATE -l ${SWAPFILE_SIZE}G /swapfile
+		$EXEC_CHMOD --changes 600 /swapfile
+
+		printInfo 'Setting up Linux swap area /swapfile'
+		$EXEC_MKSWAP /swapfile
+
+		printInfo 'Activating swap file /swapfile'
+		$EXEC_SWAPON /swapfile
+	fi
+
+	printInfo 'Adding swapfile entry to /etc/fstab'
+	echo -e "\n# swap is located in /swapfile" >> /etc/fstab
+	echo -e "/swapfile				  swap		  swap		defaults,noatime	0	0" >> /etc/fstab
 
 	# Need to remount all filesystems
 	remountAll=true
