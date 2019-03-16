@@ -157,6 +157,9 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Utility Updater" 'true'
 # Install addUserToGroup system administration utility
 installSystemUtility addUserToGroup
 
+# Install appbroker system administration utility
+installSystemUtility appbroker
+
 # Install bindmount system administration utility
 installSystemUtility bindmount
 

@@ -82,6 +82,29 @@ fstabTpl=$(isExecutable "$SCRIPT_DIR"/fstab.tpl)
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     calcSwapfileSize
+# Description:  Calculates the swapfile size to use based on amount of RAM in the system
+# -----------------------------------------------------------------------------
+function calcSwapfileSize() {
+	local RAM_GB=$[ ($(getRamTotal) + 1048575) / 1048576 ]
+
+	case $RAM_GB in
+		[1-3])
+			SWAPFILE_SIZE=1
+			;;
+		[4-7])
+			SWAPFILE_SIZE=2
+			;;
+		[8-15])
+			SWAPFILE_SIZE=3
+			;;
+		*)
+			SWAPFILE_SIZE=4
+			;;
+	esac
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     tuneReservedBlocks
 # Description:  Tunes the Reserved Blocks setting on ext4 filesystems
 # -----------------------------------------------------------------------------
@@ -120,7 +143,10 @@ function tuneReservedBlocks() {
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_FALLOCATE=/usr/bin/fallocate
 EXEC_FINDMNT=/bin/findmnt
+EXEC_MKSWAP=/sbin/mkswap
+EXEC_SWAPON=/sbin/swapon
 EXEC_TUNE2FS=/sbin/tune2fs
 
 ## Variables
@@ -171,7 +197,6 @@ fi
 # /etc/fstab Configuration
 #
 
-# Configure /etc/fstab
 if [ ! -f /etc/fstab.orig ]; then
 	printBanner 'Configure /etc/fstab'
 
@@ -201,6 +226,29 @@ elif [ "$1" == '-f' ]; then
 
 	# Need to remount all filesystems
 	remountAll=true
+fi
+
+#
+# swapfile Configuration
+#
+
+if [ -z "$($EXEC_GREP -F 'swap' /etc/fstab)" ]; then
+	calcSwapfileSize
+
+	printBanner "Creating ${SWAPFILE_SIZE}G swapfile"
+
+	$EXEC_FALLOCATE -l ${SWAPFILE_SIZE}G /swapfile
+	$EXEC_CHMOD --changes 600 /swapfile
+
+	printInfo 'Setting up Linux swap area /swapfile'
+	$EXEC_MKSWAP /swapfile
+
+	printInfo 'Activating swap file /swapfile'
+	$EXEC_SWAPON /swapfile
+
+	printInfo 'Adding swapfile entry to /etc/fstab'
+	echo -e "\n# swap is located in /swapfile" >> /etc/fstab
+	echo -e "/swapfile				  swap		  swap		defaults,noatime	0	0\n" >> /etc/fstab
 fi
 
 # Remount all filesystems

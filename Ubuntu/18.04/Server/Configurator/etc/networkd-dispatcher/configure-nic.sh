@@ -161,9 +161,11 @@ if [ ! -f /etc/networkd-dispatcher/routable.d/tune-$NIC ]; then
 	# Clean up
 	$EXEC_RM "$TMPDIR"/tune-$NIC
 
-	printInfo "Restarting $NIC interface"
-	echo
-	$EXEC_IP link set $NIC down && $EXEC_IP link set $NIC up
+	if [ -z "${SSH_CLIENT:-}" ]; then
+		printInfo "Restarting $NIC interface"
+		echo
+		$EXEC_IP link set $NIC down && $EXEC_IP link set $NIC up
+	fi
 
 	echoOnExit=true
 
@@ -179,9 +181,11 @@ elif [ "$EXEC_NETTUNER" -nt /etc/networkd-dispatcher/routable.d/tune-$NIC ]; the
 	# Clean up
 	$EXEC_RM "$TMPDIR"/tune-$NIC
 
-	printInfo "Restarting $NIC interface"
-	echo
-	$EXEC_IP link set $NIC down && $EXEC_IP link set $NIC up
+	if [ -z "${SSH_CLIENT:-}" ]; then
+		printInfo "Restarting $NIC interface"
+		echo
+		$EXEC_IP link set $NIC down && $EXEC_IP link set $NIC up
+	fi
 
 	echoOnExit=true
 fi

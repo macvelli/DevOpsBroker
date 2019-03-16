@@ -234,20 +234,21 @@ if [ "$($EXEC_LSCPU | $EXEC_AWK '/Vendor ID:/{ print $3 }')" == 'AuthenticAMD' ]
 	IS_AMD=1
 fi
 
+# Execute an 'apt update' to refresh the local APT package cache
+$EXEC_APT update
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^enp[a-z0-9]+')
+mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^(enp|ens)[a-z0-9]+')
 
 if [ ${#ethList[@]} -eq 1 ]; then
 	DEFAULT_NIC=(${ethList[0]})
 else
-	OLD_COLUMNS=$COLUMNS
 	COLUMNS=1
 	echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
 	select DEFAULT_NIC in ${ethList[@]}; do
 		break;
 	done
-	COLUMNS=$OLD_COLUMNS
 fi
 
 echo "${bold}${yellow}Where is this Ubuntu Server deployed?${white}"
@@ -318,7 +319,11 @@ if [ $IS_KVM -eq 1 ]; then
 		# TODO: /etc/netplan/50-cloud-init.yaml needs to be replaced by this configuration
 
 		uninstallPackage '/usr/bin/growpart' 'cloud-guest-utils'
-		uninstallPackage '/usr/bin/lxd' 'lxd lxd-client lxcfs'
+		uninstallPackage '/usr/bin/lxd' 'lxd'
+		uninstallPackage '/usr/bin/lxc' 'lxd-client'
+		uninstallPackage '/usr/bin/lxcfs' 'lxcfs'
+		uninstallPackage '/usr/share/doc/liblxc1/copyright' 'liblxc1'
+		uninstallPackage '/usr/share/doc/liblxc-common/copyright' 'liblxc-common'
 	fi
 fi
 
@@ -344,7 +349,10 @@ installPackage '/usr/bin/ioping' 'ioping'
 uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
 
 # Install linux-generic-hwe-18.04
-installPackage '/usr/share/doc/linux-generic-hwe-18.04/copyright' 'linux-generic-hwe-18.04'
+isGCPKernel="$( /bin/uname -r | $EXEC_GREP gcp$ )"
+if [ -z "$isGCPKernel" ]; then
+	installPackage '/usr/share/doc/linux-generic-hwe-18.04/copyright' 'linux-generic-hwe-18.04'
+fi
 
 # Install mmdblookup
 installPackage '/usr/bin/mmdblookup' 'mmdb-bin'
@@ -390,7 +398,8 @@ installPackage '/usr/sbin/sshd' 'openssh-server'
 installPackage '/usr/lib/openssh/sftp-server' 'openssh-sftp-server'
 
 # Uninstall snapd
-uninstallPackage '/usr/bin/snap' 'snapd squashfs-tools'
+uninstallPackage '/usr/bin/snap' 'snapd'
+uninstallPackage '/usr/bin/mksquashfs' 'squashfs-tools'
 
 # Install speedtest-cli
 installPackage '/usr/bin/speedtest-cli' 'speedtest-cli'
@@ -413,6 +422,9 @@ installPackage '/usr/bin/tree' 'tree'
 
 # Install unbound
 installPackage '/usr/sbin/unbound' 'unbound'
+
+# Install util-linux
+installPackage '/bin/dmesg' 'util-linux'
 
 # Install whois
 installPackage '/usr/bin/whois' 'whois'

@@ -89,6 +89,13 @@ sysctlConfig=''
 
 ################################### Actions ###################################
 
+# Clear screen only if called from command line
+if [ $SHLVL -eq 1 ]; then
+	clear
+fi
+
+printBox "DevOpsBroker $UBUNTU_RELEASE Netplan Configurator" 'true'
+
 #
 # Remove 50-cloud-init.yaml
 #
@@ -100,7 +107,7 @@ fi
 #
 # Configure network interfaces
 #
-mapfile -t ethInterfaceList < <( $EXEC_IP -br link show | $EXEC_AWK '/^enp/{ print $1 }' )
+mapfile -t ethInterfaceList < <( $EXEC_IP -br link show | $EXEC_AWK '/^(enp|ens)/{ print $1 }' )
 
 COLUMNS=1
 for ethInterface in "${ethInterfaceList[@]}"; do
@@ -163,13 +170,19 @@ for ethInterface in "${ethInterfaceList[@]}"; do
 			IPv6_GATEWAY=''
 
 			# Retrieve the current IPv6 configuration
+			set +o errexit
+
 			ethInfo=( $($EXEC_DERIVESUBNET -6 $ethInterface) )
 
-			if [ $? -eq 0 ]; then
-				IPv6_ADDRESS_GLOBAL=${ethInfo[0]}
-				IPv6_ADDRESS_LOCAL=${ethInfo[1]}
-				IPv6_GATEWAY=${ethInfo[2]}
+			if [ $? -ne 0 ]; then
+				exit 0
 			fi
+
+			set -o errexit
+
+			IPv6_ADDRESS_GLOBAL=${ethInfo[0]}
+			IPv6_ADDRESS_LOCAL=${ethInfo[1]}
+			IPv6_GATEWAY=${ethInfo[2]}
 
 			# Procure the IPv6 global address
 			read -p "${bold}${green}What is the IPv6 global address?: ${reset}" -i "$IPv6_ADDRESS_GLOBAL" -e IPv6_ADDRESS_GLOBAL
@@ -234,13 +247,22 @@ for ethInterface in "${ethInterfaceList[@]}"; do
 			sysctlConfig="${sysctlConfig}net.ipv6.conf.$ethInterface.accept_dad = 0\n"
 			sysctlConfig="${sysctlConfig}net.ipv6.conf.$ethInterface.dad_transmits = 0\n"
 		else
+			MAC_ADDRESS="$($EXEC_IP -br link show $ethInterface | $EXEC_AWK '{ print $3 }')"
+
 			netplanConfig="$netplanConfig        $ethInterface:\n"
 			netplanConfig="$netplanConfig            wakeonlan: false\n"
 			netplanConfig="$netplanConfig            dhcp4: yes\n"
+			netplanConfig="$netplanConfig            match:\n"
+			netplanConfig="$netplanConfig                 macaddress: $MAC_ADDRESS\n"
+			netplanConfig="$netplanConfig            set-name: $ethInterface\n"
 		fi
 
 	fi
 done
+
+if [ -z "$netplanConfig" ]; then
+	exit 0
+fi
 
 #
 # Backup 41-ipv6-static.conf

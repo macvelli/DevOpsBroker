@@ -134,6 +134,15 @@ if [ -f /etc/apt/sources.list.orig ] && [ $forceReconfig == 'false' ]; then
 	exit 0
 fi
 
+# Check if we are on a Google Compute Engine virtual machine
+isGCEMachine="$( $EXEC_GREP -o --max-count=1 'http://.*\.gce\..*/ubuntu/' /etc/apt/sources.list )"
+
+if [ "$isGCEMachine" ]; then
+	printInfo 'APT Mirror already configured for Google Compute Engine'
+	$EXEC_CP -a /etc/apt/sources.list /etc/apt/sources.list.orig
+	exit 0
+fi
+
 if ! $EXEC_GREP -Fq 'DevOpsBroker' /etc/apt/sources.list || [ $forceReconfig == 'true' ]; then
 	# BEGIN Configure apt mirror site
 

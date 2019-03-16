@@ -152,6 +152,7 @@ function showHelp() {
 		printUsage 'false' "$scriptName generate { dsa | ecdsa | ed25519 | rsa } ${gold}BITS"
 		printUsage 'false' "$scriptName list"
 		printUsage 'false' "$scriptName passphrase"
+		printUsage 'false' "$scriptName removehost SSH_HOST"
 		printUsage 'false' "$scriptName upload { FILE | DIR } username@remote_server:REMOTE_DIR"
 		echo
 	elif [ "$command" == 'clip' ]; then
@@ -186,6 +187,10 @@ function showHelp() {
 		printUsage "$scriptName $command"
 		echo ${romantic}
 		echo 'Change the passphrase of an existing private SSH key'${reset}
+	elif [ "$command" == 'removehost' ]; then
+		printUsage "$scriptName $command SSH_HOST"
+		echo ${romantic}
+		echo 'Removes an SSH host from the known_hosts file'${reset}
 	elif [ "$command" == 'upload' ]; then
 		printUsage "$scriptName $command { FILE | DIR } username@remote_server:REMOTE_DIR"
 		echo ${romantic}
@@ -335,6 +340,24 @@ function validateGenerate() {
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateRemoveHost
+# Description:  Performs validation for the removehost command
+#
+# Parameters:
+#   sshHost     The SSH host to remove from the known_hosts file
+# -----------------------------------------------------------------------------
+function validateRemoveHost() {
+	# Display error if sshHost parameter is missing
+	if [ -z "$sshHost" ]; then
+		printError $scriptName 'Missing SSH host parameter'
+		echo
+		printUsage "$scriptName $command SSH_HOST"
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     validateUpload
 # Description:  Performs validation for the upload command
 #
@@ -386,7 +409,7 @@ EXEC_XCLIP=/usr/bin/xclip
 SSH_COPY_ID=/usr/bin/ssh-copy-id
 SSH_KEYGEN=/usr/bin/ssh-keygen
 
-validCommands=('clip' 'connect' 'copy' 'edit' 'fingerprint' 'generate' 'list' 'passphrase' 'upload')
+validCommands=('clip' 'connect' 'copy' 'edit' 'fingerprint' 'generate' 'list' 'passphrase' 'removehost' 'upload')
 
 ## Options
 command=${1:-}
@@ -572,6 +595,12 @@ elif [ $command == 'passphrase' ]; then
 
 	# Change the private SSH key passphrase
 	$SSH_KEYGEN -f "$privateKey" -p
+
+elif [ $command == 'removehost' ]; then
+	sshHost=${2:-}
+	validateRemoveHost
+
+	$SSH_KEYGEN -f "$sshDir/known_hosts" -R "$sshHost"
 
 elif [ $command == 'upload' ]; then
 	fileOrDir=${2:-}

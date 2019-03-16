@@ -99,7 +99,7 @@ IPTABLES_SAVE=/sbin/iptables-save
 EXEC_DERIVESUBNET=/usr/local/bin/derivesubnet
 
 ## Options
-NIC="$1"
+NIC=${1:-}
 
 ## Variables
 IPv4_ADDRESS=''
@@ -115,13 +115,11 @@ if [ -z "$NIC" ]; then
 	if [ ${#ethList[@]} -eq 1 ]; then
 		ethInterface=(${ethList[0]})
 	else
-		OLD_COLUMNS=$COLUMNS
 		COLUMNS=1
 		echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
 		select ethInterface in ${ethList[@]}; do
 			break;
 		done
-		COLUMNS=$OLD_COLUMNS
 	fi
 
 	NIC=$ethInterface
@@ -136,7 +134,15 @@ else
 	fi
 fi
 
+set +o errexit
+
 ethInfo=( $($EXEC_DERIVESUBNET -4 $NIC) )
+
+if [ $? -ne 0 ]; then
+	exit 0
+fi
+
+set -o errexit
 
 IPv4_ADDRESS=${ethInfo[0]}
 IPv4_GATEWAY=${ethInfo[1]}
@@ -334,6 +340,9 @@ printInfo 'Do not track incoming HTTP/HTTPS TCP response packets'
 $IPTABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --sport 443 -j do_not_track
 $IPTABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --sport 80 -j do_not_track
 
+printInfo 'Do not track incoming SSH TCP request packets'
+$IPTABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --dport 22 -j do_not_track
+
 printInfo 'Further process all other incoming TCP traffic'
 $IPTABLES -t raw -A raw-${NIC}-tcp-pre -j ACCEPT
 
@@ -421,6 +430,9 @@ $IPTABLES -t raw -A raw-${NIC}-tcp-out -d $IPv4_SUBNET -j do_not_track
 printInfo 'Do not track outgoing HTTP/HTTPS TCP request packets'
 $IPTABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --dport 443 -j do_not_track
 $IPTABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --dport 80 -j do_not_track
+
+printInfo 'Do not track outgoing SSH TCP response packets'
+$IPTABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --sport 22 -j do_not_track
 
 printInfo 'Further process all other outgoing TCP traffic'
 $IPTABLES -t raw -A raw-${NIC}-tcp-out -j ACCEPT
@@ -597,6 +609,9 @@ printInfo 'ACCEPT incoming HTTP/HTTPS TCP response packets'
 $IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 443 -j ACCEPT
 $IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 80 -j ACCEPT
 
+printInfo 'ACCEPT incoming SSH TCP request packets'
+$IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --dport 22 -j ACCEPT
+
 printInfo 'REJECT all other incoming TCP traffic'
 $IPTABLES -A filter-${NIC}-tcp-in -j tcp_reject
 
@@ -707,6 +722,9 @@ echo
 printInfo 'ACCEPT outgoing HTTP/HTTPS TCP request packets'
 $IPTABLES -A filter-${NIC}-tcp-out -p tcp -m tcp --dport 443 -j ACCEPT
 $IPTABLES -A filter-${NIC}-tcp-out -p tcp -m tcp --dport 80 -j ACCEPT
+
+printInfo 'ACCEPT outgoing SSH TCP response packets'
+$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m tcp --sport 22 -j ACCEPT
 
 printInfo 'REJECT all other outgoing TCP traffic'
 $IPTABLES -A filter-${NIC}-tcp-out -j tcp_reject

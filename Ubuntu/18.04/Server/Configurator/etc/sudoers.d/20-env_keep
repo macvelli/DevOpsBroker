@@ -29,4 +29,7 @@
 Defaults  env_keep += "GCC_COLORS"
 Defaults  env_keep += "GREP_COLORS"
 Defaults  env_keep += "LS_COLORS"
+Defaults  env_keep += "SSH_CLIENT"
+Defaults  env_keep += "SSH_CONNECTION"
+Defaults  env_keep += "SSH_TTY"
 Defaults  env_keep += "TMPDIR"

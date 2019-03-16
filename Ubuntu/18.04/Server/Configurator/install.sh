@@ -109,6 +109,7 @@ fi
 
 printBox "DevOpsBroker $UBUNTU_RELEASE Configurator Installer" 'true'
 
+set +o errexit
 devopsGroup="$($EXEC_GETENT group devops)"
 
 # Add devops group
@@ -119,7 +120,7 @@ if [ -z "$devopsGroup" ]; then
 fi
 
 # Add user to devops group, if necessary
-if [ -z "$devopsGroup" ] || [ $(echo "$devopsGroup" | $EXEC_GREP -Fc $SUDO_USER || true ) -eq 0 ]; then
+if [ -z "$devopsGroup" ] || [ $(echo "$devopsGroup" | $EXEC_GREP -Fc $SUDO_USER ) -eq 0 ]; then
 	printInfo "Adding $SUDO_USER to the 'devops' group"
 	$EXEC_ADDUSER $SUDO_USER 'devops'
 	echo
@@ -132,6 +133,7 @@ if [ ! -d "$INSTALL_DIR" ]; then
 	$EXEC_MKDIR --parents --mode=2755 $INSTALL_DIR
 	$EXEC_CHOWN --changes --recursive root:devops /opt/devopsbroker
 fi
+set -o errexit
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Installation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

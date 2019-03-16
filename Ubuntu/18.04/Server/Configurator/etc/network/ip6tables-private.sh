@@ -103,7 +103,7 @@ IP6TABLES_SAVE=/sbin/ip6tables-save
 EXEC_DERIVESUBNET=/usr/local/bin/derivesubnet
 
 ## Options
-NIC="$1"
+NIC=${1:-}
 
 ## IPv6 Address Scopes
 IPv6_ADDRESS_GLOBAL=''
@@ -126,13 +126,11 @@ if [ -z "$NIC" ]; then
 	if [ ${#ethList[@]} -eq 1 ]; then
 		ethInterface=(${ethList[0]})
 	else
-		OLD_COLUMNS=$COLUMNS
 		COLUMNS=1
 		echo "${bold}${yellow}Which Ethernet interface do you want to configure?${white}"
 		select ethInterface in ${ethList[@]}; do
 			break;
 		done
-		COLUMNS=$OLD_COLUMNS
 	fi
 
 	NIC=$ethInterface
@@ -147,7 +145,15 @@ else
 	fi
 fi
 
+set +o errexit
+
 ethInfo=( $($EXEC_DERIVESUBNET -6 $NIC) )
+
+if [ $? -ne 0 ]; then
+	exit 0
+fi
+
+set -o errexit
 
 IPv6_ADDRESS_GLOBAL=${ethInfo[0]}
 IPv6_ADDRESS_LOCAL=${ethInfo[1]}
