@@ -236,6 +236,7 @@ fi
 
 # Execute an 'apt update' to refresh the local APT package cache
 $EXEC_APT update
+echo
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -330,6 +331,9 @@ fi
 # Install dnsutils
 installPackage '/usr/bin/dig' 'dnsutils'
 
+# Uninstall fail2ban (use sshguard instead)
+uninstallPackage '/usr/bin/fail2ban-client' 'fail2ban'
+
 # Uninstall geoip-bin
 uninstallPackage '/usr/bin/geoiplookup' 'geoip-bin'
 
@@ -396,6 +400,9 @@ installPackage '/usr/sbin/sshd' 'openssh-server'
 
 # Install openssh-sftp-server
 installPackage '/usr/lib/openssh/sftp-server' 'openssh-sftp-server'
+
+# Install sshguard
+installPackage '/usr/sbin/sshguard' 'sshguard'
 
 # Uninstall snapd
 uninstallPackage '/usr/bin/snap' 'snapd'

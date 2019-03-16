@@ -110,7 +110,7 @@ IPv4_SUBNET_IGMP='224.0.0.0/24'
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if [ -z "$NIC" ]; then
-	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^enp[a-z0-9]+')
+	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^(enp|ens)[a-z0-9]+')
 
 	if [ ${#ethList[@]} -eq 1 ]; then
 		ethInterface=(${ethList[0]})
@@ -533,6 +533,11 @@ $IPTABLES -A tcp_reject -p tcp -j REJECT --reject-with tcp-reset
 # ═══════════════════════ Configure FILTER INPUT Chain ════════════════════════
 #
 
+# Create INPUT filter chain for sshguard
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+printInfo "Creating incoming filter chain for sshguard"
+$IPTABLES -N sshguard
+
 # Create INPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
@@ -608,6 +613,9 @@ echo
 printInfo 'ACCEPT incoming HTTP/HTTPS TCP response packets'
 $IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 443 -j ACCEPT
 $IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --sport 80 -j ACCEPT
+
+printInfo 'Refer to sshguard for incoming SSH TCP request packets'
+$IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --dport 22 -j sshguard
 
 printInfo 'ACCEPT incoming SSH TCP request packets'
 $IPTABLES -A filter-${NIC}-tcp-in -p tcp -m tcp --dport 22 -j ACCEPT

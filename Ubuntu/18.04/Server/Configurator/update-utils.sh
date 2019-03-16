@@ -95,19 +95,26 @@ function createSymlink() {
 function installSystemUtility() {
 	local utility="$1"
 	local sourceDir="$SCRIPT_DIR/usr/local/sbin"
+	local sudoGroup='sudo'
+
+	set +o errexit
+	if [ "$( $EXEC_GETENT group google-sudoers )" ]; then
+		sudoGroup='google-sudoers'
+	fi
+	set -o errexit
 
 	if [ ! -f /usr/local/sbin/$utility ]; then
 		printInfo "Installing system utility /usr/local/sbin/$utility"
 
 		# Install system utility as root:sudo with rwxr-x--- privileges
-		$EXEC_INSTALL -o root -g sudo -m 750 "$sourceDir/$utility" /usr/local/sbin
+		$EXEC_INSTALL -o root -g $sudoGroup -m 750 "$sourceDir/$utility" /usr/local/sbin
 		echoOnExit=true
 
 	elif [ "$sourceDir/$utility" -nt /usr/local/sbin/$utility ]; then
 		printInfo "Updating system utility /usr/local/sbin/$utility"
 
 		# Install system utility as root:sudo with rwxr-x--- privileges
-		$EXEC_INSTALL -o root -g sudo -m 750 "$sourceDir/$utility" /usr/local/sbin
+		$EXEC_INSTALL -o root -g $sudoGroup -m 750 "$sourceDir/$utility" /usr/local/sbin
 		echoOnExit=true
 	fi
 }

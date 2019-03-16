@@ -126,6 +126,16 @@ if [ -z "$devopsGroup" ] || [ $(echo "$devopsGroup" | $EXEC_GREP -Fc $SUDO_USER 
 	echo
 fi
 
+sudoGroup="$($EXEC_GETENT group sudo)"
+googleSudoersGroup="$($EXEC_GETENT group google-sudoers)"
+
+# Add user to sudo group, if necessary
+if [ -z "$googleSudoersGroup" ] && [ $(echo "$sudoGroup" | $EXEC_GREP -Fc $SUDO_USER ) -eq 0 ]; then
+	printInfo "Adding $SUDO_USER to the 'sudo' group"
+	$EXEC_ADDUSER $SUDO_USER 'sudo'
+	echo
+fi
+
 # Create /opt/devopsbroker/bionic/server/configurator directory
 if [ ! -d "$INSTALL_DIR" ]; then
 	printInfo "Creating $INSTALL_DIR directory"
