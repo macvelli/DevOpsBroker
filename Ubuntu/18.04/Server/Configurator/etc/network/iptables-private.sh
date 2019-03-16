@@ -760,6 +760,9 @@ $IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 53 -j ACCEPT
 printInfo 'ACCEPT outgoing NTP UDP request packets'
 $IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 123 -j ACCEPT
 
+printInfo 'ACCEPT outgoing DHCP UDP request packets'
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --sport 68 --dport 67 -j ACCEPT
+
 printInfo 'REJECT all other outgoing UDP traffic'
 $IPTABLES -A filter-${NIC}-udp-out -j icmp_reject
 
