@@ -76,6 +76,7 @@ fi
 
 ## Variables
 echoOnExit=false
+restartUnbound=false
 
 ################################### Actions ###################################
 
@@ -99,8 +100,6 @@ fi
 #
 # /etc/unbound/unbound.conf.d/ Configuration
 #
-
-# Install /etc/unbound/unbound.conf.d/dns-cache-server.conf
 if [ ! -f /etc/unbound/unbound.conf.d/dns-cache-server.conf ]; then
 	printInfo 'Configuring unbound DNS cache server'
 
@@ -110,10 +109,8 @@ if [ ! -f /etc/unbound/unbound.conf.d/dns-cache-server.conf ]; then
 	# Install as root:root with rw-r--r-- privileges
 	$EXEC_INSTALL -o root -g root -m 644 "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf /etc/unbound/unbound.conf.d
 
-	printInfo 'Restart unbound service'
-	$EXEC_SYSTEMCTL restart unbound.service
-
 	echoOnExit=true
+	restartUnbound=true
 
 elif [ "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf -nt /etc/unbound/unbound.conf.d/dns-cache-server.conf ]; then
 	printInfo 'Updating unbound DNS cache server configuration'
@@ -121,21 +118,55 @@ elif [ "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf -nt /etc/unbound/unbou
 	# Install as root:root with rw-r--r-- privileges
 	$EXEC_INSTALL -b --suffix .bak -o root -g root -m 644 "$SCRIPT_DIR"/unbound.conf.d/dns-cache-server.conf /etc/unbound/unbound.conf.d
 
-	printInfo 'Restart unbound service'
-	$EXEC_SYSTEMCTL restart unbound.service
+	echoOnExit=true
+	restartUnbound=true
+fi
+
+#
+# Disable systemd-resolved.service
+#
+set +o errexit
+if [ "$($EXEC_SYSTEMCTL status systemd-resolved.service | $EXEC_GREP -F 'active (running)')" ]; then
+	printInfo 'Stopping systemd-resolved.service'
+	$EXEC_SYSTEMCTL stop systemd-resolved.service
+
+	printInfo 'Disabling systemd-resolved.service'
+	$EXEC_SYSTEMCTL disable systemd-resolved.service
 
 	echoOnExit=true
 fi
 
 #
-# Reconfigure Network Manager to use unbound
+# Enable unbound.service
 #
+if [ -z "$($EXEC_SYSTEMCTL status unbound.service | $EXEC_GREP -F 'active (running)')" ]; then
+	printInfo 'Enabling unbound.service'
+	$EXEC_SYSTEMCTL enable unbound.service
 
-if [ -f /etc/NetworkManager/NetworkManager.conf ] && $EXEC_GREP -Fq 'dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf; then
-	printInfo 'Configuring Network Manager to use unbound'
-	$EXEC_SED -i 's/dns=dnsmasq/dns=unbound/' /etc/NetworkManager/NetworkManager.conf
+	printInfo 'Starting unbound.service'
+	$EXEC_SYSTEMCTL start unbound.service
 
 	echoOnExit=true
+	restartUnbound=false
+fi
+
+#
+# Enable unbound-resolvconf.service
+#
+if [ -z "$($EXEC_SYSTEMCTL status unbound-resolvconf.service | $EXEC_GREP -F 'active (running)')" ]; then
+	printInfo 'Enabling unbound-resolvconf.service'
+	$EXEC_SYSTEMCTL enable unbound-resolvconf.service
+
+	printInfo 'Starting unbound-resolvconf.service'
+	$EXEC_SYSTEMCTL start unbound-resolvconf.service
+
+	echoOnExit=true
+fi
+set -o errexit
+
+if [ "$restartUnbound" == 'true' ]; then
+	printInfo 'Restarting unbound.service'
+	$EXEC_SYSTEMCTL restart unbound.service
 fi
 
 if [ "$echoOnExit" == 'true' ]; then

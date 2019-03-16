@@ -392,6 +392,9 @@ uninstallPackage '/bin/ntfs-3g' 'ntfs-3g'
 # Install ntp
 installPackage '/usr/sbin/ntpd' 'ntp'
 
+# Install openresolv
+installPackage '/sbin/resolvconf' 'openresolv'
+
 # Install openssh-client
 installPackage '/usr/bin/ssh' 'openssh-client'
 

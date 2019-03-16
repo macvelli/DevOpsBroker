@@ -38,6 +38,7 @@
 # o /etc/modprobe.d/nf_conntrack.conf
 # o /etc/network/firewall-restore.sh
 # o /etc/pam.d/common-session
+# o /etc/ssh/sshd_config
 # o /etc/sudoers.d/10-umask
 # o /etc/sudoers.d/20-env_keep
 # o /etc/sysctl.d/40-ipv6-enable.conf
@@ -216,6 +217,9 @@ fi
 
 # Install /etc/pam.d/common-session
 installConfig 'common-session' "$SCRIPT_DIR"/pam.d /etc/pam.d
+
+# Install /etc/ssh/sshd_config
+installConfig 'sshd_config' "$SCRIPT_DIR"/ssh /etc/ssh 'ssh'
 
 # Install /etc/sudoers.d/10-umask
 if [ ! -f /etc/sudoers.d/10-umask ]; then

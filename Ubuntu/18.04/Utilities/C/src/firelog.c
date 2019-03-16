@@ -208,7 +208,7 @@ void filterInputLogLine(register LogLine *logLine) {
 		if (f6215943_isEqual(listEntry->in, logLine->in)
 			&& f6215943_isEqual(listEntry->out, logLine->out)
 			&& f6215943_isEqual(listEntry->macAddress, logLine->macAddress)
-			&& f6215943_isEqual(listEntry->destIPAddr, logLine->destIPAddr)
+			&& f6215943_isEqual(listEntry->sourceIPAddr, logLine->sourceIPAddr)
 			&& f6215943_isEqual(listEntry->protocol, logLine->protocol)) {
 
 			if (listEntry->sourcePort == logLine->sourcePort
@@ -243,7 +243,6 @@ void filterOutputLogLine(register LogLine *logLine) {
 
 		if (f6215943_isEqual(listEntry->in, logLine->in)
 			&& f6215943_isEqual(listEntry->out, logLine->out)
-			&& f6215943_isEqual(listEntry->sourceIPAddr, logLine->sourceIPAddr)
 			&& f6215943_isEqual(listEntry->destIPAddr, logLine->destIPAddr)
 			&& f6215943_isEqual(listEntry->protocol, logLine->protocol)
 			&& listEntry->destPort == logLine->destPort) {

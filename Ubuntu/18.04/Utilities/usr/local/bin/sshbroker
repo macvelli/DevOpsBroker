@@ -79,12 +79,6 @@ IFS=$'\n\t'                    # Default the Internal Field Separator to newline
 
 scriptName='sshbroker'
 
-# Display error if running as root
-if [ "$USER" == 'root' ]; then
-	printError $scriptName 'Permission denied (you cannot be root)'
-	exit 1
-fi
-
 ################################## Functions ##################################
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -154,6 +148,7 @@ function showHelp() {
 		printUsage 'false' "$scriptName list"
 		printUsage 'false' "$scriptName passphrase"
 		printUsage 'false' "$scriptName removehost SSH_HOST"
+		printUsage 'false' "$scriptName test"
 		printUsage 'false' "$scriptName upload { FILE | DIR } username@remote_server:REMOTE_DIR"
 		echo
 	elif [ "$command" == 'clip' ]; then
@@ -196,6 +191,10 @@ function showHelp() {
 		printUsage "$scriptName $command SSH_HOST"
 		echo ${romantic}
 		echo 'Removes an SSH host from the known_hosts file'${reset}
+	elif [ "$command" == 'test' ]; then
+		printUsage "$scriptName $command"
+		echo ${romantic}
+		echo 'Checks the validity of the sshd configuration file and sanity of the keys'${reset}
 	elif [ "$command" == 'upload' ]; then
 		printUsage "$scriptName $command { FILE | DIR } username@remote_server:REMOTE_DIR"
 		echo ${romantic}
@@ -437,14 +436,13 @@ EXEC_GCLOUD="$HOME/bin/gcloud"
 EXEC_HOSTNAME=/bin/hostname
 EXEC_SCP=/usr/bin/scp
 EXEC_SSH=/usr/bin/ssh
+EXEC_SSHD=/usr/sbin/sshd
 EXEC_TRIM=/usr/local/bin/trim
 EXEC_TRUNCATE=/usr/bin/truncate
 EXEC_XCLIP=/usr/bin/xclip
 
 SSH_COPY_ID=/usr/bin/ssh-copy-id
 SSH_KEYGEN=/usr/bin/ssh-keygen
-
-validCommands=('clip' 'connect' 'copy' 'download' 'edit' 'fingerprint' 'generate' 'list' 'passphrase' 'removehost' 'upload')
 
 ## Options
 command=${1:-}
@@ -454,6 +452,9 @@ export TMPDIR=${TMPDIR:-'/tmp'}
 showCommandHelp=false
 sshDir="$HOME/.ssh"
 username=$USER
+
+sudoCommands=('test')
+validCommands=('clip' 'connect' 'copy' 'download' 'edit' 'fingerprint' 'generate' 'list' 'passphrase' 'removehost' 'upload')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -468,13 +469,29 @@ if [ "$command" == 'help' ]; then
 	command=${2:-}
 fi
 
-# Display error if invalid command
-if [ $command ] && [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError $scriptName "Invalid command: '$command'"
-	echo
-	printUsage "$scriptName ${gold}[help]${yellow} COMMAND ${gold}[OPTION...]"
+if [ $command ]; then
+	if [ "$(containsElement "$command" "${sudoCommands[@]}")" == '0' ]; then
+		# Display error if not running as root
+		if [ "$USER" != 'root' ]; then
+			printError $scriptName 'Permission denied (you must be root)'
+			exit 1
+		fi
+	else
+		# Display error if invalid command
+		if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
+			printError $scriptName "Invalid command: '$command'"
+			echo
+			printUsage "$scriptName ${gold}[help]${yellow} COMMAND ${gold}[OPTION...]"
 
-	exit 1
+			exit 1
+		fi
+
+		# Display error if running as root
+		if [ "$USER" == 'root' ]; then
+			printError $scriptName 'Permission denied (you cannot be root)'
+			exit 1
+		fi
+	fi
 fi
 
 if [ "$showCommandHelp" == 'true' ]; then
@@ -646,6 +663,10 @@ elif [ $command == 'removehost' ]; then
 	validateRemoveHost
 
 	$SSH_KEYGEN -f "$sshDir/known_hosts" -R "$sshHost"
+
+elif [ $command == 'test' ]; then
+
+	$EXEC_SSHD -t
 
 elif [ $command == 'upload' ]; then
 	fileOrDir=${2:-}

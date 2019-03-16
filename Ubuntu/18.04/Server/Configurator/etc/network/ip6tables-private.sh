@@ -232,6 +232,12 @@ $IP6TABLES -t raw -N ipv6_canon_drop
 $IP6TABLES -t raw -A ipv6_canon_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv6 CANON BLOCK] ' --log-level 7
 $IP6TABLES -t raw -A ipv6_canon_drop -j DROP
 
+# Rate limit TCP logging
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+$IP6TABLES -t raw -N tcp_drop
+$IP6TABLES -t raw -A tcp_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv6 TCP BLOCK] ' --log-level 7
+$IP6TABLES -t raw -A tcp_drop -j DROP
+
 # Perform NOTRACK and ACCEPT
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 $IP6TABLES -t raw -N do_not_track
@@ -335,6 +341,9 @@ echo
 # * raw-${NIC}-tcp-pre Rules *
 # ****************************
 #
+
+printInfo 'DROP incoming Microsoft Remote Desktop packets'
+$IP6TABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --dport 3389 -j tcp_drop
 
 printInfo 'Allow incoming Link-Local TCP packets'
 $IP6TABLES -t raw -A raw-${NIC}-tcp-pre -s $IPv6_SUBNET_LOCAL -j do_not_track

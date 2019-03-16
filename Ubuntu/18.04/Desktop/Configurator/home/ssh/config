@@ -39,7 +39,6 @@
 # git@github.com
 #
 #Host github.com
-#    AddKeysToAgent yes
 #    IdentityFile /path/to/.ssh/user-hostname-github-id_ed25519
 #    PasswordAuthentication no
 #    PubkeyAuthentication yes
@@ -47,6 +46,7 @@
 
 #
 # All SSH Servers
+#   o Add keys to ssh-agent
 #   o Multiplex multiple SSH sessions to the same server over a single TCP connection
 #   o No X11 forwarding
 #   o Disable GSSAPI authentication
@@ -58,6 +58,7 @@
 #   o Display an ASCII representation of the remote Host Key upon connection
 #
 Host *
+    AddKeysToAgent yes
     ControlMaster auto
     ControlPath ~/.ssh/multiplex/%r@%h:%p
     ControlPersist 1
@@ -69,4 +70,3 @@ Host *
     ServerAliveInterval 120
     StrictHostKeyChecking ask
     VisualHostKey yes
-

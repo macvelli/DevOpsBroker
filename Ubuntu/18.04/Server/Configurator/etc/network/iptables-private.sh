@@ -218,6 +218,12 @@ $IPTABLES -t raw -N ipv4_canon_drop
 $IPTABLES -t raw -A ipv4_canon_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 CANON BLOCK] ' --log-level 7
 $IPTABLES -t raw -A ipv4_canon_drop -j DROP
 
+# Rate limit TCP logging
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+$IPTABLES -t raw -N tcp_drop
+$IPTABLES -t raw -A tcp_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 TCP BLOCK] ' --log-level 7
+$IPTABLES -t raw -A tcp_drop -j DROP
+
 # Rate limit IGMP logging
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 $IPTABLES -t raw -N igmp_drop
@@ -332,6 +338,9 @@ echo
 # * raw-${NIC}-tcp-pre Rules *
 # ****************************
 #
+
+printInfo 'DROP incoming Microsoft Remote Desktop packets'
+$IPTABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --dport 3389 -j tcp_drop
 
 printInfo 'Allow incoming Link-Local TCP packets'
 $IPTABLES -t raw -A raw-${NIC}-tcp-pre -s $IPv4_SUBNET -j do_not_track
