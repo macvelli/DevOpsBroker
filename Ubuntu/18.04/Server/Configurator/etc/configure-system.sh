@@ -29,6 +29,8 @@
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
+# o /etc/apt/apt.conf.d/10periodic
+# o /etc/apt/apt.conf.d/50unattended-upgrades
 # o /etc/bash_completion.d/*
 # o /etc/devops/ansi.conf
 # o /etc/devops/exec.conf
@@ -169,6 +171,24 @@ installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
 installConfig 'profile' "$SCRIPT_DIR" /etc
+
+set +o errexit
+# Install /etc/apt/apt.conf.d/10periodic
+if [ -f /etc/apt/apt.conf.d/10periodic ] && [ -z "$( $EXEC_GREP -F --max-count=1 'DevOpsBroker' /etc/apt/apt.conf.d/10periodic )" ]; then
+	printInfo 'Installing /etc/apt/apt.conf.d/10periodic'
+
+	# Install as root:root with rw-r--r-- privileges
+	/usr/bin/install -o root -g root -m 644 "$SCRIPT_DIR/apt/apt.conf.d/10periodic" /etc/apt/apt.conf.d
+fi
+
+# Install /etc/apt/apt.conf.d/50unattended-upgrades
+if [ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && [ -z "$( $EXEC_GREP -F --max-count=1 'DevOpsBroker' /etc/apt/apt.conf.d/50unattended-upgrades )" ]; then
+	printInfo 'Installing /etc/apt/apt.conf.d/50unattended-upgrades'
+
+	# Install as root:root with rw-r--r-- privileges
+	/usr/bin/install -o root -g root -m 644 "$SCRIPT_DIR/apt/apt.conf.d/50unattended-upgrades" /etc/apt/apt.conf.d
+fi
+set -o errexit
 
 # Install /etc/bash_completion.d/*
 $EXEC_CP -uv "$SCRIPT_DIR"/bash_completion.d/* /etc/bash_completion.d
