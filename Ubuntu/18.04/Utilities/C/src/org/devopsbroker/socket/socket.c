@@ -51,9 +51,9 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IOBuffer *a36b5966_createIOBuffer(size_t bufLen) {
-	IOBuffer *ioBuffer = f668c4bd_malloc_size(sizeof(IOBuffer));
+	IOBuffer *ioBuffer = f668c4bd_malloc(sizeof(IOBuffer));
 
-	ioBuffer->iov_base = f668c4bd_malloc_size(bufLen);
+	ioBuffer->iov_base = f668c4bd_malloc(bufLen);
 	ioBuffer->iov_len = bufLen;
 
 	return ioBuffer;

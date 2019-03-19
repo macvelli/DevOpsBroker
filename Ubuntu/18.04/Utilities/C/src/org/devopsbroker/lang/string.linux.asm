@@ -1,7 +1,7 @@
 ;
-; string.linux.asm - Description goes here
+; string.linux.asm - DevOpsBroker NASM file for string-related functionality
 ;
-; Copyright (C) 2019 AUTHOR_NAME <email@address.com>
+; Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
 ;
 ; This program is free software: you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software

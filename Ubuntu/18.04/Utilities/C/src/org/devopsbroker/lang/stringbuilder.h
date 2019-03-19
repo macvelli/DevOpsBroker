@@ -1,7 +1,7 @@
 /*
  * stringbuilder.h - DevOpsBroker C header file for the StringBuilder struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -34,15 +34,15 @@
 
 #include "memory.h"
 
+#include "../adt/vararg.h"
+
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-// Global Constants
-#define STRINGBUILDER_DEFAULT_SIZE 64
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 typedef struct StringBuilder {
-	char *buffer;
+	char *buffer;                              // Glibc provides aligned_alloc()
 	uint32_t length;
 	uint32_t size;
 } StringBuilder;
@@ -57,6 +57,74 @@ static_assert(sizeof(StringBuilder) == 16, "Check your assumptions");
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_createStringBuilder
+ * Description: Creates a StringBuilder struct with the default buffer size
+ *
+ * Returns:     A StringBuilder struct with the default buffer size
+ * ----------------------------------------------------------------------------
+ */
+StringBuilder *c598a24c_createStringBuilder();
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_createStringBuilder_uint32
+ * Description: Creates a StringBuilder struct with the specifed buffer size
+ *
+ * Parameters:
+ *   bufSize    The buffer size to allocate
+ * Returns:     A StringBuilder struct with the specifed buffer size
+ * ----------------------------------------------------------------------------
+ */
+StringBuilder *c598a24c_createStringBuilder_uint32(const uint32_t bufSize);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_destroyStringBuilder
+ * Description: Frees the memory allocated to the StringBuilder struct pointer
+ *              and its char* string attribute
+ *
+ * Parameters:
+ *   strBuilder     A pointer to the StringBuilder instance to destroy
+ * ----------------------------------------------------------------------------
+ */
+void c598a24c_destroyStringBuilder(StringBuilder *strBuilder);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_cleanUpStringBuilder
+ * Description: Frees dynamically allocated memory within the StringBuilder instance
+ *
+ * Parameters:
+ *   strBuilder     A pointer to the StringBuilder instance to clean up
+ * ----------------------------------------------------------------------------
+ */
+void c598a24c_cleanUpStringBuilder(StringBuilder *strBuilder);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_initStringBuilder
+ * Description: Initializes an existing StringBuilder struct with the default buffer size
+ *
+ * Parameters:
+ *   strBuilder     A pointer to the StringBuilder instance to initalize
+ * ----------------------------------------------------------------------------
+ */
+void c598a24c_initStringBuilder(StringBuilder *strBuilder);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_initStringBuilder_uint32
+ * Description: Initializes an existing StringBuilder struct with the specifed buffer size
+ *
+ * Parameters:
+ *   strBuilder     A pointer to the StringBuilder instance to initalize
+ *   bufSize        The buffer size to allocate
+ * ----------------------------------------------------------------------------
+ */
+void c598a24c_initStringBuilder_uint32(StringBuilder *strBuilder, const uint32_t bufSize);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c598a24c_append_char
  * Description: Appends a char to the StringBuilder instance
@@ -66,6 +134,17 @@ static_assert(sizeof(StringBuilder) == 16, "Check your assumptions");
  * ----------------------------------------------------------------------------
  */
 void c598a24c_append_char(StringBuilder *strBuilder, const char ch);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_append_format
+ * Description: Appends a formatted string to the StringBuilder instance
+ *
+ * Parameters:
+ *   format     The string format to append
+ *   varargs    The list of variable arguments to the string format
+ * ----------------------------------------------------------------------------
+ */
+//void c598a24c_append_format(StringBuilder *strBuilder, char *format, Vararg *varargs);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c598a24c_append_int32
@@ -162,102 +241,5 @@ void c598a24c_append_stringArray(StringBuilder *strBuilder, char *const array[])
  * ----------------------------------------------------------------------------
  */
 void c598a24c_append_string_uint32(StringBuilder *strBuilder, const char *source, const uint32_t length);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_createStringBuilder
- * Description: Creates a StringBuilder struct with the default buffer size
- *
- * Returns:     A StringBuilder struct with the default buffer size
- * ----------------------------------------------------------------------------
- */
-static inline StringBuilder *c598a24c_createStringBuilder() {
-	register StringBuilder *strBuilder = f668c4bd_malloc_size(sizeof(StringBuilder));
-
-	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), STRINGBUILDER_DEFAULT_SIZE);
-	strBuilder->buffer[0] = '\0';
-	strBuilder->length = 0;
-	strBuilder->size = STRINGBUILDER_DEFAULT_SIZE;
-
-	return strBuilder;
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_createStringBuilder_uint32
- * Description: Creates a StringBuilder struct with the specifed buffer size
- *
- * Parameters:
- *   bufSize    The buffer size to allocate
- * Returns:     A StringBuilder struct with the specifed buffer size
- * ----------------------------------------------------------------------------
- */
-static inline StringBuilder *c598a24c_createStringBuilder_uint32(const uint32_t bufSize) {
-	register StringBuilder *strBuilder = f668c4bd_malloc_size(sizeof(StringBuilder));
-
-	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), bufSize);
-	strBuilder->buffer[0] = '\0';
-	strBuilder->length = 0;
-	strBuilder->size = bufSize;
-
-	return strBuilder;
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_destroyStringBuilder
- * Description: Frees the memory allocated to the StringBuilder struct pointer
- *              and its char* string attribute
- *
- * Parameters:
- *   strBuilder     A pointer to the StringBuilder instance to destroy
- * ----------------------------------------------------------------------------
- */
-static inline void c598a24c_destroyStringBuilder(StringBuilder *strBuilder) {
-	f668c4bd_free(strBuilder->buffer);
-	f668c4bd_free(strBuilder);
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_freeStringBuilder
- * Description: Frees only the memory allocated to the StringBuilder struct pointer.
- *              The char* string attribute must be freed at a later time.
- *              TODO: This method needs to go away
- *
- * Parameters:
- *   strBuilder     A pointer to the StringBuilder instance to free
- * ----------------------------------------------------------------------------
- */
-static inline void c598a24c_freeStringBuilder(StringBuilder *strBuilder) {
-	f668c4bd_free(strBuilder);
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_initStringBuilder
- * Description: Initializes an existing StringBuilder struct with the default buffer size
- *
- * Parameters:
- *   strBuilder     A pointer to the StringBuilder instance to initalize
- * ----------------------------------------------------------------------------
- */
-static inline void c598a24c_initStringBuilder(register StringBuilder *strBuilder) {
-	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), STRINGBUILDER_DEFAULT_SIZE);
-	strBuilder->buffer[0] = '\0';
-	strBuilder->length = 0;
-	strBuilder->size = STRINGBUILDER_DEFAULT_SIZE;
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_initStringBuilder_uint32
- * Description: Initializes an existing StringBuilder struct with the specifed buffer size
- *
- * Parameters:
- *   strBuilder     A pointer to the StringBuilder instance to initalize
- *   bufSize        The buffer size to allocate
- * ----------------------------------------------------------------------------
- */
-static inline void c598a24c_initStringBuilder_uint32(register StringBuilder *strBuilder, register const uint32_t bufSize) {
-	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), bufSize);
-	strBuilder->buffer[0] = '\0';
-	strBuilder->length = 0;
-	strBuilder->size = bufSize;
-}
 
 #endif /* ORG_DEVOPSBROKER_LANG_STRINGBUILDER_H */

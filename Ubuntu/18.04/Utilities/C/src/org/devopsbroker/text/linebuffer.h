@@ -1,7 +1,7 @@
 /*
  * linebuffer.h - DevOpsBroker C header file for providing text line-processing functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <assert.h>
+
 #include "../io/file.h"
 #include "../lang/memory.h"
 #include "../lang/string.h"
@@ -47,10 +49,14 @@ typedef struct LineBuffer {
 	StringBuilder bufferTail;
 } LineBuffer;
 
+static_assert(sizeof(LineBuffer) == 48, "Check your assumptions");
+
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c196bc72_createLineBuffer
@@ -61,18 +67,7 @@ typedef struct LineBuffer {
  * Returns:     A LineBuffer struct with the specified char* buffer
  * ----------------------------------------------------------------------------
  */
-static inline LineBuffer *c196bc72_createLineBuffer(char *buffer) {
-	LineBuffer *lineBuffer = f668c4bd_malloc_size(sizeof(LineBuffer));
-
-	lineBuffer->buffer = buffer;
-	lineBuffer->length = 0;
-	lineBuffer->line.value = buffer;
-	lineBuffer->line.length = 0;
-
-	c598a24c_initStringBuilder_uint32(&lineBuffer->bufferTail, LOGICAL_BLOCK_SIZE);
-
-	return lineBuffer;
-}
+LineBuffer *c196bc72_createLineBuffer(char *buffer);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c196bc72_destroyLineBuffer
@@ -82,10 +77,32 @@ static inline LineBuffer *c196bc72_createLineBuffer(char *buffer) {
  *   lineBuffer     A pointer to the LineBuffer instance to destroy
  * ----------------------------------------------------------------------------
  */
-static inline void c196bc72_destroyLineBuffer(LineBuffer *lineBuffer) {
-	c598a24c_destroyStringBuilder(&lineBuffer->bufferTail);
-	f668c4bd_free(lineBuffer);
-}
+void c196bc72_destroyLineBuffer(LineBuffer *lineBuffer);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c196bc72_initLineBuffer
+ * Description: Initializes an existing LineBuffer struct with the specified char* buffer
+ *
+ * Parameters:
+ *   lineBuffer     A pointer to the LineBuffer instance to initalize
+ *   buffer         A pointer to the char* buffer
+ * ----------------------------------------------------------------------------
+ */
+void c196bc72_initLineBuffer(LineBuffer *lineBuffer, char *buffer);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c196bc72_resetLineBuffer
+ * Description: Resets an existing LineBuffer struct to its initial state
+ *
+ * Parameters:
+ *   lineBuffer     A pointer to the LineBuffer instance to reset
+ * ----------------------------------------------------------------------------
+ */
+void c196bc72_resetLineBuffer(LineBuffer *lineBuffer);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c196bc72_getLine
@@ -102,38 +119,5 @@ static inline void c196bc72_destroyLineBuffer(LineBuffer *lineBuffer) {
  * ----------------------------------------------------------------------------
  */
 String *c196bc72_getLine(LineBuffer *lineBuffer, const ssize_t numBytes);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_initLineBuffer
- * Description: Initializes an existing LineBuffer struct with the specified char* buffer
- *
- * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to initalize
- *   buffer         A pointer to the char* buffer
- * ----------------------------------------------------------------------------
- */
-static inline void c196bc72_initLineBuffer(LineBuffer *lineBuffer, char *buffer) {
-	lineBuffer->buffer = buffer;
-	lineBuffer->length = 0;
-	lineBuffer->line.value = buffer;
-	lineBuffer->line.length = 0;
-
-	c598a24c_initStringBuilder_uint32(&lineBuffer->bufferTail, LOGICAL_BLOCK_SIZE);
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_resetLineBuffer
- * Description: Resets an existing LineBuffer struct to its initial state
- *
- * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to reset
- *   buffer         A pointer to the char* buffer
- * ----------------------------------------------------------------------------
- */
-static inline void c196bc72_resetLineBuffer(LineBuffer *lineBuffer) {
-	lineBuffer->length = 0;
-	lineBuffer->line.value = lineBuffer->buffer;
-	lineBuffer->line.length = 0;
-}
 
 #endif /* ORG_DEVOPSBROKER_TEXT_LINEBUFFER_H */

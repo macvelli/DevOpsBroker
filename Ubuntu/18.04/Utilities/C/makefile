@@ -42,12 +42,6 @@ export ASMFLAGS
 export CC
 export CFLAGS
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dependencies ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-OBJ_TERMINAL := obj/org/devopsbroker/terminal
-
-NETTUNER_DEPS := $(OBJ_TERMINAL)/commandline.linux.o
-
 ################################### Targets ###################################
 
 .ONESHELL:
@@ -66,6 +60,9 @@ clean:
 	/bin/rm -fv lib/*.a
 	echo
 
+prepare:
+	/bin/mkdir -p --mode=750 $(OBJ_DIRS)
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 lib-adt:
@@ -74,7 +71,7 @@ lib-adt:
 
 lib-firelog:
 	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ install firelog,$(MAKECMDGOALS))
+	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ install bin/firelog,$(MAKECMDGOALS))
 
 lib-info:
 	@umask $(UMASK) && \

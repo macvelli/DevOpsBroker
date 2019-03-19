@@ -1,7 +1,7 @@
 /*
  * memory.h - DevOpsBroker C header file for providing memory management functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -74,15 +74,15 @@ void f668c4bd_meminit(void *ptr, size_t size);
 void f668c4bd_memcopy(void *source, void *dest, size_t numBytes);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    f668c4bd_malloc_size
- * Description: Performs the malloc() operation along with error-checking
+ * Function:    f668c4bd_malloc
+ * Description: Performs a 16-byte aligned malloc() operation
  *
  * Parameters:
  *   size       The size of the memory block to allocate
  * Returns:     A pointer to the allocated memory block
  * ----------------------------------------------------------------------------
  */
-void *f668c4bd_malloc_size(const size_t size);
+void *f668c4bd_malloc(size_t size);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f668c4bd_malloc_size_size
@@ -95,6 +95,19 @@ void *f668c4bd_malloc_size(const size_t size);
  * ----------------------------------------------------------------------------
  */
 void *f668c4bd_malloc_size_size(const size_t typeSize, const size_t numBlocks);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f668c4bd_realloc
+ * Description: Performs a 16-byte aligned realloc() operation
+ *
+ * Parameters:
+ *   ptr            The pointer to the memory block to reallocate
+ *   origSize       The original size of the memory block
+ *   newSize        The new size of the memory block
+ * Returns:         A pointer to the re-allocated memory block
+ * ----------------------------------------------------------------------------
+ */
+void *f668c4bd_realloc(void *ptr, size_t origSize, size_t newSize);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f668c4bd_realloc_void_size

@@ -1,7 +1,7 @@
 /*
  * errorcorrectiontype.h - DevOpsBroker C header file for the org.devopsbroker.sysfs.ErrorCorrectionType enum
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -48,7 +48,7 @@ typedef enum ErrorCorrectionType {
  * Returns:     The associated ErrorCorrectionType value
  * ----------------------------------------------------------------------------
  */
-ErrorCorrectionType d485dfa0_getErrorCorrectionType(const char *source);
+ErrorCorrectionType d485dfa0_getErrorCorrectionType(char *source);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    d485dfa0_toStringErrorCorrectionType

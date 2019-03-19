@@ -1,7 +1,7 @@
 /*
  * stringbuilder.c - DevOpsBroker C source file for the StringBuilder struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -40,6 +40,7 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define STRINGBUILDER_DEFAULT_SIZE 64
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -52,14 +53,14 @@
 /*
  * Static functions in C restrict their scope to the file where they are declared
  */
-static inline char *resizeStringBuilder(register StringBuilder* strBuilder) {
+static inline char *resizeStringBuilder(StringBuilder* strBuilder) {
 	strBuilder->size <<= 1;
 	strBuilder->buffer = f668c4bd_realloc_void_size_size(strBuilder->buffer, sizeof(char), strBuilder->size);
 
 	return strBuilder->buffer + strBuilder->length;
 }
 
-static inline void appendNull(register StringBuilder* strBuilder, register char *target) {
+static inline void appendNull(StringBuilder* strBuilder, char *target) {
 	// Resize strBuilder->buffer if necessary
 	if (strBuilder->length == strBuilder->size) {
 		target = resizeStringBuilder(strBuilder);
@@ -72,6 +73,57 @@ static inline void appendNull(register StringBuilder* strBuilder, register char 
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+StringBuilder *c598a24c_createStringBuilder() {
+	register StringBuilder *strBuilder = f668c4bd_malloc(sizeof(StringBuilder));
+
+	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), STRINGBUILDER_DEFAULT_SIZE);
+	strBuilder->buffer[0] = '\0';
+	strBuilder->length = 0;
+	strBuilder->size = STRINGBUILDER_DEFAULT_SIZE;
+
+	return strBuilder;
+}
+
+StringBuilder *c598a24c_createStringBuilder_uint32(const uint32_t bufSize) {
+	register StringBuilder *strBuilder = f668c4bd_malloc(sizeof(StringBuilder));
+
+	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), bufSize);
+	strBuilder->buffer[0] = '\0';
+	strBuilder->length = 0;
+	strBuilder->size = bufSize;
+
+	return strBuilder;
+}
+
+void c598a24c_destroyStringBuilder(StringBuilder *strBuilder) {
+	free(strBuilder->buffer);
+	free(strBuilder);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void c598a24c_cleanUpStringBuilder(StringBuilder *strBuilder) {
+	free(strBuilder->buffer);
+}
+
+void c598a24c_initStringBuilder(register StringBuilder *strBuilder) {
+	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), STRINGBUILDER_DEFAULT_SIZE);
+	strBuilder->buffer[0] = '\0';
+	strBuilder->length = 0;
+	strBuilder->size = STRINGBUILDER_DEFAULT_SIZE;
+}
+
+void c598a24c_initStringBuilder_uint32(register StringBuilder *strBuilder, register const uint32_t bufSize) {
+	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), bufSize);
+	strBuilder->buffer[0] = '\0';
+	strBuilder->length = 0;
+	strBuilder->size = bufSize;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void c598a24c_append_char(register StringBuilder *strBuilder, register const char ch) {
 	register char *target = strBuilder->buffer + strBuilder->length;
@@ -118,7 +170,7 @@ void c598a24c_append_uint64(register StringBuilder *strBuilder, register const u
 	f668c4bd_free(unsignedLongStr);
 }
 
-void c598a24c_append_string(register StringBuilder *strBuilder, register const char *source) {
+void c598a24c_append_string(StringBuilder *strBuilder, const char *source) {
 	register char* target = strBuilder->buffer + strBuilder->length;
 	register char ch = *source;
 

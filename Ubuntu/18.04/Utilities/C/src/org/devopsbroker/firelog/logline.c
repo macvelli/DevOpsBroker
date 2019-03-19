@@ -1,7 +1,7 @@
 /*
  * logline.c - DevOpsBroker C source file for the org.devopsbroker.firelog.LogLine struct
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -60,50 +60,23 @@ static char *IGMP = "IGMP";
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-LogLine *e88eda74_cloneLogLine(LogLine *logLine) {
-	register LogLine *clone = f668c4bd_malloc_size(sizeof(LogLine));
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	// in
-	clone->in = f6215943_copy(logLine->in, logLine->lineLength);
+LogLine *e88eda74_createLogLine() {
+	LogLine *logLine = f668c4bd_malloc(sizeof(LogLine));
 
-	// out
-	clone->out = (clone->in + (logLine->out - logLine->in));
+	// Perform initializations
+	f668c4bd_meminit(logLine, sizeof(LogLine));
 
-	// macAddress
-	if (logLine->macAddress != NULL) {
-		clone->macAddress = (clone->in + (logLine->macAddress - logLine->in));
-	}
-
-	// sourceIPAddr
-	clone->sourceIPAddr = (clone->in + (logLine->sourceIPAddr - logLine->in));
-
-	// destIPAddr
-	clone->destIPAddr = (clone->in + (logLine->destIPAddr - logLine->in));
-
-	// IGMP Type
-	if (f6215943_isEqual(IGMP, logLine->protocol)) {
-		clone->protocol = IGMP;
-		clone->sourcePort = 0;
-		clone->destPort = 0;
-	} else {
-		// protocol
-		clone->protocol = (clone->in + (logLine->protocol - logLine->in));
-
-		// sourcePort
-		clone->sourcePort = logLine->sourcePort;
-
-		// destPort
-		clone->destPort = logLine->destPort;
-	}
-
-	// lineLength
-	clone->lineLength = logLine->lineLength;
-
-	// count
-	clone->count = logLine->count;
-
-	return clone;
+	return logLine;
 }
+
+void e88eda74_destroyLogLine(LogLine *logLine) {
+	f668c4bd_free(logLine->in);
+	f668c4bd_free(logLine);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void e88eda74_initLogLine(LogLine *logLine, String *line) {
 	char *position = line->value;
@@ -163,4 +136,51 @@ void e88eda74_initLogLine(LogLine *logLine, String *line) {
 
 	// count
 	logLine->count = 1;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+LogLine *e88eda74_cloneLogLine(LogLine *logLine) {
+	register LogLine *clone = f668c4bd_malloc(sizeof(LogLine));
+
+	// in
+	clone->in = f6215943_copy(logLine->in, logLine->lineLength);
+
+	// out
+	clone->out = (clone->in + (logLine->out - logLine->in));
+
+	// macAddress
+	if (logLine->macAddress != NULL) {
+		clone->macAddress = (clone->in + (logLine->macAddress - logLine->in));
+	}
+
+	// sourceIPAddr
+	clone->sourceIPAddr = (clone->in + (logLine->sourceIPAddr - logLine->in));
+
+	// destIPAddr
+	clone->destIPAddr = (clone->in + (logLine->destIPAddr - logLine->in));
+
+	// IGMP Type
+	if (f6215943_isEqual(IGMP, logLine->protocol)) {
+		clone->protocol = IGMP;
+		clone->sourcePort = 0;
+		clone->destPort = 0;
+	} else {
+		// protocol
+		clone->protocol = (clone->in + (logLine->protocol - logLine->in));
+
+		// sourcePort
+		clone->sourcePort = logLine->sourcePort;
+
+		// destPort
+		clone->destPort = logLine->destPort;
+	}
+
+	// lineLength
+	clone->lineLength = logLine->lineLength;
+
+	// count
+	clone->count = logLine->count;
+
+	return clone;
 }

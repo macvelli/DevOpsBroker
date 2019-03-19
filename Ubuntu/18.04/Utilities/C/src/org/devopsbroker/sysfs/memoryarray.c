@@ -191,7 +191,7 @@ MemoryArray *f004d1bd_createMemoryArray() {
 	numDevices = getUInt32Value(         "\tNumber Of Devices: ", &memoryArrayData, '\n');
 
 	// Allocate memory for the MemoryArray struct
-	register MemoryArray *memoryArray = f668c4bd_malloc_size(sizeof(MemoryArray) + sizeof(MemoryDevice[numDevices]));
+	register MemoryArray *memoryArray = f668c4bd_malloc(sizeof(MemoryArray) + sizeof(MemoryDevice[numDevices]));
 
 	// Fill in the MemoryArray struct
 	memoryArray->dmidecodeData = dmidecodeData;

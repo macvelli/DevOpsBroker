@@ -1,7 +1,7 @@
 /*
  * listarray.c - DevOpsBroker C source file for providing array-based dynamic list functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -49,6 +49,49 @@ static inline void resizeListArray(ListArray* listArray) {
 
 
 // ═════════════════════════ Function Implementations ═════════════════════════
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ListArray *b196167f_createListArray() {
+	ListArray *listArray = f668c4bd_malloc(sizeof(ListArray));
+
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
+	listArray->size = LISTARRAY_DEFAULT_SIZE;
+	listArray->length = 0;
+
+	return listArray;
+}
+
+ListArray *b196167f_createListArray_uint32(const uint32_t size) {
+	ListArray *listArray = f668c4bd_malloc(sizeof(ListArray));
+
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
+	listArray->size = size;
+	listArray->length = 0;
+
+	return listArray;
+}
+
+void b196167f_destroyListArray(ListArray *listArray) {
+	f668c4bd_free(listArray->values);
+	f668c4bd_free(listArray);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void b196167f_initListArray(ListArray *listArray) {
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
+	listArray->size = LISTARRAY_DEFAULT_SIZE;
+	listArray->length = 0;
+}
+
+void b196167f_initListArray_uint32(ListArray *listArray, const uint32_t size) {
+	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
+	listArray->size = size;
+	listArray->length = 0;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void b196167f_add(ListArray *listArray, void *element) {
 	if (listArray->length == listArray->size) {

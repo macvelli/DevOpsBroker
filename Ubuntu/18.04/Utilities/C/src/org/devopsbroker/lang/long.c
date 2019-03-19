@@ -1,7 +1,7 @@
 /*
  * long.c - DevOpsBroker C source file for signed long and unsigned long values
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -170,7 +170,7 @@ char* db0acb04_toString_uint64(register uint64_t value) {
 	const int mallocSize = sizeof(char) * db0acb04_getStringSize_uint64(value);
 	register int remainder;
 
-	register char* target = f668c4bd_malloc_size(mallocSize);
+	register char* target = f668c4bd_malloc(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 
@@ -205,7 +205,7 @@ char* db0acb04_toString_int64(register int64_t value) {
 		value = -value;
 	}
 
-	register char* target = f668c4bd_malloc_size(mallocSize);
+	register char* target = f668c4bd_malloc(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 

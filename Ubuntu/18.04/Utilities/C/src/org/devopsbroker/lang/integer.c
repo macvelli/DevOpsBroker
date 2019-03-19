@@ -1,7 +1,7 @@
 /*
  * integer.c - DevOpsBroker C source file for providing integer-related functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -163,7 +163,7 @@ char *f45efac2_toString_int32(register int32_t value) {
 		value = -value;
 	}
 
-	register char* target = f668c4bd_malloc_size(mallocSize);
+	register char* target = f668c4bd_malloc(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 
@@ -192,7 +192,7 @@ char *f45efac2_toString_uint32(register uint32_t value) {
 	const size_t mallocSize = sizeof(char) * f45efac2_getStringSize_uint32(value);
 	register uint32_t remainder;
 
-	register char* target = f668c4bd_malloc_size(mallocSize);
+	register char* target = f668c4bd_malloc(mallocSize);
 	target += mallocSize;
 	(*--target) = '\0';
 
@@ -217,7 +217,7 @@ char *f45efac2_toStringHex_uint32(register uint32_t value, const uint32_t precis
 	size_t mallocSize = sizeof(char) * (f45efac2_max_uint32(precision + 1, f45efac2_getStringSize_uint32(value)) + 2);
 	register uint32_t remainder;
 
-	register char *target = f668c4bd_malloc_size(mallocSize);
+	register char *target = f668c4bd_malloc(mallocSize);
 	register const char *end = (target + 2);
 	target += mallocSize;
 	(*--target) = '\0';

@@ -40,8 +40,6 @@
 typedef struct CPUID {
 	char modelName[48];
 	char vendorId[16];
-//	uint64_t processorInfo;
-//	uint64_t featureFlags;
 	int maxCpuIdLevel;
 	int family;
 	int model;
@@ -114,7 +112,7 @@ typedef struct CPUID {
 	bool hasF16C;
 	bool hasRDRAND;
 	bool alwaysZero;
-} CPUID __attribute__ ((aligned (16)));;
+} __attribute__ ((aligned (16))) CPUID;
 
 static_assert(sizeof(CPUID) == 160, "Check your assumptions");
 

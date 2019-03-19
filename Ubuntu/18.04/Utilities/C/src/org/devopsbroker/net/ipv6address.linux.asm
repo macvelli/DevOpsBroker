@@ -79,14 +79,18 @@ section .bss                ; RESX directives
 
 ; ══════════════════════════════ Assembly Code ═══════════════════════════════
 
-section .text
+	section .text
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ External Resources ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+extern  malloc
+extern  free
+extern  abort
+extern  a25c96b2_invalidIPv6Address
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_createIPv6Address ~~~~~~~~~~~~~~~~~~~~~~~~
 
 	global  b7808f25_createIPv6Address:function
-	extern  malloc
-	extern  abort
-	extern  a25c96b2_invalidIPv6Address
 b7808f25_createIPv6Address:
 ; Parameters:
 ;	rdi : char *ipAddress
@@ -130,7 +134,6 @@ b7808f25_createIPv6Address:
 ; ~~~~~~~~~~~~~~~~~~~~~~~~ b7808f25_destroyIPv6Address ~~~~~~~~~~~~~~~~~~~~~~~~
 
 	global  b7808f25_destroyIPv6Address:function
-	extern  free
 b7808f25_destroyIPv6Address:
 
 .prologue:                            ; functions typically have a prologue

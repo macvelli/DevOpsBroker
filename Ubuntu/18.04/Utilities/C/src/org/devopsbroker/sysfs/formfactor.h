@@ -1,7 +1,7 @@
 /*
  * formfactor.h - DevOpsBroker C header file for the org.devopsbroker.sysfs.MemoryType enum
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -48,7 +48,7 @@ typedef enum FormFactor {
  * Returns:     The associated FormFactor value
  * ----------------------------------------------------------------------------
  */
-FormFactor a88c5c62_getFormFactor(const char *source);
+FormFactor a88c5c62_getFormFactor(char *source);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    a88c5c62_toStringFormFactor

@@ -65,17 +65,6 @@ void f668c4bd_free(void *ptr) {
 	}
 }
 
-void* f668c4bd_malloc_size(const size_t size) {
-	void *buffer = malloc(size);
-
-	if (buffer == NULL && size != 0) {
-		printErrorMessage(size);
-		abort();
-	}
-
-	return buffer;
-}
-
 void *f668c4bd_malloc_size_size(const size_t typeSize, const size_t numBlocks) {
 	const size_t size = typeSize * numBlocks;
 	void *buffer = malloc(size);

@@ -1,7 +1,7 @@
 /*
  * errorcorrectiontype.c - DevOpsBroker C source file for the org.devopsbroker.sysfs.ErrorCorrectionType enum
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -39,7 +39,7 @@ char *d485dfa0_stringList[] = { "None", "ECC", "Multi-bit ECC" };
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-ErrorCorrectionType d485dfa0_getErrorCorrectionType(register const char *source) {
+ErrorCorrectionType d485dfa0_getErrorCorrectionType(char *source) {
 	// Find the appropriate ErrorCorrectionType
 	for (register int i = 0; i < d485dfa0_NUM_VALUES; i++) {
 		if (f6215943_isEqual(source, d485dfa0_stringList[i])) {

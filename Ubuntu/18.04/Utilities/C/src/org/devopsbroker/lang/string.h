@@ -1,7 +1,7 @@
 /*
  * string.h - DevOpsBroker C header file for string constants and functions
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -27,8 +27,11 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#include <assert.h>
+
 #include <sys/types.h>
 
 #include "memory.h"
@@ -40,8 +43,10 @@
 
 typedef struct String {
 	char *value;
-	size_t length;
+	uint32_t length;
 } String;
+
+static_assert(sizeof(String) == 16, "Check your assumptions");
 
 // ════════════════════════════════ Structures ════════════════════════════════
 

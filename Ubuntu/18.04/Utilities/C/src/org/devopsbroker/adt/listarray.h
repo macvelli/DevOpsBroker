@@ -1,7 +1,7 @@
 /*
  * listarray.h - DevOpsBroker C header file for providing array-based dynamic list functionality
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -27,10 +27,9 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include <stdlib.h>
 #include <stdint.h>
 
-#include "../lang/memory.h"
+#include <assert.h>
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -45,10 +44,69 @@ typedef struct ListArray {
 	uint32_t size;
 } ListArray;
 
+static_assert(sizeof(ListArray) == 16, "Check your assumptions");
+
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_createListArray
+ * Description: Creates a ListArray struct with the default list size
+ *
+ * Returns:     A ListArray struct with the default list size
+ * ----------------------------------------------------------------------------
+ */
+ListArray *b196167f_createListArray();
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_createListArray_uint32
+ * Description: Creates a ListArray struct with the specified list size
+ *
+ * Parameters:
+ *   size       The size of the list to allocate
+ * Returns:     A ListArray struct with the specified list size
+ * ----------------------------------------------------------------------------
+ */
+ListArray *b196167f_createListArray_uint32(const uint32_t size);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_destroyListArray
+ * Description: Frees the memory allocated to the ListArray struct pointer
+ *
+ * Parameters:
+ *   listArray     A pointer to the ListArray instance to destroy
+ * ----------------------------------------------------------------------------
+ */
+void b196167f_destroyListArray(ListArray *listArray);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_initListArray
+ * Description: Initializes a ListArray struct with the default list size
+ *
+ * Parameters:
+ *   listArray      A pointer to the ListArray instance to initalize
+ * ----------------------------------------------------------------------------
+ */
+void b196167f_initListArray(ListArray *listArray);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_initListArray_uint32
+ * Description: Initializes a ListArray struct with the specified list size
+ *
+ * Parameters:
+ *   listArray  A pointer to the ListArray instance to initalize
+ *   size       The size of the list to allocate
+ * ----------------------------------------------------------------------------
+ */
+void b196167f_initListArray_uint32(ListArray *listArray, const uint32_t size);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    b196167f_add
@@ -60,83 +118,5 @@ typedef struct ListArray {
  * ----------------------------------------------------------------------------
  */
 void b196167f_add(ListArray *listArray, void *element);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    b196167f_createListArray
- * Description: Creates a ListArray struct with the default list size
- *
- * Returns:     A ListArray struct with the default list size
- * ----------------------------------------------------------------------------
- */
-static inline ListArray *b196167f_createListArray() {
-	ListArray *listArray = f668c4bd_malloc_size(sizeof(ListArray));
-
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
-	listArray->size = LISTARRAY_DEFAULT_SIZE;
-	listArray->length = 0;
-
-	return listArray;
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    b196167f_createListArray_uint32
- * Description: Creates a ListArray struct with the specified list size
- *
- * Parameters:
- *   size       The size of the list to allocate
- * Returns:     A ListArray struct with the specified list size
- * ----------------------------------------------------------------------------
- */
-static inline ListArray *b196167f_createListArray_uint32(const uint32_t size) {
-	ListArray *listArray = f668c4bd_malloc_size(sizeof(ListArray));
-
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
-	listArray->size = size;
-	listArray->length = 0;
-
-	return listArray;
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    b196167f_destroyListArray
- * Description: Frees the memory allocated to the ListArray struct pointer
- *
- * Parameters:
- *   listArray     A pointer to the ListArray instance to destroy
- * ----------------------------------------------------------------------------
- */
-static inline void b196167f_destroyListArray(ListArray *listArray) {
-	f668c4bd_free(listArray->values);
-	f668c4bd_free(listArray);
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    b196167f_initListArray
- * Description: Initializes a ListArray struct with the default list size
- *
- * Parameters:
- *   listArray      A pointer to the ListArray instance to initalize
- * ----------------------------------------------------------------------------
- */
-static inline void b196167f_initListArray(ListArray *listArray) {
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
-	listArray->size = LISTARRAY_DEFAULT_SIZE;
-	listArray->length = 0;
-}
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    b196167f_initListArray_uint32
- * Description: Initializes a ListArray struct with the specified list size
- *
- * Parameters:
- *   listArray  A pointer to the ListArray instance to initalize
- *   size       The size of the list to allocate
- * ----------------------------------------------------------------------------
- */
-static inline void b196167f_initListArray_uint32(ListArray *listArray, const uint32_t size) {
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
-	listArray->size = size;
-	listArray->length = 0;
-}
 
 #endif /* ORG_DEVOPSBROKER_ADT_LISTARRAY_H */

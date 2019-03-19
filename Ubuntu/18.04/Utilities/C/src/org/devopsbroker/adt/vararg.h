@@ -1,7 +1,7 @@
 /*
- * logline.h - DevOpsBroker C header file for the org.devopsbroker.firelog.LogLine struct
+ * vararg.h - DevOpsBroker C header file for the org.devopsbroker.adt.Vararg struct
  *
- * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -16,14 +16,14 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+ * Developed on Ubuntu 18.04.2 LTS running kernel.osrelease = 4.18.0-16
  *
- * echo ORG_DEVOPSBROKER_FIRELOG_LOGLINE | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_ADT_VARARG | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H
-#define ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H
+#ifndef ORG_DEVOPSBROKER_ADT_VARARG_H
+#define ORG_DEVOPSBROKER_ADT_VARARG_H
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
@@ -31,27 +31,17 @@
 
 #include <assert.h>
 
-#include "../lang/string.h"
-
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
-typedef struct LogLine {
-	char *in;
-	char *out;
-	char *macAddress;
-	char *sourceIPAddr;
-	char *destIPAddr;
-	char *protocol;
-	uint32_t sourcePort;
-	uint32_t destPort;
-	uint32_t count;
-	uint32_t lineLength;
-} LogLine;
+typedef struct Vararg {
+	uint32_t size;
+	void *list[];
+} __attribute__ ((aligned (16))) Vararg;
 
-static_assert(sizeof(LogLine) == 64, "Check your assumptions");
+static_assert(sizeof(Vararg) == 16, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -61,48 +51,26 @@ static_assert(sizeof(LogLine) == 64, "Check your assumptions");
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_createLogLine
- * Description: Creates a LogLine struct instance
- *
- * Returns:     A LogLine struct instance
- * ----------------------------------------------------------------------------
- */
-LogLine *e88eda74_createLogLine();
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_destroyLogLine
- * Description: Frees the memory allocated to the LogLine struct pointer
+ * Function:    f590a9e5_createVararg
+ * Description: Creates a Vararg struct instance
  *
  * Parameters:
- *   logLine	A pointer to the LogLine instance to destroy
+ *   numArgs    The number of variable arguments
+ *   ...        The list of variable arguments
+ *
+ * Returns:     An initialized Vararg struct instance created with malloc()
  * ----------------------------------------------------------------------------
  */
-void e88eda74_destroyLogLine(LogLine *logLine);
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+Vararg *f590a9e5_createVararg(uint32_t numArgs, ...);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_initLogLine
- * Description: Initializes an existing LogLine struct
+ * Function:    f590a9e5_destroyVararg
+ * Description: Frees the memory allocated to the Vararg struct pointer
  *
  * Parameters:
- *   logLine	A pointer to the LogLine instance to initalize
- *   line       A pointer reference to the line data
+ *   vararg     A pointer to the Vararg instance to destroy
  * ----------------------------------------------------------------------------
  */
-void e88eda74_initLogLine(LogLine *logLine, String *line);
+void f590a9e5_destroyVararg(Vararg *vararg);
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_cloneLogLine
- * Description: Clones the LogLine contents contained within the pointer
- *
- * Parameters:
- *   logLine    The LogLine instance to clone
- * Returns:     A cloned instance of the LogLine
- * ----------------------------------------------------------------------------
- */
-LogLine *e88eda74_cloneLogLine(LogLine *logLine);
-
-#endif /* ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H */
+#endif /* ORG_DEVOPSBROKER_ADT_VARARG_H */

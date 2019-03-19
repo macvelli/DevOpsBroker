@@ -28,12 +28,26 @@ include /etc/devops/globals.mk
 
 ################################## Variables ##################################
 
-SRC_DIR := $(CURDIR)/src/org/devopsbroker/firelog
-OBJ_DIR := $(CURDIR)/obj/org/devopsbroker/firelog
+ifndef ASM
+	ASM := /usr/bin/nasm
+	ASMFLAGS := -felf64 -gdwarf
 
-LANG_DIR := $(CURDIR)/src/org/devopsbroker/lang
+	CC := /usr/bin/gcc
+	CFLAGS := -Wall -gdwarf -m64 -fdiagnostics-color=always
 
-LL_DEPS := $(LANG_DIR)/integer.h $(LANG_DIR)/memory.h $(LANG_DIR)/string.h
+	BASEDIR := $(shell /usr/bin/realpath $(CURDIR)/../../../..)
+else
+	BASEDIR := $(CURDIR)
+endif
+
+SRC_DIR := $(BASEDIR)/src/org/devopsbroker/firelog
+OBJ_DIR := $(BASEDIR)/obj/org/devopsbroker/firelog
+
+C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
+C_OBJECTS := $(subst /src/,/obj/,$(C_SOURCES:.c=.o))
+
+ASM_SOURCES := $(wildcard $(SRC_DIR)/*.asm)
+ASM_OBJECTS := $(subst /src/,/obj/,$(ASM_SOURCES:.asm=.o))
 
 ################################### Targets ###################################
 
@@ -42,7 +56,7 @@ LL_DEPS := $(LANG_DIR)/integer.h $(LANG_DIR)/memory.h $(LANG_DIR)/string.h
 
 default: all
 
-all: $(OBJ_DIR)/logline.o
+all:	prepare $(C_OBJECTS) $(ASM_OBJECTS)
 
 clean:
 	$(call printInfo,Cleaning $(OBJ_DIR) directory)
@@ -51,15 +65,23 @@ clean:
 prepare:
 	/bin/mkdir -p --mode=750 $(OBJ_DIR)
 
-# For some reason I have to put "| prepare" else this target is rebuilt all the time
-$(OBJ_DIR)/logline.o: $(SRC_DIR)/logline.c $(SRC_DIR)/logline.h $(LL_DEPS) | prepare
+# Obtain object files for the C utilities
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/%.h | prepare
 	$(call printInfo,Compiling $(@F))
-	$(CC) $(CFLAGS) -c $(SRC_DIR)/logline.c -o $(OBJ_DIR)/logline.o
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Obtain object files for the ASM libraries
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm | prepare
+	$(call printInfo,Compiling $(@F))
+	$(ASM) $(ASMFLAGS) $< -o $@
 
 printenv:
 	echo "  MAKEFILE_LIST: $(MAKEFILE_LIST)"
 	echo "         TMPDIR: $(TMPDIR)"
+	echo "        BASEDIR: $(BASEDIR)"
 	echo "         CURDIR: $(CURDIR)"
+	echo "            ASM: $(ASM)"
+	echo "       ASMFLAGS: $(ASMFLAGS)"
 	echo "             CC: $(CC)"
 	echo "         CFLAGS: $(CFLAGS)"
 	echo "        SRC_DIR: $(SRC_DIR)"

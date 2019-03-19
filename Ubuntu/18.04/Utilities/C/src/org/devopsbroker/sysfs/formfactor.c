@@ -1,7 +1,7 @@
 /*
  * formfactor.c - DevOpsBroker C source file for the org.devopsbroker.sysfs.FormFactor enum
  *
- * Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2018-2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -39,7 +39,7 @@ char *a88c5c62_stringList[] = { "Unknown", "DIMM", "SO-DIMM" };
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-FormFactor a88c5c62_getFormFactor(register const char *source) {
+FormFactor a88c5c62_getFormFactor(char *source) {
 	// Find the appropriate FormFactor
 	for (register int i = 0; i < a88c5c62_NUM_VALUES; i++) {
 		if (f6215943_isEqual(source, a88c5c62_stringList[i])) {
