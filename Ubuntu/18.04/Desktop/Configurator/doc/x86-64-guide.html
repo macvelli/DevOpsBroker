@@ -306,6 +306,7 @@ function toggleDisplay(id) {
           </li>
           <li><a href="#sse2DataMovement">SSE2 Data Movement</a></li>
           <li><a href="#sse2Shuffling">SSE2 Data Shuffling</a></li>
+          <li><a href="#sse2Arithmetic">SSE2 Arithmetic Instructions</a></li>
           <li><a href="#sse2Logic">SSE2 Logic Instructions</a></li>
           <li><a href="#sse2Compare">SSE2 Compare Instructions</a></li>
         </ul>
@@ -525,6 +526,10 @@ function toggleDisplay(id) {
       <ul>
         <li>The stack must be 16-byte aligned just before making the call instruction</li>
       </ul>
+      <li>If the function being called is a variadic function, then the number of
+          floating point arguments must be provided in the <code>AL</code> register</li>
+      <li><b>TODO:</b> The ABI needs to be extended so that the number of non-floating
+          point variadic arguments is passed in the <code>AH</code> register</li>
       <li>Scratch registers that can be used by the function include <code>RAX</code>,
           <code>RDI</code>, <code>RSI</code>, <code>RDX</code>, <code>RCX</code>,
           <code>R8</code>, <code>R9</code>, <code>R10</code>, and <code>R11</code></li>
@@ -1283,13 +1288,47 @@ function toggleDisplay(id) {
         <code>movups xmm0, [rdi]</code><br>
         <code>movups [rdi], xmm1</code>
       </dd>
+      <dt onclick="toggleDisplay('movhpd')"><b>movhpd</b> &boxh; move high packed double-precision floating-point value</dt>
+      <dd id="movhpd" style="display: none;">
+        <ul>
+          <li>Moves a 64-bit double-precision floating-point value from the
+              source 64-bit memory location into the top 64 bits of the XMM register</li>
+          <li>The bottom 64 bits of the XMM register are preserved</li>
+          <li>Cannot be used to move between XMM registers</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movhpd &lt;xmm&gt;, &lt;mem64&gt;</code><br>
+        <code>movhpd &lt;mem64&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movhpd xmm0, [rdi]</code><br>
+        <code>movhpd [rdi], xmm1</code>
+      </dd>
+      <dt onclick="toggleDisplay('movlpd')"><b>movlpd</b> &boxh; move low packed double-precision floating-point value</dt>
+      <dd id="movlpd" style="display: none;">
+        <ul>
+          <li>Moves a 64-bit double-precision floating-point value from the
+              source 64-bit memory location into the bottom 64 bits of the XMM register</li>
+          <li>The top 64 bits of the XMM register are preserved</li>
+          <li>Cannot be used to move between XMM registers</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movlpd &lt;xmm&gt;, &lt;mem64&gt;</code><br>
+        <code>movlpd &lt;mem64&gt;, &lt;xmm&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movlpd xmm0, [rdi]</code><br>
+        <code>movlpd [rdi], xmm1</code>
+      </dd>
       <dt onclick="toggleDisplay('movhps')"><b>movhps</b> &boxh; move high packed single-precision floating-point values</dt>
       <dd id="movhps" style="display: none;">
         <ul>
           <li>Moves two 32-bit single-precision floating-point values from a
               64-bit memory location into the top 64 bits of the XMM register</li>
-          <li>Moves the top 64 bits of an XMM register into the 64-bit memory
-              location</li>
+          <li>The bottom 64 bits of the XMM register are preserved</li>
+          <li>Cannot be used to move between XMM registers</li>
         </ul>
         <br>
         <em>Syntax</em><br>
@@ -1305,8 +1344,8 @@ function toggleDisplay(id) {
         <ul>
           <li>Moves two 32-bit single-precision floating-point values from a
               64-bit memory location into the bottom 64 bits of the XMM register</li>
-          <li>Moves the bottom 64 bits of an XMM register into the 64-bit memory
-              location</li>
+          <li>The top 64 bits of the XMM register are preserved</li>
+          <li>Cannot be used to move between XMM registers</li>
         </ul>
         <br>
         <em>Syntax</em><br>
@@ -1462,6 +1501,89 @@ function toggleDisplay(id) {
     </dl>
     </p>
 
+    <h3 id="sse2Arithmetic">SSE2 Arithmetic Instructions</h3>
+    <p>
+    There are generally two types of SSE2 arithmetic instructions available:
+    <ul>
+      <li>Packed</li>
+      <li>Scalar</li>
+    </ul>
+    Unfortunately, scalar instructions are limited only to single-precision and
+    double-precision floating-point values. The only available instructions for
+    integers are of the packed variety.
+
+    <dl class="instruction">
+      <dt onclick="toggleDisplay('paddb')"><b>paddb</b> &boxh; add packed byte integers</dt>
+      <dd id="paddb" style="display: none;">
+        <ul>
+          <li>Performs a SIMD add of the packed 8-bit byte integers from the source
+              and the destination XMM register</li>
+          <li>The source may either be another XMM register or a 64-bit memory
+              location with a 128-bit value</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>paddb &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>paddb &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>paddb xmm0, xmm1</code><br>
+        <code>paddb xmm0, [rdi]</code>
+      </dd>
+      <dt onclick="toggleDisplay('paddw')"><b>paddw</b> &boxh; add packed word integers</dt>
+      <dd id="paddw" style="display: none;">
+        <ul>
+          <li>Performs a SIMD add of the packed 16-bit word integers from the source
+              and the destination XMM register</li>
+          <li>The source may either be another XMM register or a 64-bit memory
+              location with a 128-bit value</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>paddw &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>paddw &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>paddw xmm0, xmm1</code><br>
+        <code>paddw xmm0, [rdi]</code>
+      </dd>
+      <dt onclick="toggleDisplay('paddd')"><b>paddd</b> &boxh; add packed doubleword integers</dt>
+      <dd id="paddd" style="display: none;">
+        <ul>
+          <li>Performs a SIMD add of the packed 32-bit doubleword integers from
+              the source and the destination XMM register</li>
+          <li>The source may either be another XMM register or a 64-bit memory
+              location with a 128-bit value</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>paddd &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>paddd &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>paddd xmm0, xmm1</code><br>
+        <code>paddd xmm0, [rdi]</code>
+      </dd>
+      <dt onclick="toggleDisplay('paddq')"><b>paddq</b> &boxh; add packed quadword integers</dt>
+      <dd id="paddq" style="display: none;">
+        <ul>
+          <li>Performs a SIMD add of the packed 64-bit quadword integers from
+              the source and the destination XMM register</li>
+          <li>The source may either be another XMM register or a 64-bit memory
+              location with a 128-bit value</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>paddq &lt;xmm&gt;, &lt;xmm&gt;</code><br>
+        <code>paddq &lt;xmm&gt;, &lt;mem128&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>paddq xmm0, xmm1</code><br>
+        <code>paddq xmm0, [rdi]</code>
+      </dd>
+    </dl>
+    </p>
+
     <h3 id="sse2Logic">SSE2 Logic Instructions</h3>
     <p>
     The SSE2 logic instructions allow the capability to perform the usual bitwise
@@ -1474,8 +1596,8 @@ function toggleDisplay(id) {
         <ul>
           <li>Performs a 128-bit bitwise logical AND operation between the source
               and destination XMM register</li>
-          <li>The source may either be another XMM register or a 128-bit memory
-              location</li>
+          <li>The source may either be another XMM register or a 64-bit memory
+              location with a 128-bit value</li>
         </ul>
         <br>
         <em>Syntax</em><br>
