@@ -498,6 +498,14 @@ if [ "$command" == 'nautilus' ] || [ "$command" == 'all' ]; then
 	# org.gnome.nautilus.preferences settings
 	#
 
+	# Set always-use-location-entry
+	if [ "$($EXEC_GSETTINGS get org.gnome.nautilus.preferences always-use-location-entry)" == 'false' ]; then
+		printInfo 'Enabling location entry'
+
+		$EXEC_GSETTINGS set org.gnome.nautilus.preferences always-use-location-entry true
+		echoOnExit=true
+	fi
+
 	# Set show-create-link
 	if [ "$($EXEC_GSETTINGS get org.gnome.nautilus.preferences show-create-link)" == 'false' ]; then
 		printInfo 'Enabling context menu for creating links'

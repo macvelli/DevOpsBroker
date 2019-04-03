@@ -73,7 +73,7 @@ crashReportList=()
 ################################### Actions ###################################
 
 set +o errexit
-IFS=' '; crashReportList=( $($EXEC_LS /var/crash/*.crash 2>/dev/null) ); IFS=$'\n\t'
+unset IFS; crashReportList=( $($EXEC_LS /var/crash/*.crash 2>/dev/null) ); IFS=$'\n\t'
 set -o errexit
 
 if [ ${#crashReportList[@]} -eq 0 ]; then

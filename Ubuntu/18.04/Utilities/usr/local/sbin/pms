@@ -454,7 +454,8 @@ elif [ $command == 'list' ]; then
 				# Check the Apt cache first for the package
 				mapfile -t pkgInfo < <($EXEC_APT_CACHE policy $name 2>/dev/null)
 
-				if [ ! -z "$pkgInfo" ]; then
+				# TODO: This fails with a pkgInfo: unbound variable message if the package name is misspelled
+				if [ "$pkgInfo" ]; then
 					echo "${pkgInfo[1]:2}"
 
 					if [[ ! "${pkgInfo[1]}" =~ 'Installed: (none)'$ ]]; then
