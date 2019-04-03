@@ -150,7 +150,7 @@ function installPackage() {
 
 	if [ ! -f "$1" ]; then
 		printBanner "Installing $2"
-		$EXEC_APT -y install $2
+		$EXEC_APT --yes --no-install-recommends install $2
 		PKG_INSTALLED=true
 		echo
 	fi
@@ -297,6 +297,9 @@ fi
 
 #~~~~~~~~~~~~~~~~~~~~ Applications / Libraries / Utilities ~~~~~~~~~~~~~~~~~~~~
 
+# Install abcde
+installPackage '/usr/bin/abcde' 'abcde'
+
 # Install apparmor-utils
 installPackage '/usr/sbin/aa-genprof' 'apparmor-utils'
 
@@ -324,6 +327,9 @@ installPackage '/usr/bin/dig' 'dnsutils'
 # Install dos2unix
 installPackage '/usr/bin/dos2unix' 'dos2unix'
 
+# Install eject
+installPackage '/usr/bin/eject' 'eject'
+
 # Install ethtool
 installPackage '/sbin/ethtool' 'ethtool'
 
@@ -332,6 +338,9 @@ installPackage '/sbin/mkfs.exfat' 'exfat-fuse exfat-utils'
 
 # Install fio
 installPackage '/usr/bin/fio' 'fio'
+
+# Install flac
+installPackage '/usr/bin/flac' 'flac'
 
 # Install flashplugin-installer
 installPackage '/usr/lib/flashplugin-installer/install_plugin' 'flashplugin-installer'
@@ -405,6 +414,9 @@ installPackage '/usr/bin/ioping' 'ioping'
 
 # Uninstall irqbalance
 uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
+
+# Install lame
+installPackage '/usr/bin/lame' 'lame'
 
 # Install libaio-dev
 installPackage '/usr/include/libaio.h' 'libaio-dev'

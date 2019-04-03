@@ -30,6 +30,7 @@
 # o /etc/profile
 # o /etc/tidy.conf
 # o /etc/apparmor.d/local/usr.bin.evince
+# o /etc/apparmor.d/local/usr.sbin.unbound
 # o /etc/bash_completion.d/*
 # o /etc/default/resolvconf
 # o /etc/devops/ansi.conf
@@ -164,6 +165,9 @@ installConfig 'tidy.conf' "$SCRIPT_DIR" /etc
 
 # Install /etc/apparmor.d/local/usr.bin.evince
 installConfig 'usr.bin.evince' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/local
+
+# Install /etc/apparmor.d/local/usr.sbin.unbound
+installConfig 'usr.sbin.unbound' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/local
 
 # Install /etc/bash_completion.d/*
 $EXEC_CP -uv "$SCRIPT_DIR"/bash_completion.d/* /etc/bash_completion.d
