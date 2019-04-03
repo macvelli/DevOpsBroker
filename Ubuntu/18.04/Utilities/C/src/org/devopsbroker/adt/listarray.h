@@ -33,8 +33,6 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
-// Global Constants
-#define LISTARRAY_DEFAULT_SIZE 8
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -69,7 +67,7 @@ ListArray *b196167f_createListArray();
  * Parameters:
  *   size       The size of the list to allocate
  * Returns:     A ListArray struct with the specified list size
- * ----------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  */
 ListArray *b196167f_createListArray_uint32(const uint32_t size);
 
@@ -82,6 +80,16 @@ ListArray *b196167f_createListArray_uint32(const uint32_t size);
  * ----------------------------------------------------------------------------
  */
 void b196167f_destroyListArray(ListArray *listArray);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_destroyAllElements
+ * Description: Frees memory allocated to all elements contained within the ListArray
+ *
+ * Parameters:
+ *   listArray     A pointer to the ListArray instance
+ * ----------------------------------------------------------------------------
+ */
+void b196167f_destroyAllElements(ListArray *listArray);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

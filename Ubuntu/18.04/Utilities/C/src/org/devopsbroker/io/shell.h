@@ -1,7 +1,7 @@
 /*
- * shell.h - C header file for the org.devopsbroker.io.Shell struct
+ * shell.h - DevOpsBroker C header file for the org.devopsbroker.io.Shell struct
  *
- * Copyright (C) 2019 AUTHOR_NAME <email@address.com>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -38,9 +38,10 @@
 
 typedef struct Shell {
 	FILE *file;
+	int fd;
 } Shell;
 
-static_assert(sizeof(Shell) == 8, "Check your assumptions");
+static_assert(sizeof(Shell) == 16, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 

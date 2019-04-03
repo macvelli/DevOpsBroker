@@ -34,16 +34,13 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define B196167F_DEFAULT_SIZE 8
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
-static inline void resizeListArray(ListArray* listArray) {
-	listArray->size <<= 1;
-	listArray->values = f668c4bd_realloc_void_size_size(listArray->values, sizeof(void *), listArray->size);
-}
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -55,8 +52,8 @@ static inline void resizeListArray(ListArray* listArray) {
 ListArray *b196167f_createListArray() {
 	ListArray *listArray = f668c4bd_malloc(sizeof(ListArray));
 
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
-	listArray->size = LISTARRAY_DEFAULT_SIZE;
+	listArray->values = f668c4bd_malloc(sizeof(void*) * B196167F_DEFAULT_SIZE);
+	listArray->size = B196167F_DEFAULT_SIZE;
 	listArray->length = 0;
 
 	return listArray;
@@ -65,7 +62,7 @@ ListArray *b196167f_createListArray() {
 ListArray *b196167f_createListArray_uint32(const uint32_t size) {
 	ListArray *listArray = f668c4bd_malloc(sizeof(ListArray));
 
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
+	listArray->values = f668c4bd_malloc(sizeof(void*) * size);
 	listArray->size = size;
 	listArray->length = 0;
 
@@ -79,24 +76,8 @@ void b196167f_destroyListArray(ListArray *listArray) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void b196167f_initListArray(ListArray *listArray) {
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), LISTARRAY_DEFAULT_SIZE);
-	listArray->size = LISTARRAY_DEFAULT_SIZE;
-	listArray->length = 0;
-}
-
 void b196167f_initListArray_uint32(ListArray *listArray, const uint32_t size) {
-	listArray->values = f668c4bd_malloc_size_size(sizeof(void*), size);
+	listArray->values = f668c4bd_malloc(sizeof(void*) * size);
 	listArray->size = size;
 	listArray->length = 0;
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-void b196167f_add(ListArray *listArray, void *element) {
-	if (listArray->length == listArray->size) {
-		resizeListArray(listArray);
-	}
-
-	listArray->values[listArray->length++] = element;
 }

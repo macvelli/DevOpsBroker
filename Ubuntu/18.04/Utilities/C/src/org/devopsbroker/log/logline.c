@@ -62,7 +62,7 @@ static char *IGMP = "IGMP";
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LogLine *e88eda74_createLogLine() {
+LogLine *b45c9f7e_createLogLine() {
 	LogLine *logLine = f668c4bd_malloc(sizeof(LogLine));
 
 	// Perform initializations
@@ -71,14 +71,14 @@ LogLine *e88eda74_createLogLine() {
 	return logLine;
 }
 
-void e88eda74_destroyLogLine(LogLine *logLine) {
+void b45c9f7e_destroyLogLine(LogLine *logLine) {
 	f668c4bd_free(logLine->in);
 	f668c4bd_free(logLine);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void e88eda74_initLogLine(LogLine *logLine, String *line) {
+void b45c9f7e_initLogLine(LogLine *logLine, String *line) {
 	char *position = line->value;
 
 	// in
@@ -140,7 +140,7 @@ void e88eda74_initLogLine(LogLine *logLine, String *line) {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LogLine *e88eda74_cloneLogLine(LogLine *logLine) {
+LogLine *b45c9f7e_cloneLogLine(LogLine *logLine) {
 	register LogLine *clone = f668c4bd_malloc(sizeof(LogLine));
 
 	// in

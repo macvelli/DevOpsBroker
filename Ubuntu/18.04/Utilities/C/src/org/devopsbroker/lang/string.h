@@ -44,6 +44,7 @@
 typedef struct String {
 	char *value;
 	uint32_t length;
+	uint32_t size;
 } String;
 
 static_assert(sizeof(String) == 16, "Check your assumptions");
@@ -120,7 +121,7 @@ static inline String *f6215943_createString(const size_t length) {
  * Returns:     A copied instance of the char* and of the specified length
  * ----------------------------------------------------------------------------
  */
-char *f6215943_copy(const char *source, const uint32_t length);
+char *f6215943_copy(char *source, uint32_t length);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f6215943_copy_to_buffer

@@ -29,11 +29,23 @@ include /etc/devops/globals.mk
 ################################## Variables ##################################
 
 ASM := /usr/bin/nasm
-ASMFLAGS := -felf64 -gdwarf
-
 CC := /usr/bin/gcc
-CFLAGS := -Wall -gdwarf -m64 -fdiagnostics-color=always
 LDFLAGS := -m64
+
+ifeq ($(DEBUG), 1)
+    ASMFLAGS := -felf64 -gdwarf
+    CFLAGS := -Wall -gdwarf -m64 -Og -fdiagnostics-color=always -DDEBUG
+else
+    ASMFLAGS := -felf64
+    CFLAGS := -Wall -m64 -O2 -fdiagnostics-color=always -DNDEBUG
+endif
+
+BIN_DIR := bin
+SRC_DIR := src
+OBJ_DIR := obj
+
+C_SOURCES := $(shell /bin/ls $(SRC_DIR)/*.c)
+C_BINARIES := $(subst src/,bin/,$(C_SOURCES:.c=))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Exports ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -45,18 +57,15 @@ export CFLAGS
 ################################### Targets ###################################
 
 .ONESHELL:
-.PHONY: default all clean library install ls \
-	lib-adt lib-firelog lib-info lib-io lib-lang lib-net lib-socket \
-	lib-sysfs lib-terminal lib-text lib-time
+.PHONY: default clean install library ls
 
-default: all
-
-all:	bin/between bin/convert-temp bin/derivesubnet bin/firelog bin/nettuner \
-	bin/schedtuner bin/scriptinfo bin/verifyclass bin/verifyip
+default: $(C_BINARIES)
 
 clean:
+	$(call printInfo,Cleaning $(OBJ_DIR) directory)
+	/bin/rm -fv $(OBJ_DIR)/*
+
 	/bin/rm -rfv bin/*
-	/bin/rm -rfv obj/*
 	/bin/rm -fv lib/*.a
 	echo
 
@@ -65,119 +74,79 @@ prepare:
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Library ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-lib-adt:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/adt/adt.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-firelog:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/firelog/firelog.mk $(filter-out $@ install bin/firelog,$(MAKECMDGOALS))
-
-lib-info:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/info/info.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-io:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/io/io.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-lang:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/lang/lang.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-net:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/net/net.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-socket:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/socket/socket.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-sysfs:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/sysfs/sysfs.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-terminal:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/terminal/terminal.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-text:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/text/text.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-lib-time:
-	@umask $(UMASK) && \
-	$(MAKE) -f src/org/devopsbroker/time/time.mk $(filter-out $@ install library,$(MAKECMDGOALS))
-
-library: lib-adt lib-info lib-io lib-lang lib-net lib-socket lib-sysfs lib-terminal lib-text lib-time
-	@umask $(UMASK) && \
-	$(MAKE) -f lib/libdevopsbroker.mk $(filter-out $@ install library,$(MAKECMDGOALS))
+library:
+	@umask $(UMASK) && $(MAKE) -f libdevopsbroker.mk default
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Obtain object files for the C utilities
-obj/%.o: src/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(call printInfo,Compiling $(@F))
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Obtain object files for the ASM libraries
-obj/%.o: src/%.asm
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm
 	$(call printInfo,Compiling $(@F))
 	$(ASM) $(ASMFLAGS) $< -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/between: obj/between.o
+bin/between: obj/between.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 	$(call printInfo,Testing $(@) executable)
 	test/testBetween.sh
 
 # Have to put the library at the end else the linker blows chunks
-bin/convert-temp: obj/convert-temp.o obj/convert-temp.linux.o
+bin/convert-temp: obj/convert-temp.o obj/convert-temp.linux.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 	/usr/bin/strip -s $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/derivesubnet: obj/derivesubnet.o
+bin/derivesubnet: obj/derivesubnet.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/firelog: obj/firelog.o obj/org/devopsbroker/firelog/logline.o | lib-firelog
+bin/firechain: obj/firechain.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/nettuner: obj/nettuner.o $(NETTUNER_DEPS)
+bin/firelog: obj/firelog.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/schedtuner: obj/schedtuner.o
+bin/nettuner: obj/nettuner.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/scriptinfo: obj/scriptinfo.o obj/scriptinfo.linux.o
+bin/schedtuner: obj/schedtuner.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
+
+# Have to put the library at the end else the linker blows chunks
+bin/scriptinfo: obj/scriptinfo.o obj/scriptinfo.linux.o lib/libdevopsbroker.a
+	$(call printInfo,Creating $(@) executable)
+	$(CC) $(LDFLAGS) $^ -o $@
 	/usr/bin/strip -s $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/trim: obj/trim.o
+bin/trim: obj/trim.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/verifyclass: obj/verifyclass.o
+bin/verifyclass: obj/verifyclass.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $< lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 
 # Have to put the library at the end else the linker blows chunks
-bin/verifyip: obj/verifyip.o obj/verifyip.linux.o
+bin/verifyip: obj/verifyip.o obj/verifyip.linux.o lib/libdevopsbroker.a
 	$(call printInfo,Creating $(@) executable)
-	$(CC) $(LDFLAGS) $^ lib/libdevopsbroker.a -o $@
+	$(CC) $(LDFLAGS) $^ -o $@
 	/usr/bin/strip -s $@
 	$(call printInfo,Testing $(@) executable)
 	test/testVerifyIP.sh
@@ -196,20 +165,10 @@ install: all
 ls:
 	echo "Phony Targets:"
 	echo "  default"
-	echo "  all"
 	echo "  clean"
 	echo "  install"
-	echo "  lib-adt"
-	echo "  lib-firelog"
-	echo "  lib-info"
-	echo "  lib-io"
-	echo "  lib-lang"
-	echo "  lib-net"
-	echo "  lib-sysfs"
-	echo "  lib-terminal"
-	echo "  lib-text"
-	echo "  lib-time"
 	echo "  library"
+	echo "  ls"
 	echo
 	echo "Executable Targets:"
 	echo "  between"
@@ -225,6 +184,8 @@ ls:
 
 printenv:
 	echo "  MAKEFILE_LIST: $(MAKEFILE_LIST)"
+	echo "   MAKECMDGOALS: $(MAKECMDGOALS)"
+	echo "          DEBUG: $(DEBUG)"
 	echo "         TMPDIR: $(TMPDIR)"
 	echo "         CURDIR: $(CURDIR)"
 	echo "            ASM: $(ASM)"
@@ -232,4 +193,5 @@ printenv:
 	echo "             CC: $(CC)"
 	echo "         CFLAGS: $(CFLAGS)"
 	echo "        LDFLAGS: $(LDFLAGS)"
+	echo "     C_BINARIES: $(C_BINARIES)"
 	echo

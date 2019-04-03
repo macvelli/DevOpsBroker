@@ -1,7 +1,7 @@
 /*
- * shell.c - C source file for the org.devopsbroker.io.Shell struct
+ * shell.c - DevOpsBroker C source file for the org.devopsbroker.io.Shell struct
  *
- * Copyright (C) 2019 AUTHOR_NAME <email@address.com>
+ * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -52,6 +52,9 @@ void f6843e7e_openShellForRead(Shell *shell, const char *command) {
 		printf("Cannot open file\n");
 		exit(EXIT_FAILURE);
 	}
+
+	// TODO: I can get the file descriptor for an existing stream, but not the existing stream from a file descriptor
+	shell->fd = fileno(shell->file);
 }
 
 void f6843e7e_closeShell(Shell *shell) {

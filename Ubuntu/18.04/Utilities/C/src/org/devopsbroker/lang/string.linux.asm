@@ -22,6 +22,7 @@
 ; This file implements the following x86-64 assembly language functions for the
 ; org.devopsbroker.lang.string.h header file:
 ;
+;   o char *f6215943_copy(char *source, uint32_t length);
 ;   o char *f6215943_trim(char *string);
 ; -----------------------------------------------------------------------------
 ;
@@ -46,6 +47,74 @@ section .bss                ; RESX directives
 ; ══════════════════════════════ Assembly Code ═══════════════════════════════
 
 	section .text
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ External Resources ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+extern  malloc
+extern  abort
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ f6215943_copy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	global  f6215943_copy:function
+f6215943_copy:
+; Parameters:
+;	rdi : char *source
+;	rsi : uint32_t length
+; Local Variables:
+;	rdi : char *destination
+;	rsi : char *source
+;	edx : uint32_t length
+;	ecx : count register for repeat instruction
+
+.prologue:                            ; functions typically have a prologue
+	test       esi, esi               ; if (length == 0)
+	jz         .epilogue
+
+.malloc:
+	push       rdi                    ; save char *source
+	push       rsi                    ; save uint32_t length
+	sub        rsp, 8                 ; align stack frame before calling malloc()
+
+	mov        rdi, rsi               ; malloc(length+1)
+	inc        rdi
+	call       malloc WRT ..plt
+
+	test       rax, rax               ; if (ptr == NULL)
+	je         .fatalError
+
+	add        rsp, 8                 ; unalign stack frame after calling malloc()
+	pop        rdx                    ; retrieve uint32_t length
+	pop        rsi                    ; retrieve char *source
+
+.copyString:
+	mov        rdi, rax               ; rdi = char *destination
+	cld                               ; clear direction flag in EFLAGS register
+
+	cmp        edx, 0x08              ; if (length < 8)
+	jb         .copyBytes
+
+.copyEightBytes:
+	mov        ecx, edx               ; calculate how many eight byte chunks to copy
+	shr        ecx, 3                 ; ecx = length / 8
+	mov        r8d, ecx
+	shl        r8d, 3
+	sub        edx, r8d               ; edx = length % 8
+
+	rep movsq                         ; move ecx quadwords from char *source to char *destination
+
+	test       edx, edx
+	jz         .epilogue
+
+.copyBytes:
+	mov        ecx, edx
+	rep movsb                         ; move ecx bytes from char *source to char *destination
+
+.epilogue:
+	mov        [rdi+1], byte 0x00     ; terminate char *destination
+	ret                               ; pop return address from stack and jump there
+
+.fatalError:
+	call       abort WRT ..plt
 
 ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ f6215943_trim ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -63,9 +63,9 @@ f668c4bd_malloc:
 ;	rax : void *ptr
 
 .prologue:                            ; functions typically have a prologue
-	add        rsi, 0x0F              ; size = ((size + 15) / 16) * 16
-	shr        rsi, 4
-	shl        rsi, 4
+	add        rdi, 0x0F              ; size = ((size + 15) / 16) * 16
+	shr        rdi, 4
+	shl        rdi, 4
 
 .malloc:
 	sub        rsp, 8                 ; align stack frame before calling malloc()

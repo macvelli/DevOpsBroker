@@ -36,16 +36,16 @@
 #include <locale.h>
 
 #include "org/devopsbroker/adt/listarray.h"
-#include "org/devopsbroker/firelog/logline.h"
-#include "org/devopsbroker/io/file.h"
 #include "org/devopsbroker/io/pipe.h"
 #include "org/devopsbroker/lang/error.h"
 #include "org/devopsbroker/lang/system.h"
+#include "org/devopsbroker/log/logline.h"
 #include "org/devopsbroker/text/linebuffer.h"
 #include "org/devopsbroker/text/regex.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define END_OF_FILE   0
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -86,22 +86,21 @@ int main(int argc, char *argv[]) {
 	// Initialize the LineBuffer
 	String *line = NULL;
 	LineBuffer lineBuffer;
-	char buffer[PIPE_BUFFER_LENGTH];
-	c196bc72_initLineBuffer(&lineBuffer, buffer);
+	c196bc72_initLineBuffer(&lineBuffer);
 
 	// Execute dmesg
 	Pipe pipe;
 	const pid_t child = c16819a0_execute_pipe("/bin/dmesg", argList, &pipe);
 
 	// Check for a firewall BLOCK header
-	register ssize_t numBytes = e2f74138_readFile(*pipe.read, buffer, PIPE_BUFFER_LENGTH, dmesg);
+	int numBytes = c196bc72_populateLineBuffer(&lineBuffer, *pipe.read);
 	while (numBytes != END_OF_FILE) {
-		line = c196bc72_getLine(&lineBuffer, numBytes);
+		line = c196bc72_getLine(&lineBuffer);
 
 		while (line != NULL) {
 			// Check for a firewall BLOCK header
 			if (b395ed5f_matchRegExpr(&regExpr, line->value, 0)) {
-				e88eda74_initLogLine(&logLine, line);
+				b45c9f7e_initLogLine(&logLine, line);
 
 				if (*logLine.in) {
 					filterInputLogLine(&logLine);
@@ -110,10 +109,10 @@ int main(int argc, char *argv[]) {
 				}
 			}
 
-			line = c196bc72_getLine(&lineBuffer, numBytes);
+			line = c196bc72_getLine(&lineBuffer);
 		}
 
-		numBytes = e2f74138_readFile(*pipe.read, buffer, PIPE_BUFFER_LENGTH, dmesg);
+		numBytes = c196bc72_populateLineBuffer(&lineBuffer, *pipe.read);
 	}
 
 	// Close the read side of the pipe and wait for child process to finish
@@ -150,7 +149,7 @@ int main(int argc, char *argv[]) {
 					listEntry->sourceIPAddr, listEntry->destIPAddr, listEntry->protocol, listEntry->sourcePort, listEntry->destPort);
 			}
 
-			e88eda74_destroyLogLine(listEntry);
+			b45c9f7e_destroyLogLine(listEntry);
 		}
 
 		b196167f_destroyListArray(inputLogLineList);
@@ -174,7 +173,7 @@ int main(int argc, char *argv[]) {
 			printf("Count: %u OUT=%s SRC=%s DST=%s PROTO=%s SPT=%u DPT=%u\n", listEntry->count, listEntry->out, listEntry->sourceIPAddr, \
 				 listEntry->destIPAddr, listEntry->protocol, listEntry->sourcePort, listEntry->destPort);
 
-			e88eda74_destroyLogLine(listEntry);
+			b45c9f7e_destroyLogLine(listEntry);
 		}
 
 		b196167f_destroyListArray(outputLogLineList);
@@ -221,7 +220,7 @@ void filterInputLogLine(register LogLine *logLine) {
 	}
 
 	// 2. Add LogLine to the inputLogLineList
-	LogLine *newListItem = e88eda74_cloneLogLine(logLine);
+	LogLine *newListItem = b45c9f7e_cloneLogLine(logLine);
 	b196167f_add(inputLogLineList, newListItem);
 }
 
@@ -253,6 +252,6 @@ void filterOutputLogLine(register LogLine *logLine) {
 	}
 
 	// 2. Add LogLine to the outputLogLineList
-	LogLine *newListItem = e88eda74_cloneLogLine(logLine);
+	LogLine *newListItem = b45c9f7e_cloneLogLine(logLine);
 	b196167f_add(outputLogLineList, newListItem);
 }

@@ -39,17 +39,18 @@
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
+#define C196BC72_BUFFER_SIZE 4072                          // PAGESIZE - 24
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
 typedef struct LineBuffer {
-	char *buffer;
+	char buffer[C196BC72_BUFFER_SIZE];
 	uint32_t length;
+	uint32_t size;
 	String line;
-	StringBuilder bufferTail;
 } LineBuffer;
 
-static_assert(sizeof(LineBuffer) == 48, "Check your assumptions");
+static_assert(sizeof(LineBuffer) == 4096, "Check your assumptions");
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -60,14 +61,12 @@ static_assert(sizeof(LineBuffer) == 48, "Check your assumptions");
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c196bc72_createLineBuffer
- * Description: Creates a LineBuffer struct with the specified char* buffer
+ * Description: Creates a LineBuffer struct
  *
- * Parameters:
- *   buffer     A pointer to the char* buffer
- * Returns:     A LineBuffer struct with the specified char* buffer
+ * Returns:     A LineBuffer struct
  * ----------------------------------------------------------------------------
  */
-LineBuffer *c196bc72_createLineBuffer(char *buffer);
+LineBuffer *c196bc72_createLineBuffer();
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c196bc72_destroyLineBuffer
@@ -83,24 +82,13 @@ void c196bc72_destroyLineBuffer(LineBuffer *lineBuffer);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c196bc72_initLineBuffer
- * Description: Initializes an existing LineBuffer struct with the specified char* buffer
+ * Description: Initializes a LineBuffer struct
  *
  * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to initalize
- *   buffer         A pointer to the char* buffer
+ *   listArray      A pointer to the LineBuffer instance to initalize
  * ----------------------------------------------------------------------------
  */
-void c196bc72_initLineBuffer(LineBuffer *lineBuffer, char *buffer);
-
-/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c196bc72_resetLineBuffer
- * Description: Resets an existing LineBuffer struct to its initial state
- *
- * Parameters:
- *   lineBuffer     A pointer to the LineBuffer instance to reset
- * ----------------------------------------------------------------------------
- */
-void c196bc72_resetLineBuffer(LineBuffer *lineBuffer);
+void c196bc72_initLineBuffer(LineBuffer *lineBuffer);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -110,7 +98,6 @@ void c196bc72_resetLineBuffer(LineBuffer *lineBuffer);
  *
  * Parameters:
  *   lineBuffer     A pointer to the LineBuffer instance
- *   numBytes       The number of bytes available in the buffer
  * Returns:         A String* pointer to the next line, or NULL if no line found
  *
  * NOTE: This method will bomb out with a SIGSEGV Segmentation Fault if the
@@ -118,6 +105,18 @@ void c196bc72_resetLineBuffer(LineBuffer *lineBuffer);
  *       Segment area of your program.
  * ----------------------------------------------------------------------------
  */
-String *c196bc72_getLine(LineBuffer *lineBuffer, const ssize_t numBytes);
+String *c196bc72_getLine(LineBuffer *lineBuffer);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c196bc72_populateLineBuffer
+ * Description: Populates the LineBuffer with data from the open file descriptor
+ *
+ * Parameters:
+ *   lineBuffer     A pointer to the LineBuffer instance to populate
+ *   fd             The open file descriptor to read from
+ * Returns:         The number of bytes populated (zero == end of file)
+ * ----------------------------------------------------------------------------
+ */
+int c196bc72_populateLineBuffer(LineBuffer *lineBuffer, int fd);
 
 #endif /* ORG_DEVOPSBROKER_TEXT_LINEBUFFER_H */

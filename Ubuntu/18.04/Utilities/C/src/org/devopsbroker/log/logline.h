@@ -18,12 +18,12 @@
  * -----------------------------------------------------------------------------
  * Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
  *
- * echo ORG_DEVOPSBROKER_FIRELOG_LOGLINE | md5sum | cut -c 25-32
+ * echo ORG_DEVOPSBROKER_LOG_LOGLINE | md5sum | cut -c 25-32
  * -----------------------------------------------------------------------------
  */
 
-#ifndef ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H
-#define ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H
+#ifndef ORG_DEVOPSBROKER_LOG_LOGLINE_H
+#define ORG_DEVOPSBROKER_LOG_LOGLINE_H
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
@@ -61,28 +61,28 @@ static_assert(sizeof(LogLine) == 64, "Check your assumptions");
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_createLogLine
+ * Function:    b45c9f7e_createLogLine
  * Description: Creates a LogLine struct instance
  *
  * Returns:     A LogLine struct instance
  * ----------------------------------------------------------------------------
  */
-LogLine *e88eda74_createLogLine();
+LogLine *b45c9f7e_createLogLine();
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_destroyLogLine
+ * Function:    b45c9f7e_destroyLogLine
  * Description: Frees the memory allocated to the LogLine struct pointer
  *
  * Parameters:
  *   logLine	A pointer to the LogLine instance to destroy
  * ----------------------------------------------------------------------------
  */
-void e88eda74_destroyLogLine(LogLine *logLine);
+void b45c9f7e_destroyLogLine(LogLine *logLine);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_initLogLine
+ * Function:    b45c9f7e_initLogLine
  * Description: Initializes an existing LogLine struct
  *
  * Parameters:
@@ -90,12 +90,12 @@ void e88eda74_destroyLogLine(LogLine *logLine);
  *   line       A pointer reference to the line data
  * ----------------------------------------------------------------------------
  */
-void e88eda74_initLogLine(LogLine *logLine, String *line);
+void b45c9f7e_initLogLine(LogLine *logLine, String *line);
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    e88eda74_cloneLogLine
+ * Function:    b45c9f7e_cloneLogLine
  * Description: Clones the LogLine contents contained within the pointer
  *
  * Parameters:
@@ -103,6 +103,6 @@ void e88eda74_initLogLine(LogLine *logLine, String *line);
  * Returns:     A cloned instance of the LogLine
  * ----------------------------------------------------------------------------
  */
-LogLine *e88eda74_cloneLogLine(LogLine *logLine);
+LogLine *b45c9f7e_cloneLogLine(LogLine *logLine);
 
-#endif /* ORG_DEVOPSBROKER_FIRELOG_LOGLINE_H */
+#endif /* ORG_DEVOPSBROKER_LOG_LOGLINE_H */

@@ -107,24 +107,6 @@ char *f6215943_concatenate(char *string, ...) {
 	return strBuilder.buffer;
 }
 
-char *f6215943_copy(register const char *source, register const uint32_t length) {
-	char *copy = f668c4bd_malloc_size_size(sizeof(char), length + 1);
-
-	register char *ptr = copy;
-	register uint32_t i = 0;
-
-	while (i < length) {
-		*ptr = *source;
-		ptr++;
-		source++;
-		i++;
-	}
-
-	*ptr = '\0';
-
-	return copy;
-}
-
 uint32_t f6215943_copy_to_buffer(register const char *source, register char *buffer, register const uint32_t bufSize) {
 	register uint32_t i = 0;
 	register char ch = *source;
