@@ -29,6 +29,7 @@
 # o /etc/modules
 # o /etc/ntp.conf
 # o /etc/profile
+# o /etc/apparmor.d/local/usr.sbin.unbound
 # o /etc/apt/apt.conf.d/10periodic
 # o /etc/apt/apt.conf.d/50unattended-upgrades
 # o /etc/bash_completion.d/*
@@ -173,6 +174,9 @@ installConfig 'ntp.conf' "$SCRIPT_DIR" /etc 'ntp'
 
 # Install /etc/profile
 installConfig 'profile' "$SCRIPT_DIR" /etc
+
+# Install /etc/apparmor.d/local/usr.sbin.unbound
+installConfig 'usr.sbin.unbound' "$SCRIPT_DIR"/apparmor.d/local /etc/apparmor.d/local
 
 set +o errexit
 # Install /etc/apt/apt.conf.d/10periodic

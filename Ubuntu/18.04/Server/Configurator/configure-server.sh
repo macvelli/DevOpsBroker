@@ -240,7 +240,9 @@ echo
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+set +o errexit
 mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^(enp|ens)[a-z0-9]+')
+set -o errexit
 
 if [ ${#ethList[@]} -eq 1 ]; then
 	DEFAULT_NIC=(${ethList[0]})
@@ -328,6 +330,9 @@ if [ $IS_KVM -eq 1 ]; then
 	fi
 fi
 
+# Install aspell
+installPackage '/usr/bin/aspell' 'aspell'
+
 # Install dnsutils
 installPackage '/usr/bin/dig' 'dnsutils'
 
@@ -353,7 +358,10 @@ installPackage '/usr/bin/ioping' 'ioping'
 uninstallPackage '/usr/sbin/irqbalance' 'irqbalance'
 
 # Install linux-generic-hwe-18.04
+set +o errexit
 isGCPKernel="$( /bin/uname -r | $EXEC_GREP gcp$ )"
+set -o errexit
+
 if [ -z "$isGCPKernel" ]; then
 	installPackage '/usr/share/doc/linux-generic-hwe-18.04/copyright' 'linux-generic-hwe-18.04'
 fi
@@ -369,6 +377,9 @@ if [ "$INSTALL_PKG" == 'true' ] || [ ! -d /usr/share/GeoLite2 ]; then
 	/usr/local/bin/geoip update
 	echo
 fi
+
+# Install mutt
+installPackage '/usr/bin/mutt' 'mutt'
 
 # Install net-tools
 installPackage '/bin/netstat' 'net-tools'

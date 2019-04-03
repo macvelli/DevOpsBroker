@@ -74,6 +74,9 @@ fi
 
 ################################## Variables ##################################
 
+## Bash exec variables
+EXEC_TOUCH=/usr/bin/touch
+
 ## Variables
 echoOnExit=false
 restartUnbound=false
@@ -93,6 +96,17 @@ printBox "DevOpsBroker $UBUNTU_RELEASE Unbound Configurator" 'true'
 if ! $EXEC_GROUPS unbound | $EXEC_GREP -Fq 'syslog'; then
 	printInfo 'Adding unbound user to the syslog group'
 	$EXEC_ADDUSER unbound syslog
+
+	echoOnExit=true
+fi
+
+#
+# /var/log/unbound.log File
+#
+if [ ! -f /var/log/unbound.log ]; then
+	printInfo 'Creating /var/log/unbound.log'
+	$EXEC_TOUCH /var/log/unbound.log
+	$EXEC_CHOWN --changes unbound:unbound /var/log/unbound.log
 
 	echoOnExit=true
 fi
