@@ -109,18 +109,23 @@ void c598a24c_cleanUpStringBuilder(StringBuilder *strBuilder) {
 	free(strBuilder->buffer);
 }
 
-void c598a24c_initStringBuilder(register StringBuilder *strBuilder) {
+void c598a24c_initStringBuilder(StringBuilder *strBuilder) {
 	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), STRINGBUILDER_DEFAULT_SIZE);
 	strBuilder->buffer[0] = '\0';
 	strBuilder->length = 0;
 	strBuilder->size = STRINGBUILDER_DEFAULT_SIZE;
 }
 
-void c598a24c_initStringBuilder_uint32(register StringBuilder *strBuilder, register const uint32_t bufSize) {
+void c598a24c_initStringBuilder_uint32(StringBuilder *strBuilder, const uint32_t bufSize) {
 	strBuilder->buffer = f668c4bd_malloc_size_size(sizeof(char), bufSize);
 	strBuilder->buffer[0] = '\0';
 	strBuilder->length = 0;
 	strBuilder->size = bufSize;
+}
+
+void c598a24c_resetStringBuilder(StringBuilder *strBuilder) {
+	strBuilder->buffer[0] = '\0';
+	strBuilder->length = 0;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,7 +143,7 @@ void c598a24c_append_char(register StringBuilder *strBuilder, register const cha
 	*target = '\0';
 }
 
-void c598a24c_append_int32(register StringBuilder *strBuilder, register const int32_t signedInt) {
+void c598a24c_append_int(StringBuilder *strBuilder, int signedInt) {
 	register char* signedIntStr = f45efac2_toString_int32(signedInt);
 
 	c598a24c_append_string(strBuilder, signedIntStr);
@@ -154,7 +159,7 @@ void c598a24c_append_int64(register StringBuilder *strBuilder, register const in
 	f668c4bd_free(signedLongStr);
 }
 
-void c598a24c_append_uint32(register StringBuilder *strBuilder, register const uint32_t unsignedInt) {
+void c598a24c_append_uint(StringBuilder *strBuilder, uint32_t unsignedInt) {
 	register char* unsignedIntStr = f45efac2_toString_uint32(unsignedInt);
 
 	c598a24c_append_string(strBuilder, unsignedIntStr);

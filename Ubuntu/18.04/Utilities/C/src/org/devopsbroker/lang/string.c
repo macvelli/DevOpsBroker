@@ -127,29 +127,6 @@ uint32_t f6215943_copy_to_buffer(register const char *source, register char *buf
 	} while (true);
 }
 
-bool f6215943_isEqual(register const char *foo, register const char *bar) {
-	if (foo == bar) {
-		return true;
-	}
-
-	if (foo == NULL || bar == NULL) {
-		return false;
-	}
-
-	register char fooCh = *foo;
-	register char barCh = *bar;
-
-	while (fooCh && barCh && fooCh == barCh) {
-		foo++;
-		bar++;
-
-		fooCh = *foo;
-		barCh = *bar;
-	}
-
-	return (fooCh == barCh);
-}
-
 bool f6215943_isNotEqual(register const char *foo, register const char *bar) {
 	if (foo == bar) {
 		return false;
@@ -171,29 +148,6 @@ bool f6215943_isNotEqual(register const char *foo, register const char *bar) {
 	}
 
 	return (fooCh != barCh);
-}
-
-char *f6215943_search(char *pattern, char *text) {
-	char *ptr = pattern;
-
-	while (*text) {
-		while (*ptr == *text || *ptr == '\0') {
-			if (*ptr == '\0') {
-				return text;
-			}
-
-			ptr++;
-			text++;
-		}
-
-		if (ptr != pattern) {
-			ptr = pattern;
-		}
-
-		text++;
-	}
-
-	return NULL;
 }
 
 char *f6215943_startsWith(register const char *pattern, register char *text) {

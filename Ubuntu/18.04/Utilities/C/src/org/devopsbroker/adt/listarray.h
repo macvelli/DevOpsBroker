@@ -127,4 +127,16 @@ void b196167f_initListArray_uint32(ListArray *listArray, const uint32_t size);
  */
 void b196167f_add(ListArray *listArray, void *element);
 
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    b196167f_addAll
+ * Description: Appends all of the elements to the end of the ListArray instance
+ *
+ * Parameters:
+ *   listArray      The ListArray instance
+ *   elementArray   The element to add to the ListArray
+ *   numElements    The number of elements to add
+ * ----------------------------------------------------------------------------
+ */
+void b196167f_addAll(ListArray *listArray, void **elementArray, uint32_t numElements);
+
 #endif /* ORG_DEVOPSBROKER_ADT_LISTARRAY_H */

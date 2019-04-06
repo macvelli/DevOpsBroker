@@ -1,7 +1,7 @@
 /*
- * commandline.c - DevOpsBroker C source file for providing command line-related functionality
+ * array.c - C source file for the org.devopsbroker.lang.Array struct
  *
- * Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
+ * Copyright (C) 2019 AUTHOR_NAME <email@address.com>
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -15,9 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  * -----------------------------------------------------------------------------
- * Developed on Ubuntu 18.04.1 LTS running kernel.osrelease = 4.15.0-44
+ * Developed on Ubuntu 18.04.2 LTS running kernel.osrelease = 4.18.0-17
  *
  * -----------------------------------------------------------------------------
  */
@@ -28,7 +27,9 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
-#include "commandline.h"
+#include <stdlib.h>
+
+#include "array.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -44,8 +45,24 @@
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-void d7ad7024_initCmdLineParam(CmdLineParam *cmdLineParm, int argc, char **argv, char *usageMsg) {
-	cmdLineParm->usageMsg = usageMsg;
-	cmdLineParm->argv = argv;
-	cmdLineParm->argc = argc;
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Array *b33b0483_createArray() {
+	Array *array = malloc(sizeof(Array));
+
+	// TODO: Fill in with struct initialization code
+
+	return array;
+}
+
+void b33b0483_destroyArray(Array *array) {
+	free(array);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void b33b0483_initArray(Array *array) {
+
+	// TODO: Fill in with struct initialization code
+
 }

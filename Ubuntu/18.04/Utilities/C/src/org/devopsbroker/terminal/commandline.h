@@ -27,6 +27,7 @@
 
 // ═════════════════════════════════ Includes ═════════════════════════════════
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <assert.h>
@@ -39,7 +40,7 @@
 typedef struct CmdLineParam {
 	char *usageMsg;
 	char **argv;
-	int   argc;
+	int  argc;
 } CmdLineParam;
 
 static_assert(sizeof(CmdLineParam) == 24, "Check your assumptions");
@@ -99,11 +100,11 @@ char *d7ad7024_getString(CmdLineParam *cmdLineParam, char *paramName, int i);
  * Parameters:
  *   cmdLineParam   A pointer to the CmdLineParam instance
  *   paramName      The name of the parameter
- *   i              The current command-line parameter index
+ *   argIndex       The current command-line parameter index
  * Returns:         The unsigned int command-line parameter value
  * ----------------------------------------------------------------------------
  */
-uint32_t d7ad7024_getUint32(CmdLineParam *cmdLineParam, char *paramName, int i);
+uint32_t d7ad7024_getUint32(CmdLineParam *cmdLineParam, char *paramName, int argIndex);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    d7ad7024_getUint64
@@ -117,5 +118,18 @@ uint32_t d7ad7024_getUint32(CmdLineParam *cmdLineParam, char *paramName, int i);
  * ----------------------------------------------------------------------------
  */
 uint64_t d7ad7024_getUint64(CmdLineParam *cmdLineParam, char *paramName, int i);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    d7ad7024_isEqual
+ * Description: Determines if the argument at argIndex is equal to the char *value
+ *
+ * Parameters:
+ *   cmdLineParam   A pointer to the CmdLineParam instance
+ *   value          The value to compare for equality
+ *   argIndex       The current command-line parameter index
+ * Returns:         True if the argument equals the value, false otherwise
+ * ----------------------------------------------------------------------------
+ */
+bool d7ad7024_isEqual(CmdLineParam *cmdLineParam, char *value, int argIndex);
 
 #endif /* ORG_DEVOPSBROKER_TERMINAL_COMMANDLINE_H */

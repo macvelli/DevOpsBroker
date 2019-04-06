@@ -26,6 +26,7 @@
 ;   o char *d7ad7024_getString(CmdLineParam *cmdLineParam, char *paramName, int i);
 ;   o uint32_t d7ad7024_getUint32(CmdLineParam *cmdLineParam, char *paramName, int i);
 ;   o uint64_t d7ad7024_getUint64(CmdLineParam *cmdLineParam, char *paramName, int i);
+;   o bool d7ad7024_isEqual(CmdLineParam *cmdLineParam, char *value, int argIndex);
 ; -----------------------------------------------------------------------------
 ;
 
@@ -126,7 +127,7 @@ d7ad7024_getUint32:
 ; Parameters:
 ;	rdi : CmdLineParam *cmdLineParam
 ;	rsi : char *paramName
-;	rdx : int i
+;	edx : int argIndex
 ; Local Variables:
 ;	ecx : cmdLineParam->argc
 ;	rcx : cmdLineParam->argv[i]
@@ -136,15 +137,14 @@ d7ad7024_getUint32:
 ;	r10 : cmdLineParam->argv[i] reference
 
 .prologue:                            ; functions typically have a prologue
-	mov        ecx, [rdi + 16]        ; ecx = cmdLineParm->argc
-	inc        edx                    ; ++i
+	mov        ecx, [rdi+16]          ; ecx = cmdLineParm->argc
 	xor        eax, eax               ; function return value = 0
 
 	cmp        edx, ecx
 	je         missingParameter
 
 .parseUint32:
-	mov        rcx, [rdi + 8]         ; rcx = cmdLineParam->argv[i]
+	mov        rcx, [rdi+8]           ; rcx = cmdLineParam->argv[i]
 	mov        rcx, [rcx + 8*rdx]
 	mov        r10, rcx               ; save argv[i] reference for invalidValue
 
@@ -244,6 +244,60 @@ d7ad7024_getUint64:
 	mov        r8, [rcx]              ; load next eight characters into r8
 	mov        dl, dh                 ; bufSize = 8
 	jmp        .whileInteger
+
+; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ d7ad7024_isEqual ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	global  d7ad7024_isEqual:function
+d7ad7024_isEqual:
+; Parameters:
+;	rdi : CmdLineParam *cmdLineParam
+;	rsi : char *value
+;	edx : int argIndex
+; Local Variables:
+;	ecx : loop counter
+;	r8  : 64-bit character buffer
+;	r9  : 64-bit character buffer
+
+.prologue:                            ; functions typically have a prologue
+	mov        rdi, [rdi+8]           ; rdi = cmdLineParam->argv[argIndex]
+	mov        rdi, [rdi + 8*rdx]
+	xor        eax, eax               ; return value = false
+
+.whileEqual:
+	mov        r8, [rdi]              ; load eight characters into rdx
+	mov        r9, [rsi]              ; load eight characters into rcx
+
+	mov        ecx, 0x08              ; loop counter = 8
+	add        rdi, rcx               ; foo += 8
+	add        rsi, rcx               ; bar += 8
+
+.firstChar:
+	cmp        r8b, r9b               ; if (foo[i] != bar[i])
+	jne        .returnFalse
+
+	test       r8b, r8b               ; if (foo[i] == '\0')
+	jz         .returnTrue
+	dec        cl                     ; loop counter--
+
+.nextChars:
+	shr        r8, 8
+	shr        r9, 8
+
+	cmp        r8b, r9b               ; if (foo[i] != bar[i])
+	jne        .returnFalse
+
+	test       r8b, r8b               ; if (foo[i] == '\0')
+	jz         .returnTrue
+
+	dec        cl                     ; loop counter--
+	jnz        .nextChars             ; if (cl > 0)
+	jmp        .whileEqual
+
+.returnTrue:
+	inc        al                     ; return value = true
+
+.returnFalse:
+	ret                               ; pop return address from stack and jump there
 
 ; ═════════════════════════════ Private Routines ═════════════════════════════
 

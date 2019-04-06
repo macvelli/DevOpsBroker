@@ -35,6 +35,7 @@
 #include <sys/types.h>
 
 #include "memory.h"
+#include "../adt/listarray.h"
 
 // ═══════════════════════════════ Preprocessor ═══════════════════════════════
 
@@ -48,9 +49,6 @@ typedef struct String {
 } String;
 
 static_assert(sizeof(String) == 16, "Check your assumptions");
-
-// ════════════════════════════════ Structures ════════════════════════════════
-
 
 // ═════════════════════════════ Global Variables ═════════════════════════════
 
@@ -179,7 +177,7 @@ static inline uint32_t f6215943_getLength(register const char *string) {
  * Returns:     True if the two string instances are equal, false otherwise
  * ----------------------------------------------------------------------------
  */
-bool f6215943_isEqual(const char *foo, const char *bar);
+bool f6215943_isEqual(char *foo, char *bar);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f6215943_isNotEqual
@@ -205,6 +203,18 @@ bool f6215943_isNotEqual(const char *foo, const char *bar);
  * ----------------------------------------------------------------------------
  */
 char *f6215943_search(char *pattern, char *text);
+
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    f6215943_splitWithChar
+ * Description: Split a string into a substring array
+ *
+ * Parameters:
+ *   string       The string to split
+ *   delimiter    The character delimiter to split by
+ *   substrList   The list to populate with the char *substring references
+ * ----------------------------------------------------------------------------
+ */
+void f6215943_splitWithChar(char *string, char delimiter, ListArray *substrList);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    f6215943_startsWith

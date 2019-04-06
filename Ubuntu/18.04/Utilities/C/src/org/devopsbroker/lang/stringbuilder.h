@@ -123,6 +123,16 @@ void c598a24c_initStringBuilder(StringBuilder *strBuilder);
  */
 void c598a24c_initStringBuilder_uint32(StringBuilder *strBuilder, const uint32_t bufSize);
 
+/* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+ * Function:    c598a24c_resetStringBuilder
+ * Description: Resets an existing StringBuilder instance to the empty state
+ *
+ * Parameters:
+ *   strBuilder   A pointer to the StringBuilder instance to reset
+ * ----------------------------------------------------------------------------
+ */
+void c598a24c_resetStringBuilder(StringBuilder *strBuilder);
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utility Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -147,14 +157,14 @@ void c598a24c_append_char(StringBuilder *strBuilder, const char ch);
 //void c598a24c_append_format(StringBuilder *strBuilder, char *format, Vararg *varargs);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_append_int32
+ * Function:    c598a24c_append_int
  * Description: Appends an signed int to the StringBuilder instance
  *
  * Parameters:
  *   signedInt      The signed int to append
  * ----------------------------------------------------------------------------
  */
-void c598a24c_append_int32(StringBuilder *strBuilder, const int32_t signedInt);
+void c598a24c_append_int(StringBuilder *strBuilder, int signedInt);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c598a24c_append_int64
@@ -167,14 +177,14 @@ void c598a24c_append_int32(StringBuilder *strBuilder, const int32_t signedInt);
 void c598a24c_append_int64(StringBuilder *strBuilder, const int64_t signedLong);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- * Function:    c598a24c_append_uint32
+ * Function:    c598a24c_append_uint
  * Description: Appends an unsigned int to the StringBuilder instance
  *
  * Parameters:
- *   unsignedInt    The unsigned int to append
+ *   unsignedInt   The unsigned int to append
  * ----------------------------------------------------------------------------
  */
-void c598a24c_append_uint32(StringBuilder *strBuilder, const uint32_t unsignedInt);
+void c598a24c_append_uint(StringBuilder *strBuilder, uint32_t unsignedInt);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    c598a24c_append_uint64
