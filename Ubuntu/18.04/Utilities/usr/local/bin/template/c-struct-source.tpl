@@ -151,6 +151,8 @@ static_assert(sizeof($typedefName) == 64, "Check your assumptions");
 
 // ═══════════════════════════ Function Declarations ══════════════════════════
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    ${md5Hash}_create${typedefName}
  * Description: Creates a ${typedefName} struct instance
@@ -169,6 +171,8 @@ ${typedefName} *${md5Hash}_create${typedefName}();
  * ----------------------------------------------------------------------------
  */
 void ${md5Hash}_destroy${typedefName}(${typedefName} *${variableName});
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Function:    ${md5Hash}_init${typedefName}
@@ -232,6 +236,8 @@ EOF
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Create/Destroy Functions ~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ${typedefName} *${md5Hash}_create${typedefName}() {
 	${typedefName} *${variableName} = malloc(sizeof(${typedefName}));
 
@@ -243,6 +249,8 @@ ${typedefName} *${md5Hash}_create${typedefName}() {
 void ${md5Hash}_destroy${typedefName}(${typedefName} *${variableName}) {
 	free(${variableName});
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ Init/Clean Up Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void ${md5Hash}_init${typedefName}(${typedefName} *${variableName}) {
 
