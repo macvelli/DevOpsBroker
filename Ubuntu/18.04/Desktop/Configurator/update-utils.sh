@@ -225,6 +225,9 @@ installSystemUtility dirchmod
 # Install disableJournal system administration utility
 installSystemUtility disableJournal
 
+# Install firechain system administration utility
+installSystemUtility firechain
+
 # Install firewall system administration utility
 installSystemUtility firewall
 
@@ -266,6 +269,9 @@ fi
 installService 'smbd'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ User Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Install albumart user utility
+installUserUtility albumart
 
 # Install archive user utility
 installUserUtility archive
