@@ -68,6 +68,8 @@ fi
 ################################## Variables ##################################
 
 ## Bash exec variables
+EXEC_APT=/usr/bin/apt
+EXEC_APT_KEY=/usr/bin/apt-key
 EXEC_SHA256SUM=/usr/bin/sha256sum
 
 ## Options
@@ -102,16 +104,16 @@ if [ $command == 'install' ]; then
 	if [ -z "$appName" ]; then
 		printError $scriptName 'Missing application name parameter'
 		echo
-		printUsage "$scriptName $command { google-cloud-sdk }"
+		printUsage "$scriptName $command { atom | google-cloud-sdk }"
 
 		exit 1
 	fi
 
 	# Display error if application name parameter is invalid
-	if [[ ! "$appName" =~ ^(google-cloud-sdk)$ ]]; then
+	if [[ ! "$appName" =~ ^(atom|google-cloud-sdk)$ ]]; then
 		printError $scriptName "Invalid application name: '$appName'"
 		echo
-		printUsage "$scriptName $command { google-cloud-sdk }"
+		printUsage "$scriptName $command { atom | google-cloud-sdk }"
 
 		exit 1
 	fi
@@ -121,7 +123,18 @@ fi
 
 if [ $command == 'install' ]; then
 
-	if [ $appName == 'google-cloud-sdk' ]; then
+	if [ $appName == 'atom' ]; then
+		if [ ! -f /etc/apt/sources.list.d/atom.list ]; then
+			$EXEC_WGET -qO - https://packagecloud.io/AtomEditor/atom/gpgkey | $EXEC_APT_KEY add -
+
+			$SHELL -c 'echo "deb [arch=amd64] https://packagecloud.io/AtomEditor/atom/any/ any main" > /etc/apt/sources.list.d/atom.list'
+		fi
+
+		$EXEC_APT update
+
+		$EXEC_APT install atom
+
+	elif [ $appName == 'google-cloud-sdk' ]; then
 		sdkFileName='google-cloud-sdk-238.0.0-linux-x86_64.tar.gz'
 		sdkFileSHA256='50746c8c02ac4014265661f8fed9c07c81968b461e8eb077a382c23c039b61d6'
 		installDir='/opt'
