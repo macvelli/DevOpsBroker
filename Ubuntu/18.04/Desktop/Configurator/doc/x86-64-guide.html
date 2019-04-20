@@ -38,26 +38,26 @@ div#header {
 
 div#toc {
   position: fixed;
-  width: 20%;
+  min-width: 387px;
   height: auto;
   top: 80px;
   right: auto;
   bottom: 0;
   left: 0;
-  overflow-y: auto;
+  overflow-y: auto !important;
   padding-left: 8px;
   background-color: #DDDAE7;
 }
 
 div#content {
   position: fixed;
-  width: auto;
+  min-width: 776px;
   height: auto;
   top: 80px;
   right: 0;
   bottom: 0;
-  left: 20%;
-  overflow-y: auto;
+  left: 395px;
+  overflow-y: auto !important;
   padding-left: 16px;
   background-color: #FBFBFD;
 }
@@ -296,6 +296,19 @@ function toggleDisplay(id) {
           <li><a href="#flagsRegister">x86 FLAGS Register</a></li>
           <li><a href="#x86JumpReference">x86 JUMP Instruction Reference</a></li>
           <li><a href="#x86JumpTypes">x86 JUMP Instruction Types</a></li>
+        </ul>
+      </li>
+      <li class="tocTopic padTop">
+        <a href="#x86_64Instructions">x86_64 Instructions</a>
+        <ul class="tocSubtopic">
+          <li class="padTop">
+            <a href="#arithmeticOps">Arithmetic Operations</a>
+          </li>
+          <li><a href="#sse2DataMovement">SSE2 Data Movement</a></li>
+          <li><a href="#sse2Shuffling">SSE2 Data Shuffling</a></li>
+          <li><a href="#sse2Arithmetic">SSE2 Arithmetic Instructions</a></li>
+          <li><a href="#sse2Logic">SSE2 Logic Instructions</a></li>
+          <li><a href="#sse2Compare">SSE2 Compare Instructions</a></li>
         </ul>
       </li>
       <li class="tocTopic padTop">
@@ -633,6 +646,7 @@ function toggleDisplay(id) {
 
     <p>
     The most commonly used flags and their meanings are as follows:
+    </p>
     <dl>
      <dt>Carry Flag (CF)</dt>
      <dd>Set when an arithmetic carry or borrow occurs from the most significant bit
@@ -648,7 +662,6 @@ function toggleDisplay(id) {
      <dd>Set when an arithmetic overflow of a signed number has occurred during the
          execution of an operation; meaningless for unsigned numbers</dd>
     </dl>
-    </p>
 
     <table id="flagsRegister" class="center stripe">
     <caption>x86 FLAGS Register</caption>
@@ -964,13 +977,14 @@ function toggleDisplay(id) {
       <td class="hex">0F 8B</td>
     </tr>
     <tr>
-      <td>JCXZ<br>JECXZ</td>
+      <td>JCXZ<br>JECXZ<br>JRCXZ</td>
       <td>
         Jump if CX register is 0<br>
-        Jump if ECX register is 0
+        Jump if ECX register is 0<br>
+        Jump if RCX register is 0
       </td>
       <td>&nbsp;</td>
-      <td>CX = 0<br>ECX = 0</td>
+      <td>CX = 0<br>ECX = 0<br>RCX = 0</td>
       <td class="hex">E3</td>
       <td class="hex">&nbsp;</td>
     </tr>
@@ -981,6 +995,7 @@ function toggleDisplay(id) {
     <p>
     There are four types of jump instructions, each of which are generally
     encoded as follows:
+    </p>
     <ul>
       <li>Jump instruction</li>
       <li>The number of bytes to jump (+/-)</li>
@@ -1008,7 +1023,74 @@ function toggleDisplay(id) {
         <li>Can only be executed in protected mode</li>
       </ul>
     </dl>
+
+    <h2 id="x86_64Instructions">x86_64 Instructions</h2>
+    <p>
+      There are many, many x86_64 instructions available to a software developer.
+      The ubiquitous instructions are <code>mov</code>, <code>cmp</code>,
+      <code>test</code>, and the corresponding <code>jmp</code> instructions as
+      listed above.
+      <br><br>
+      These sections intend to cover a small subset of the available instructions
+      while giving tips on how to effectively use them in your own assembly
+      language code.
     </p>
+
+    <h3 id="arithmeticOps">Arithmetic Operations</h3>
+    <dl class="instruction">
+      <dt onclick="toggleDisplay('add')"><b>add</b> &boxh; add</dt>
+      <dd id="add" style="display: none;">
+        <ul>
+          <li>Adds the destination and source operands together</li>
+          <li>The destination operand can be a register or a memory location</li>
+          <li>The source operand can be an immediate, a register, or a memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>add &lt;reg&gt;, &lt;imm&gt;</code><br>
+        <code>add &lt;reg&gt;, &lt;mem&gt;</code><br>
+        <code>add &lt;reg&gt;, &lt;reg&gt;</code><br>
+        <code>add &lt;mem&gt;, &lt;imm&gt;</code><br>
+        <code>add &lt;mem&gt;, &lt;reg&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>add eax, edx</code><br>
+        <code>add [rdi], eax</code><br>
+        <code>add rsi, 0x08</code>
+      </dd>
+      <dt onclick="toggleDisplay('xadd')"><b>xadd</b> &boxh; exchange and add</dt>
+      <dd id="xadd" style="display: none;">
+        <ul>
+          <li>Exchanges the destination and source operand values</li>
+          <li>Places the sum of the values into the destination</li>
+          <li>The destination operand can be either a register or memory location</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>xadd &lt;reg&gt;, &lt;reg&gt;</code><br>
+        <code>xadd &lt;mem&gt;, &lt;reg&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>xadd eax, edx</code><br>
+        <code>xadd [rdi], eax</code><br>
+      </dd>
+      <dt onclick="toggleDisplay('dec')"><b>dec</b> &boxh; decrement by one</dt>
+      <dd id="dec" style="display: none;">
+        <ul>
+          <li>Subtracts one from the destination operand</li>
+          <li>The destination operand can be either a register or memory location</li>
+          <li>Can update a loop counter without disturbing the CF flag</li>
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>dec &lt;reg&gt;</code><br>
+        <code>dec &lt;mem&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>dec eax</code><br>
+        <code>dec [rdi]</code><br>
+      </dd>
+    </dl>
 
     <h2 id="sse2Instructions">SSE2 Instructions</h2>
     <p>
@@ -1088,7 +1170,6 @@ function toggleDisplay(id) {
     <p>
     The structure of each SSE2 register is as follows:
     </p>
-
     <table id="sse2Register" class="center">
     <caption>SSE2 Register Layout</caption>
     <thead>
@@ -1148,6 +1229,7 @@ function toggleDisplay(id) {
     <p>
     The first thing to learn about SSE2 is how to move data into, out of, and
     between the XMM registers:
+    </p>
     <dl class="instruction">
       <dt onclick="toggleDisplay('movd')"><b>movd</b> &boxh; move doubleword</dt>
       <dd id="movd" style="display: none;">
@@ -1451,13 +1533,47 @@ function toggleDisplay(id) {
         <code>pinsrw xmm0, eax, 0</code> &boxh; insert <code>AX</code> into the 1<sup>st</sup> word of <code>XMM0</code><br>
       </dd>
     </dl>
+
+    <h4>Non-Temporal Data Storage</h4>
+    <p style="color: red; font-weight: bold;">WARNING: Non-Temporal data storage
+      instructions are to be used with care! They can cause impossible bugs to
+      find and/or serious performance degredation if used improperly!
     </p>
+    <p>Non-Temporal data storage instructions are used as a hint to the CPU to
+      minimize cache pollution during the write to memory.<br><br>
+      The CPU will use a write-combining protocol to write the data directly to
+      memory while bypassing the cache hierarchy.<br><br>
+      A non-temporal data store also infers the program will completely replace
+      the current content in memory, so it <b>does not</b> fetch the
+      corresponding cache line from memory into the cache hierarchy.
+    </p>
+
+    <dl class="instruction">
+      <dt onclick="toggleDisplay('movnti')"><b>movnti</b> &boxh; store doubleword&#47;quadword using non-temporal hint</dt>
+      <dd id="movnti" style="display: none;">
+        <ul>
+          <li>Stores a 32-bit doubleword from a general-purpose regsiter into a
+              memory location using non-temporal hint
+          <li>Stores a 64-bit quadword from a general-purpose regsiter into a
+              memory location using non-temporal hint
+        </ul>
+        <br>
+        <em>Syntax</em><br>
+        <code>movnti &lt;mem32&gt;, &lt;reg32&gt;</code><br>
+        <code>movnti &lt;mem64&gt;, &lt;reg64&gt;</code><br>
+        <br>
+        <em>Examples</em><br>
+        <code>movnti [rdi], eax</code><br>
+        <code>movnti [rsi], rdx</code>
+      </dd>
+    </dl>
 
     <h3 id="sse2Shuffling">SSE2 Data Shuffling</h3>
     <p>
     A key concept about performing SIMD operations with SSE2 is the "multiple
     data" part. Data shuffling allows 16-bit words / 32-bit doublewords / 64-bit
     quadwords to be repackaged in a different way in an XMM register.
+    </p>
     <dl class="instruction">
       <dt onclick="toggleDisplay('pshufd')"><b>pshufd</b> &boxh; shuffle packed doublewords</dt>
       <dd id="pshufd" style="display: none;">
@@ -1511,7 +1627,7 @@ function toggleDisplay(id) {
     Unfortunately, scalar instructions are limited only to single-precision and
     double-precision floating-point values. The only available instructions for
     integers are of the packed variety.
-
+    </p>
     <dl class="instruction">
       <dt onclick="toggleDisplay('paddb')"><b>paddb</b> &boxh; add packed byte integers</dt>
       <dd id="paddb" style="display: none;">
@@ -1590,6 +1706,7 @@ function toggleDisplay(id) {
     logic on XMM registers. Some logic instructions operate on the entire 128-bit
     register as a whole, while other logic instructions perform operations on
     packed values within the XMM register.
+    </p>
     <dl class="instruction">
       <dt onclick="toggleDisplay('pand')"><b>pand</b> &boxh; logical AND</dt>
       <dd id="pand" style="display: none;">
@@ -1648,6 +1765,7 @@ function toggleDisplay(id) {
     <p>
     SSE2 compare functionality is quite limited considering there are only a
     couple compare operations for integers.
+    </p>
     <dl class="instruction">
       <dt onclick="toggleDisplay('pcmpeqb')"><b>pcmpeqb</b> &boxh; compare packed bytes for equal</dt>
       <dd id="pcmpeqb" style="display: none;">
