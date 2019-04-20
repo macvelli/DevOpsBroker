@@ -80,10 +80,6 @@ function showHelp() {
 		printUsage 'gnome-config reset'
 		echo ${romantic}
 		echo "Resets the user's dconf configuration (must restart to take effect)"${reset}
-	elif [ "$command" == 'rhythmbox' ]; then
-		printUsage 'gnome-config rhythmbox'
-		echo ${romantic}
-		echo 'Performs Rhythmbox-specifc configurations'${reset}
 	elif [ "$command" == 'terminal' ]; then
 		printUsage 'gnome-config terminal'
 		echo ${romantic}
@@ -110,7 +106,7 @@ command="$1"
 ## Variables
 echoOnExit=false
 showCommandHelp=false
-validCommands=('all' 'gnome' 'nautilus' 'reset' 'rhythmbox' 'terminal' 'ubuntu')
+validCommands=('all' 'gnome' 'nautilus' 'reset' 'terminal' 'ubuntu')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -121,7 +117,7 @@ fi
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage "gnome-config ${gold}[help]${yellow} { all | gnome | nautilus | reset | rhythmbox | terminal | ubuntu }"
+	printUsage "gnome-config ${gold}[help]${yellow} { all | gnome | nautilus | reset | terminal | ubuntu }"
 	exit 1
 fi
 
@@ -129,7 +125,7 @@ fi
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
 	printError 'gnome-config' "Invalid command: $command"
 	echo
-	printUsage "gnome-config ${gold}[help]${yellow} { all | gnome | nautilus | reset | rhythmbox | terminal | ubuntu }"
+	printUsage "gnome-config ${gold}[help]${yellow} { all | gnome | nautilus | reset | terminal | ubuntu }"
 
 	exit 1
 fi
@@ -539,29 +535,6 @@ if [ "$command" == 'nautilus' ] || [ "$command" == 'all' ]; then
 		printInfo 'Enabling GTK File Chooser sort directories first'
 
 		$EXEC_GSETTINGS set org.gtk.Settings.FileChooser sort-directories-first true
-		echoOnExit=true
-	fi
-fi
-
-if [ "$command" == 'rhythmbox' ] || [ "$command" == 'all' ]; then
-
-	#
-	# org.gnome.rhythmbox.sharing settings
-	#
-
-	# Set enable-browsing
-	if [ "$($EXEC_GSETTINGS get org.gnome.rhythmbox.sharing enable-browsing)" == 'true' ]; then
-		printInfo 'Disabling browse network for shared music'
-
-		$EXEC_GSETTINGS set org.gnome.rhythmbox.sharing enable-browsing false
-		echoOnExit=true
-	fi
-
-	# Set enable-sharing
-	if [ "$($EXEC_GSETTINGS get org.gnome.rhythmbox.sharing enable-sharing)" == 'true' ]; then
-		printInfo 'Disabling share music over the network'
-
-		$EXEC_GSETTINGS set org.gnome.rhythmbox.sharing enable-sharing false
 		echoOnExit=true
 	fi
 fi

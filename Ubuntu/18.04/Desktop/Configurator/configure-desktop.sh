@@ -309,6 +309,9 @@ installPackage '/usr/sbin/arp-scan' 'arp-scan'
 # Install aspell
 installPackage '/usr/bin/aspell' 'aspell aspell-en'
 
+# Install audacious
+installPackage '/usr/bin/audacious' 'audacious'
+
 # Install avahi-daemon
 installPackage '/usr/sbin/avahi-daemon' 'avahi-daemon'
 
@@ -326,6 +329,9 @@ installPackage '/usr/bin/dig' 'dnsutils'
 
 # Install dos2unix
 installPackage '/usr/bin/dos2unix' 'dos2unix'
+
+# Install easytag
+installPackage '/usr/bin/easytag' 'easytag'
 
 # Install eject
 installPackage '/usr/bin/eject' 'eject'

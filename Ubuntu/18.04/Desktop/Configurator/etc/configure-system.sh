@@ -310,13 +310,13 @@ fi
 
 if $EXEC_GREP -Eq '^audio/.+=org\.gnome\.Totem\.desktop' /usr/share/applications/defaults.list; then
 
-	printInfo 'Changing default application for all audio files to Rhythmbox'
+	printInfo 'Changing default application for all audio files to Audacious'
 
 	# Fix /usr/share/applications/defaults.list audio defaults
-	$EXEC_SED --regexp-extended -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1rhythmbox.desktop/' /usr/share/applications/defaults.list
+	$EXEC_SED --regexp-extended -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1audacious.desktop/' /usr/share/applications/defaults.list
 
 	# Fix /etc/gnome/defaults.list audio defaults
-	$EXEC_SED --regexp-extended -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1rhythmbox.desktop/' /etc/gnome/defaults.list
+	$EXEC_SED --regexp-extended -i 's/^(audio\/.+=)org\.gnome\.Totem\.desktop/\1audacious.desktop/' /etc/gnome/defaults.list
 
 	printInfo 'Changing default application for all video files to VLC'
 
