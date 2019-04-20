@@ -194,9 +194,9 @@ $IPTABLES -t raw -A ipv4_fragment_drop -j DROP
 
 # Rate limit IGMP logging
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-$IPTABLES -t raw -N ${NIC}_igmp_drop
-$IPTABLES -t raw -A ${NIC}_igmp_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 IGMP BLOCK] ' --log-level 7
-$IPTABLES -t raw -A ${NIC}_igmp_drop -j DROP
+$IPTABLES -t raw -N igmp_drop
+$IPTABLES -t raw -A igmp_drop -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 IGMP BLOCK] ' --log-level 7
+$IPTABLES -t raw -A igmp_drop -j DROP
 
 # Perform NOTRACK and ACCEPT
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
@@ -211,21 +211,17 @@ $IPTABLES -t raw -A do_not_track -j ACCEPT
 printInfo 'DROP incoming fragmented packets'
 $IPTABLES -t raw -A PREROUTING -f -j ipv4_fragment_drop
 
-printInfo 'Allow incoming IPv4 Subnet packets on all network interfaces'
-$IPTABLES -t raw -A PREROUTING -s $IPv4_SUBNET -j do_not_track
-$IPTABLES -t raw -A PREROUTING -s $IPv4_SUBNET_IGMP -j do_not_track
-
 # Create PREROUTING filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-
-## lo
-printInfo 'Allow incoming lo interface traffic'
-$IPTABLES -t raw -A PREROUTING -i lo -j do_not_track
 
 ## NIC
 printInfo "Process incoming $NIC interface traffic"
 $IPTABLES -t raw -N raw-${NIC}-pre
 $IPTABLES -t raw -A PREROUTING -i ${NIC} -j raw-${NIC}-pre
+
+## lo
+printInfo 'Allow incoming lo interface traffic'
+$IPTABLES -t raw -A PREROUTING -i lo -j do_not_track
 
 printInfo 'Allow all other incoming interface traffic'
 $IPTABLES -t raw -A PREROUTING -j ACCEPT
@@ -234,6 +230,10 @@ echo
 
 # Create PREROUTING filter chains for each protocol
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+printInfo 'Allow incoming IPv4 Subnet packets'
+$IPTABLES -t raw -A raw-${NIC}-pre -s $IPv4_SUBNET -j do_not_track
+$IPTABLES -t raw -A raw-${NIC}-pre -s $IPv4_SUBNET_IGMP -j do_not_track
 
 ## TCP
 printInfo 'Process incoming TCP traffic'
@@ -252,7 +252,7 @@ $IPTABLES -t raw -A raw-${NIC}-pre -p icmp -j raw-${NIC}-icmp-pre
 
 ## IGMP
 printInfo "DROP all incoming IGMP traffic not on $IPv4_SUBNET"
-$IPTABLES -t raw -A raw-${NIC}-pre -p igmp -j ${NIC}_igmp_drop
+$IPTABLES -t raw -A raw-${NIC}-pre -p igmp -j igmp_drop
 
 ## ALL OTHERS
 printInfo 'Further process all other incoming protocol traffic'
@@ -311,7 +311,7 @@ echo
 printInfo 'DROP all incoming DHCP request packets'
 $IPTABLES -t raw -A raw-${NIC}-udp-pre -p udp -m udp -s 0.0.0.0 -d 255.255.255.255 --sport 68 --dport 67 -j DROP
 
-printInfo 'Further process all other incoming UDP traffic'
+printInfo 'Do not track all other incoming UDP traffic'
 $IPTABLES -t raw -A raw-${NIC}-udp-pre -j do_not_track
 
 echo
@@ -323,21 +323,17 @@ echo
 printInfo 'DROP outgoing fragmented packets'
 $IPTABLES -t raw -A OUTPUT -f -j ipv4_fragment_drop
 
-printInfo 'Allow outgoing IPv4 Subnet packets on all network interfaces'
-$IPTABLES -t raw -A OUTPUT -d $IPv4_SUBNET -j do_not_track
-$IPTABLES -t raw -A OUTPUT -d $IPv4_SUBNET_IGMP -j do_not_track
-
 # Create OUTPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-
-## lo
-printInfo 'Allow outgoing lo interface traffic'
-$IPTABLES -t raw -A OUTPUT -o lo -j do_not_track
 
 ## NIC
 printInfo "Process outgoing $NIC interface traffic"
 $IPTABLES -t raw -N raw-${NIC}-out
 $IPTABLES -t raw -A OUTPUT -o ${NIC} -j raw-${NIC}-out
+
+## lo
+printInfo 'Allow outgoing lo interface traffic'
+$IPTABLES -t raw -A OUTPUT -o lo -j do_not_track
 
 printInfo 'ACCEPT all other outgoing interface traffic'
 $IPTABLES -t raw -A OUTPUT -j ACCEPT
@@ -346,6 +342,10 @@ echo
 
 # Create OUTPUT filter chains for each protocol
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+printInfo 'Allow outgoing IPv4 Subnet packets'
+$IPTABLES -t raw -A raw-${NIC}-out -d $IPv4_SUBNET -j do_not_track
+$IPTABLES -t raw -A raw-${NIC}-out -d $IPv4_SUBNET_IGMP -j do_not_track
 
 ## TCP
 printInfo 'Process outgoing TCP traffic'
@@ -363,7 +363,7 @@ $IPTABLES -t raw -A raw-${NIC}-out -p icmp -j do_not_track
 
 ## IGMP
 printInfo "DROP all outgoing IGMP traffic not on $IPv4_SUBNET"
-$IPTABLES -t raw -A raw-${NIC}-out -p igmp -j ${NIC}_igmp_drop
+$IPTABLES -t raw -A raw-${NIC}-out -p igmp -j igmp_drop
 
 ## ALL OTHERS
 printInfo 'DROP all other outgoing protocol traffic'
@@ -396,7 +396,7 @@ echo
 printInfo 'DROP outgoing Canon/Epson printer discovery packets'
 $IPTABLES -t raw -A raw-${NIC}-udp-out -p udp -m multiport --dports 8610,8612,3289 -j DROP
 
-printInfo 'Further process all other outgoing UDP traffic'
+printInfo 'Do not track all other outgoing UDP traffic'
 $IPTABLES -t raw -A raw-${NIC}-udp-out -p udp -j do_not_track
 
 echo
@@ -470,14 +470,14 @@ $IPTABLES -A tcp_reject -p tcp -j REJECT --reject-with tcp-reset
 # Create INPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-## lo
-printInfo 'ACCEPT incoming lo interface traffic'
-$IPTABLES -A INPUT -i lo -j ACCEPT
-
 ## NIC
 printInfo "Process incoming $NIC interface traffic"
 $IPTABLES -N filter-${NIC}-in
 $IPTABLES -A INPUT -i ${NIC} -j filter-${NIC}-in
+
+## lo
+printInfo 'ACCEPT incoming lo interface traffic'
+$IPTABLES -A INPUT -i lo -j ACCEPT
 
 printInfo 'ACCEPT all other incoming interface traffic'
 $IPTABLES -A INPUT -j ACCEPT
@@ -587,14 +587,14 @@ echo
 # Create OUTPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-## lo
-printInfo 'ACCEPT outgoing lo interface traffic'
-$IPTABLES -A OUTPUT -o lo -j ACCEPT
-
 ## NIC
 printInfo "Process outgoing $NIC interface traffic"
 $IPTABLES -N filter-${NIC}-out
 $IPTABLES -A OUTPUT -o ${NIC} -j filter-${NIC}-out
+
+## lo
+printInfo 'ACCEPT outgoing lo interface traffic'
+$IPTABLES -A OUTPUT -o lo -j ACCEPT
 
 printInfo 'ACCEPT all other outgoing interface traffic'
 $IPTABLES -A OUTPUT -j ACCEPT
@@ -659,8 +659,11 @@ echo
 # *******************************
 #
 
-printInfo "REJECT outgoing TCP SMB/NetBIOS request packets not on $IPv4_SUBNET"
-$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --dports 139,445 -j tcp_reject
+printInfo "REJECT TCP SMB/NetBIOS request packets not on $IPv4_SUBNET"
+$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --dports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
+
+printInfo "REJECT TCP SMB/NetBIOS response packets not on $IPv4_SUBNET"
+$IPTABLES -A filter-${NIC}-tcp-out -p tcp -m multiport --sports 139,445 ! -d $IPv4_SUBNET -j tcp_reject
 
 printInfo 'ACCEPT all other outgoing TCP traffic'
 $IPTABLES -A filter-${NIC}-tcp-out -j ACCEPT
