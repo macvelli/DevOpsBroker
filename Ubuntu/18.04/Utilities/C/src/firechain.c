@@ -36,6 +36,7 @@
 #include "org/devopsbroker/io/shell.h"
 #include "org/devopsbroker/lang/error.h"
 #include "org/devopsbroker/lang/memory.h"
+#include "org/devopsbroker/lang/string.h"
 #include "org/devopsbroker/lang/stringbuilder.h"
 #include "org/devopsbroker/terminal/ansi.h"
 #include "org/devopsbroker/terminal/commandline.h"
@@ -45,7 +46,13 @@
 
 #define END_OF_FILE 0
 
-#define USAGE_MSG "firechain { add | delete | view } { raw | mangle | nat | filter } CHAIN_NAME { tcp | udp } { " ANSI_GOLD "[multi]" ANSI_YELLOW " source | dest } PORT_NUM ACTION"
+#define USAGE_MSG "firechain " ANSI_GOLD "[help]" ANSI_YELLOW " { add | delete | view } " ANSI_GOLD "[OPTION...]"
+
+#define ADD_USAGE_MSG "firechain add { raw | mangle | nat | filter } CHAIN_NAME { tcp | udp } { " ANSI_GOLD "[multi]" ANSI_YELLOW " source | dest } PORT_NUM ACTION"
+
+#define DELETE_USAGE_MSG "firechain delete { raw | mangle | nat | filter } CHAIN_NAME { tcp | udp } { " ANSI_GOLD "[multi]" ANSI_YELLOW " source | dest } PORT_NUM"
+
+#define VIEW_USAGE_MSG "firechain view { raw | mangle | nat | filter } CHAIN_NAME"
 
 // ═════════════════════════════════ Typedefs ═════════════════════════════════
 
@@ -84,6 +91,14 @@ static_assert(sizeof(FirewallParams) == 56, "Check your assumptions");
 
 
 // ════════════════════════════ Function Prototypes ═══════════════════════════
+
+static int processAdd(FirewallParams *firewallParams);
+
+static int processDelete(FirewallParams *firewallParams);
+
+static int findRuleIndex(FirewallParams *firewallParams);
+
+static void printHelp(int argc, char *argv[]);
 
 /* ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
  * Possible command-line options:
@@ -289,8 +304,6 @@ static void processCmdLine(CmdLineParam *cmdLineParm, FirewallParams *firewallPa
 	firewallParams->ruleAction = cmdLineParm->argv[argIndex];
 }
 
-static int processChain(FirewallParams *firewallParams);
-
 // ══════════════════════════════════ main() ══════════════════════════════════
 
 int main(int argc, char *argv[]) {
@@ -301,6 +314,9 @@ int main(int argc, char *argv[]) {
 	if (argc == 1) {
 		c7c88e52_printUsage(USAGE_MSG);
 		exit(EXIT_FAILURE);
+	} else if (f6215943_isEqual("help", argv[1])) {
+		printHelp(argc, argv);
+		exit(EXIT_SUCCESS);
 	}
 
 	FirewallParams firewallParams;
@@ -309,7 +325,15 @@ int main(int argc, char *argv[]) {
 	d7ad7024_initCmdLineParam(&cmdLineParm, argc, argv, USAGE_MSG);
 	processCmdLine(&cmdLineParm, &firewallParams);
 
-	processChain(&firewallParams);
+	if (firewallParams.action == ADD) {
+		processAdd(&firewallParams);
+	} else if (firewallParams.action == DELETE) {
+		processDelete(&firewallParams);
+	} else if (firewallParams.action == VIEW) {
+		for (int i=0; i < firewallParams.ruleList.length; i++) {
+			puts(firewallParams.ruleList.values[i]);
+		}
+	}
 
 	b196167f_destroyAllElements(&firewallParams.ruleList);
 
@@ -319,21 +343,12 @@ int main(int argc, char *argv[]) {
 
 // ═════════════════════════ Function Implementations ═════════════════════════
 
-static int processChain(FirewallParams *firewallParams) {
+static int findRuleIndex(FirewallParams *firewallParams) {
 	StringBuilder strBuilder;
-	int ruleIndex = 0;
-	int status = 0;
 
 	c598a24c_initStringBuilder(&strBuilder);
 
-	if (firewallParams->action == VIEW) {
-		for (int i=0; i < firewallParams->ruleList.length; i++) {
-			puts(firewallParams->ruleList.values[i]);
-		}
-
-		return status;
-	}
-
+	// Search for existing rule in table chain
 	if ((firewallParams->portType & MULTIPORT) > 0) {
 
 	} else {
@@ -352,57 +367,121 @@ static int processChain(FirewallParams *firewallParams) {
 		c598a24c_append_int(&strBuilder, firewallParams->portNumber);
 	}
 
-	// Search for existing rule in table chain
 	for (int i=2; i < firewallParams->ruleList.length; i++) {
 		if (f6215943_search(strBuilder.buffer, firewallParams->ruleList.values[i])) {
-			ruleIndex = i;
-			break;
+			return i;
 		}
 	}
 
-	if (firewallParams->action == ADD) {
-		if (ruleIndex == 0) {
-			// Build the iptables command-line
-			c598a24c_resetStringBuilder(&strBuilder);
-			c598a24c_append_string(&strBuilder, "/sbin/iptables -t ");
-			c598a24c_append_string(&strBuilder, firewallParams->tableName);
-			c598a24c_append_string(&strBuilder, " -I ");
-			c598a24c_append_string(&strBuilder, firewallParams->chainName);
-			c598a24c_append_char(&strBuilder, ' ');
-			c598a24c_append_uint(&strBuilder, firewallParams->ruleList.length - 2);
-			c598a24c_append_string(&strBuilder, " -p ");
+	// Rule not found
+	return -1;
+}
 
-			if (firewallParams->protocol == TCP) {
-				c598a24c_append_string(&strBuilder, "tcp");
-			} else {
-				c598a24c_append_string(&strBuilder, "udp");
-			}
+static int processAdd(FirewallParams *firewallParams) {
+	StringBuilder strBuilder;
+	int ruleIndex = findRuleIndex(firewallParams);
+	int status = 0;
 
-			c598a24c_append_string(&strBuilder, " -m ");
+	// Insert the iptables firewall rule if it does not already exist
+	if (ruleIndex < 0) {
+		c598a24c_initStringBuilder(&strBuilder);
 
-			if (firewallParams->protocol == TCP) {
-				c598a24c_append_string(&strBuilder, "tcp");
-			} else {
-				c598a24c_append_string(&strBuilder, "udp");
-			}
+		// Build the iptables command-line
+		c598a24c_append_string(&strBuilder, "/sbin/iptables -t ");
+		c598a24c_append_string(&strBuilder, firewallParams->tableName);
+		c598a24c_append_string(&strBuilder, " -I ");
+		c598a24c_append_string(&strBuilder, firewallParams->chainName);
+		c598a24c_append_char(&strBuilder, ' ');
+		c598a24c_append_uint(&strBuilder, firewallParams->ruleList.length - 2);
+		c598a24c_append_string(&strBuilder, " -p ");
 
-			if (firewallParams->portType == SOURCE) {
-				c598a24c_append_string(&strBuilder, " --sport ");
-			} else {
-				c598a24c_append_string(&strBuilder, " --dport ");
-			}
-
-			c598a24c_append_int(&strBuilder, firewallParams->portNumber);
-
-			c598a24c_append_string(&strBuilder, " -j ");
-			c598a24c_append_string(&strBuilder, firewallParams->ruleAction);
-
-			// Insert the iptables firewall rule
-			status = system(strBuilder.buffer);
+		if (firewallParams->protocol == TCP) {
+			c598a24c_append_string(&strBuilder, "tcp");
 		} else {
-			c7c88e52_printNotice("Rule already exists");
+			c598a24c_append_string(&strBuilder, "udp");
 		}
+
+		c598a24c_append_string(&strBuilder, " -m ");
+
+		if (firewallParams->protocol == TCP) {
+			c598a24c_append_string(&strBuilder, "tcp");
+		} else {
+			c598a24c_append_string(&strBuilder, "udp");
+		}
+
+		if (firewallParams->portType == SOURCE) {
+			c598a24c_append_string(&strBuilder, " --sport ");
+		} else {
+			c598a24c_append_string(&strBuilder, " --dport ");
+		}
+
+		c598a24c_append_int(&strBuilder, firewallParams->portNumber);
+
+		c598a24c_append_string(&strBuilder, " -j ");
+		c598a24c_append_string(&strBuilder, firewallParams->ruleAction);
+
+		// Insert the iptables firewall rule
+		status = system(strBuilder.buffer);
+	} else {
+		c7c88e52_printNotice("Rule already exists");
 	}
 
 	return status;
+}
+
+static int processDelete(FirewallParams *firewallParams) {
+	StringBuilder strBuilder;
+	int ruleIndex = findRuleIndex(firewallParams);
+	int status = 0;
+
+	// Delete the iptables firewall rule if it exists
+	if (ruleIndex >= 0) {
+		c598a24c_initStringBuilder(&strBuilder);
+
+		// Build the iptables command-line
+		c598a24c_append_string(&strBuilder, "/sbin/iptables -t ");
+		c598a24c_append_string(&strBuilder, firewallParams->tableName);
+		c598a24c_append_string(&strBuilder, " -D ");
+		c598a24c_append_string(&strBuilder, firewallParams->chainName);
+		c598a24c_append_char(&strBuilder, ' ');
+		c598a24c_append_int(&strBuilder, ruleIndex);
+
+		// Delete the iptables firewall rule
+		status = system(strBuilder.buffer);
+	} else {
+		c7c88e52_printNotice("Rule does not exist");
+	}
+
+	return status;
+}
+
+static void printHelp(int argc, char *argv[]) {
+	if (argc == 2) {
+		c7c88e52_printUsage(USAGE_MSG);
+
+		puts("\nManage iptables firewall chain rules");
+
+		puts(ANSI_BOLD "\nValid Actions:" ANSI_RESET);
+		puts(ANSI_BOLD "  add\t\t" ANSI_YELLOW "Adds an iptables firewall rule to an existing chain" ANSI_RESET);
+		puts(ANSI_BOLD "  delete\t" ANSI_YELLOW "Deletes an iptables firewall rule from an existing chain" ANSI_RESET);
+		puts(ANSI_BOLD "  view\t\t" ANSI_YELLOW "View all of the rules in a given chain" ANSI_RESET);
+	} else {
+		if (f6215943_isEqual("add", argv[2])) {
+			c7c88e52_printUsage(ADD_USAGE_MSG);
+
+			puts(ANSI_ROMANTIC "\nAdds an iptables firewall rule to an existing chain" ANSI_RESET);
+		} else if (f6215943_isEqual("delete", argv[2])) {
+			c7c88e52_printUsage(DELETE_USAGE_MSG);
+
+			puts(ANSI_ROMANTIC "\nDeletes an iptables firewall rule from an existing chain" ANSI_RESET);
+		} else if (f6215943_isEqual("view", argv[2])) {
+			c7c88e52_printUsage(VIEW_USAGE_MSG);
+
+			puts(ANSI_ROMANTIC "\nView all of the rules in a given chain" ANSI_RESET);
+		} else {
+			c7c88e52_invalidValue("action", argv[2]);
+			c7c88e52_printUsage(USAGE_MSG);
+			exit(EXIT_FAILURE);
+		}
+	}
 }
