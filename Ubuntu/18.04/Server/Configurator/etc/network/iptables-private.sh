@@ -104,13 +104,12 @@ NIC=${1:-}
 ## Variables
 IPv4_ADDRESS=''
 IPv4_GATEWAY=''
-IPv4_SUBNET=''
-IPv4_SUBNET_IGMP='224.0.0.0/24'
+IPv4_INTERNAL=''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if [ -z "$NIC" ]; then
-	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^(enp|ens)[a-z0-9]+')
+	mapfile -t ethList < <($EXEC_IP -br -4 addr show | $EXEC_GREP -Eo '^en(p|s)[a-z0-9]+')
 
 	if [ ${#ethList[@]} -eq 1 ]; then
 		ethInterface=(${ethList[0]})
@@ -142,11 +141,23 @@ if [ $? -ne 0 ]; then
 	exit 0
 fi
 
-set -o errexit
-
 IPv4_ADDRESS=${ethInfo[0]}
 IPv4_GATEWAY=${ethInfo[1]}
-IPv4_SUBNET=${ethInfo[2]}
+
+# Check if we are on a Google Compute Engine platform
+if [[ "${ethInfo[2]}" =~ ^10\.128\. ]]; then
+	isGCE="$($EXEC_GREP -F google-sudoers /etc/group)"
+
+	if [ "$isGCE" ]; then
+		IPv4_INTERNAL='10.128.0.0/9'
+	else
+		IPv4_INTERNAL=${ethInfo[2]}
+	fi
+else
+	IPv4_INTERNAL=${ethInfo[2]}
+fi
+
+set -o errexit
 
 ################################### Actions ###################################
 
@@ -158,9 +169,9 @@ fi
 printBox "DevOpsBroker $UBUNTU_RELEASE iptables Configurator" 'true'
 
 echo "${bold}Network Interface: ${green}$NIC"
-echo "${white}IPv4 Address: ${green}$IPv4_ADDRESS"
-echo "${white}IPv4 Gateway: ${green}$IPv4_GATEWAY"
-echo "${white}IPv4 Subnet:  ${green}$IPv4_SUBNET"
+echo "${white}IPv4 Address:  ${green}$IPv4_ADDRESS"
+echo "${white}IPv4 Gateway:  ${green}$IPv4_GATEWAY"
+echo "${white}IPv4 Internal: ${green}$IPv4_INTERNAL"
 echo "${reset}"
 
 #
@@ -246,14 +257,14 @@ $IPTABLES -t raw -A PREROUTING -f -j ipv4_fragment_drop
 # Create PREROUTING filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-## lo
-printInfo 'Allow incoming lo interface traffic'
-$IPTABLES -t raw -A PREROUTING -i lo -j do_not_track
-
 ## NIC
 printInfo "Process incoming $NIC interface traffic"
 $IPTABLES -t raw -N raw-${NIC}-pre
 $IPTABLES -t raw -A PREROUTING -i ${NIC} -j raw-${NIC}-pre
+
+## lo
+printInfo 'Allow incoming lo interface traffic'
+$IPTABLES -t raw -A PREROUTING -i lo -j do_not_track
 
 printInfo 'DROP all other incoming interface traffic'
 $IPTABLES -t raw -A PREROUTING -j ipv4_nic_drop
@@ -262,6 +273,9 @@ echo
 
 # Create PREROUTING filter chains for each protocol
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+printInfo 'Allow incoming IPv4 Internal packets'
+$IPTABLES -t raw -A raw-${NIC}-pre -s $IPv4_INTERNAL -j do_not_track
 
 ## TCP
 printInfo 'Process incoming TCP traffic'
@@ -279,9 +293,8 @@ $IPTABLES -t raw -N raw-${NIC}-icmp-pre
 $IPTABLES -t raw -A raw-${NIC}-pre -p icmp -j raw-${NIC}-icmp-pre
 
 ## IGMP
-printInfo 'Process incoming IGMP traffic'
-$IPTABLES -t raw -N raw-${NIC}-igmp-pre
-$IPTABLES -t raw -A raw-${NIC}-pre -p igmp -j raw-${NIC}-igmp-pre
+printInfo "DROP all incoming IGMP traffic not on $IPv4_INTERNAL"
+$IPTABLES -t raw -A raw-${NIC}-pre -j igmp_drop
 
 ## ALL OTHERS
 printInfo 'Further process all other incoming protocol traffic'
@@ -294,9 +307,6 @@ echo
 # * raw-${NIC}-icmp-pre Rules *
 # *****************************
 #
-
-printInfo 'Allow incoming Link-Local ICMP packets'
-$IPTABLES -t raw -A raw-${NIC}-icmp-pre -s $IPv4_SUBNET -j do_not_track
 
 printInfo 'Allow ICMP destination-unreachable packets'
 $IPTABLES -t raw -A raw-${NIC}-icmp-pre -p icmp -m icmp --icmp-type destination-unreachable -j do_not_track
@@ -320,30 +330,10 @@ $IPTABLES -t raw -A raw-${NIC}-icmp-pre -j DROP
 echo
 
 #
-# *****************************
-# * raw-${NIC}-igmp-pre Rules *
-# *****************************
-#
-
-printInfo 'Allow incoming Link-Local IGMP packets'
-$IPTABLES -t raw -A raw-${NIC}-igmp-pre -s $IPv4_SUBNET -j do_not_track
-
-printInfo "DROP all incoming IGMP traffic not on $IPv4_SUBNET"
-$IPTABLES -t raw -A raw-${NIC}-igmp-pre -j igmp_drop
-
-echo
-
-#
 # ****************************
 # * raw-${NIC}-tcp-pre Rules *
 # ****************************
 #
-
-printInfo 'DROP incoming Microsoft Remote Desktop packets'
-$IPTABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --dport 3389 -j tcp_drop
-
-printInfo 'Allow incoming Link-Local TCP packets'
-$IPTABLES -t raw -A raw-${NIC}-tcp-pre -s $IPv4_SUBNET -j do_not_track
 
 printInfo 'Do not track incoming HTTP/HTTPS TCP response packets'
 $IPTABLES -t raw -A raw-${NIC}-tcp-pre -p tcp -m tcp --sport 443 -j do_not_track
@@ -384,14 +374,14 @@ $IPTABLES -t raw -A OUTPUT -f -j ipv4_fragment_drop
 # Create OUTPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-## lo
-printInfo 'Allow outgoing lo interface traffic'
-$IPTABLES -t raw -A OUTPUT -o lo -j do_not_track
-
 ## NIC
 printInfo "Process outgoing $NIC interface traffic"
 $IPTABLES -t raw -N raw-${NIC}-out
 $IPTABLES -t raw -A OUTPUT -o ${NIC} -j raw-${NIC}-out
+
+## lo
+printInfo 'Allow outgoing lo interface traffic'
+$IPTABLES -t raw -A OUTPUT -o lo -j do_not_track
 
 printInfo 'DROP all other outgoing interface traffic'
 $IPTABLES -t raw -A OUTPUT -j ipv4_nic_drop
@@ -400,6 +390,9 @@ echo
 
 # Create OUTPUT filter chains for each protocol
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+printInfo 'Allow outgoing IPv4 Internal packets'
+$IPTABLES -t raw -A raw-${NIC}-out -d $IPv4_INTERNAL -j do_not_track
 
 ## TCP
 printInfo 'Process outgoing TCP traffic'
@@ -416,9 +409,8 @@ printInfo 'Allow outgoing ICMP traffic'
 $IPTABLES -t raw -A raw-${NIC}-out -p icmp -j do_not_track
 
 ## IGMP
-printInfo 'Process outgoing IGMP traffic'
-$IPTABLES -t raw -N raw-${NIC}-igmp-out
-$IPTABLES -t raw -A raw-${NIC}-out -p igmp -j raw-${NIC}-igmp-out
+printInfo "DROP all outgoing IGMP traffic not on $IPv4_INTERNAL"
+$IPTABLES -t raw -A raw-${NIC}-out -j igmp_drop
 
 ## ALL OTHERS
 printInfo 'DROP all other outgoing protocol traffic'
@@ -432,9 +424,6 @@ echo
 # * raw-${NIC}-tcp-out Rules *
 # ****************************
 #
-
-printInfo 'Allow outgoing Link-Local TCP packets'
-$IPTABLES -t raw -A raw-${NIC}-tcp-out -d $IPv4_SUBNET -j do_not_track
 
 printInfo 'Do not track outgoing HTTP/HTTPS TCP request packets'
 $IPTABLES -t raw -A raw-${NIC}-tcp-out -p tcp -m tcp --dport 443 -j do_not_track
@@ -459,20 +448,6 @@ $IPTABLES -t raw -A raw-${NIC}-udp-out -p udp -m multiport --dports 8610,8612,32
 
 printInfo 'Further process all other outgoing UDP traffic'
 $IPTABLES -t raw -A raw-${NIC}-udp-out -p udp -j do_not_track
-
-echo
-
-#
-# *****************************
-# * raw-${NIC}-igmp-out Rules *
-# *****************************
-#
-
-printInfo 'Allow outgoing Link-Local IGMP packets'
-$IPTABLES -t raw -A raw-${NIC}-igmp-out -d $IPv4_SUBNET -j do_not_track
-
-printInfo "DROP all outgoing IGMP traffic not on $IPv4_SUBNET"
-$IPTABLES -t raw -A raw-${NIC}-igmp-out -j igmp_drop
 
 echo
 
@@ -550,24 +525,23 @@ $IPTABLES -N sshguard
 # Create INPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-## lo
-printInfo 'ACCEPT incoming lo interface traffic'
-$IPTABLES -A INPUT -i lo -j ACCEPT
-
 ## NIC
 printInfo "Process incoming $NIC interface traffic"
 $IPTABLES -N filter-${NIC}-in
 $IPTABLES -A INPUT -i ${NIC} -j filter-${NIC}-in
+
+## lo
+printInfo 'ACCEPT incoming lo interface traffic'
+$IPTABLES -A INPUT -i lo -j ACCEPT
 
 echo
 
 # Create INPUT filter chains for each protocol
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-printInfo "Process incoming IPv4 Subnet packets on $NIC"
+printInfo "Process incoming IPv4 Internal packets on $NIC"
 $IPTABLES -N filter-${NIC}-local-in
-$IPTABLES -A filter-${NIC}-in -s $IPv4_SUBNET -j filter-${NIC}-local-in
-$IPTABLES -A filter-${NIC}-in -s $IPv4_SUBNET_IGMP -j filter-${NIC}-local-in
+$IPTABLES -A filter-${NIC}-in -s $IPv4_INTERNAL -j filter-${NIC}-local-in
 
 ## TCP
 printInfo 'Process incoming TCP traffic'
@@ -595,19 +569,19 @@ echo
 # ********************************
 #
 
-printInfo 'Perform incoming IPv4 Subnet TCP traffic accounting'
+printInfo 'Perform incoming IPv4 Internal TCP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-in -p tcp -j ACCEPT
 
-printInfo 'Perform incoming IPv4 Subnet UDP traffic accounting'
+printInfo 'Perform incoming IPv4 Internal UDP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-in -p udp -j ACCEPT
 
-printInfo 'Perform incoming IPv4 Subnet IGMP traffic accounting'
+printInfo 'Perform incoming IPv4 Internal IGMP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-in -p igmp -j ACCEPT
 
-printInfo 'Perform incoming IPv4 Subnet ICMP traffic accounting'
+printInfo 'Perform incoming IPv4 Internal ICMP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-in -p icmp -j ACCEPT
 
-printInfo 'Perform incoming IPv4 Subnet OTHER traffic accounting'
+printInfo 'Perform incoming IPv4 Internal OTHER traffic accounting'
 $IPTABLES -A filter-${NIC}-local-in -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv4 INFO BLOCK] ' --log-level 7
 $IPTABLES -A filter-${NIC}-local-in -j ACCEPT
 
@@ -646,6 +620,9 @@ $IPTABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 53 -j ACCEPT
 printInfo 'ACCEPT incoming NTP UDP response packets'
 $IPTABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 123 -j ACCEPT
 
+printInfo 'ACCEPT incoming DHCP UDP response packets'
+$IPTABLES -A filter-${NIC}-udp-in -p udp -m udp --sport 67 --dport 68 -j ACCEPT
+
 printInfo 'REJECT all other incoming UDP traffic'
 $IPTABLES -A filter-${NIC}-udp-in -j icmp_reject
 
@@ -667,24 +644,23 @@ echo
 # Create OUTPUT filter chains for each network interface
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-## lo
-printInfo 'ACCEPT outgoing lo interface traffic'
-$IPTABLES -A OUTPUT -o lo -j ACCEPT
-
 ## NIC
 printInfo "Process outgoing $NIC interface traffic"
 $IPTABLES -N filter-${NIC}-out
 $IPTABLES -A OUTPUT -o ${NIC} -j filter-${NIC}-out
+
+## lo
+printInfo 'ACCEPT outgoing lo interface traffic'
+$IPTABLES -A OUTPUT -o lo -j ACCEPT
 
 echo
 
 # Create OUTPUT filter chains for each protocol
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 
-printInfo "Process outgoing IPv4 Subnet packets on $NIC"
+printInfo "Process outgoing IPv4 Internal packets on $NIC"
 $IPTABLES -N filter-${NIC}-local-out
-$IPTABLES -A filter-${NIC}-out -d $IPv4_SUBNET -j filter-${NIC}-local-out
-$IPTABLES -A filter-${NIC}-out -d $IPv4_SUBNET_IGMP -j filter-${NIC}-local-out
+$IPTABLES -A filter-${NIC}-out -d $IPv4_INTERNAL -j filter-${NIC}-local-out
 
 ## TCP
 printInfo 'Process outgoing TCP traffic'
@@ -712,19 +688,19 @@ echo
 # *********************************
 #
 
-printInfo 'Perform outgoing IPv4 Subnet TCP traffic accounting'
+printInfo 'Perform outgoing IPv4 Internal TCP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-out -p tcp -j ACCEPT
 
-printInfo 'Perform outgoing IPv4 Subnet UDP traffic accounting'
+printInfo 'Perform outgoing IPv4 Internal UDP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-out -p udp -j ACCEPT
 
-printInfo 'Perform outgoing IPv4 Subnet IGMP traffic accounting'
+printInfo 'Perform outgoing IPv4 Internal IGMP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-out -p igmp -j ACCEPT
 
-printInfo 'Perform outgoing IPv4 Subnet ICMP traffic accounting'
+printInfo 'Perform outgoing IPv4 Internal ICMP traffic accounting'
 $IPTABLES -A filter-${NIC}-local-out -p icmp -j ACCEPT
 
-printInfo 'Perform outgoing IPv4 Subnet OTHER traffic accounting'
+printInfo 'Perform outgoing IPv4 Internal OTHER traffic accounting'
 $IPTABLES -A filter-${NIC}-local-out -m limit --limit 3/min --limit-burst 2 -j LOG --log-prefix '[IPv6 INFO BLOCK] ' --log-level 7
 $IPTABLES -A filter-${NIC}-local-out -j ACCEPT
 

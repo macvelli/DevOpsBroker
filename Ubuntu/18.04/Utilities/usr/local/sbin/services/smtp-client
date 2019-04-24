@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-# smbd - DevOpsBroker utility for managing the smbd firewall services
+# smtp-client - DevOpsBroker utility for managing the SMTP client firewall services
 #
-# Copyright (C) 2018 Edward Smith <edwardsmith@devopsbroker.org>
+# Copyright (C) 2019 Edward Smith <edwardsmith@devopsbroker.org>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -19,7 +19,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # -----------------------------------------------------------------------------
-# Developed on Ubuntu 16.04.5 LTS running kernel.osrelease = 4.15.0-34
+# Developed on Ubuntu 18.04.2 LTS running kernel.osrelease = 4.18.0-18
 #
 # -----------------------------------------------------------------------------
 #
@@ -54,7 +54,7 @@ set -o nounset                 # Exit if use an uninitialised variable
 set -o pipefail                # Exit if any statement in a pipeline returns a non-true value
 IFS=$'\n\t'                    # Default the Internal Field Separator to newline and tab
 
-scriptName='smbd'
+scriptName='smtp-client'
 
 # Display error if not running as root
 if [ "$USER" != 'root' ]; then
@@ -122,27 +122,23 @@ fi
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RAW PREROUTING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-printInfo 'Allow incoming TCP SMB request packets (RAW PREROUTING)'
-$EXEC_FIRECHAIN add raw "raw-${NIC}-tcp-pre" tcp dest 445 do_not_track 2>/dev/null
-
-printInfo 'Allow incoming TCP SMB response packets (RAW PREROUTING)'
-$EXEC_FIRECHAIN add raw "raw-${NIC}-tcp-pre" tcp source 445 do_not_track 2>/dev/null
+printInfo 'Allow incoming TCP SMTP response packets (RAW PREROUTING)'
+$EXEC_FIRECHAIN add raw "raw-${NIC}-tcp-pre" tcp source 587 do_not_track 2>/dev/null
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RAW OUTPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-printInfo 'Allow outgoing TCP SMB request packets (RAW OUTPUT)'
-$EXEC_FIRECHAIN add raw "raw-${NIC}-tcp-out" tcp dest 445 do_not_track 2>/dev/null
-
-printInfo 'Allow outgoing TCP SMB response packets (RAW OUTPUT)'
-$EXEC_FIRECHAIN add raw "raw-${NIC}-tcp-out" tcp source 445 do_not_track 2>/dev/null
+printInfo 'Allow outgoing TCP SMTP request packets (RAW OUTPUT)'
+$EXEC_FIRECHAIN add raw "raw-${NIC}-tcp-out" tcp dest 587 do_not_track 2>/dev/null
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FILTER INPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-printInfo 'Allow incoming TCP SMB request packets (FILTER INPUT)'
-$EXEC_FIRECHAIN add filter "filter-${NIC}-tcp-in" tcp dest 445 ACCEPT 2>/dev/null
+printInfo 'Allow incoming TCP SMTP response packets (FILTER INPUT)'
+$EXEC_FIRECHAIN add filter "filter-${NIC}-tcp-in" tcp source 587 ACCEPT 2>/dev/null
 
-printInfo 'Allow incoming TCP SMB response packets (FILTER INPUT)'
-$EXEC_FIRECHAIN add filter "filter-${NIC}-tcp-in" tcp source 445 ACCEPT 2>/dev/null
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FILTER OUTPUT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+printInfo 'Allow outgoing TCP SMTP request packets (FILTER OUTPUT)'
+$EXEC_FIRECHAIN add filter "filter-${NIC}-tcp-out" tcp dest 587 ACCEPT 2>/dev/null
 
 ################################ IPTABLES-SAVE ################################
 

@@ -268,6 +268,8 @@ fi
 
 installService 'smbd'
 
+installService 'smtp-client'
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ User Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Install albumart user utility

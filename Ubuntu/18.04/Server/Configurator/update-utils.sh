@@ -87,6 +87,33 @@ function createSymlink() {
 }
 
 # ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     installService
+# Description:  Installs the firewall service into /usr/local/sbin/services
+#
+# Parameter $1: The name of the service to install
+# -----------------------------------------------------------------------------
+function installService() {
+	local service="$1"
+	local destDir=/usr/local/sbin/services
+	local sourceDir="$SCRIPT_DIR/$destDir"
+
+	if [ ! -f $destDir/$service ]; then
+		printInfo "Installing firewall service $destDir/$service"
+
+		# Install as root:sudo with rwxr-x--- privileges
+		$EXEC_INSTALL -o root -g sudo -m 750 "$sourceDir/$service" $destDir
+		echoOnExit=true
+
+	elif [ "$sourceDir/$service" -nt $destDir/$service ]; then
+		printInfo "Updating firewall service $destDir/$service"
+
+		# Install as root:sudo with rwxr-x--- privileges
+		$EXEC_INSTALL -o root -g sudo -m 750 "$sourceDir/$service" $destDir
+		echoOnExit=true
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
 # Function:     installSystemUtility
 # Description:  Installs the system administration utility into /usr/local/sbin
 #
@@ -180,6 +207,9 @@ installSystemUtility dirchmod
 installSystemUtility disableJournal
 
 # Install firewall system administration utility
+installSystemUtility firechain
+
+# Install firewall system administration utility
 installSystemUtility firewall
 
 # Install logbroker system administration utility
@@ -202,6 +232,21 @@ installSystemUtility smbshare
 
 # Install wipedisk system administration utility
 installSystemUtility wipedisk
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Firewall Services ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Make /usr/local/sbin/services directory
+if [ ! -d /usr/local/sbin/services ]; then
+	printInfo 'Creating /usr/local/sbin/services directory'
+
+	$EXEC_MKDIR --parents --mode=0750 /usr/local/sbin/services
+	$EXEC_CHOWN --changes root:sudo /usr/local/sbin/services
+	echoOnExit=true
+fi
+
+installService 'smbd'
+
+installService 'smtp-client'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ User Utilities ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
