@@ -79,9 +79,7 @@ scriptName='verify'
 # -----------------------------------------------------------------------------
 function showMissingFilename() {
 
-	if [ "$command" == 'sha256' ]; then
-		printUsage "verify sha256 FILE ${gold}[SHA256_HASH]"
-	elif [ "$command" == 'sign' ]; then
+	if [ "$command" == 'sign' ]; then
 		printUsage "verify sign ${gold}[OPTION] ${yellow}FILE"
 		echo ${bold}
 		echo "Valid Options:${romantic}"
@@ -90,7 +88,105 @@ function showMissingFilename() {
 	elif [ "$command" == 'pgp' ]; then
 		printUsage 'verify pgp FILE SIG_FILE'
 	fi
+}
 
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateCompute
+# Description:  Performs validation for the compute command
+#
+# Parameters:
+#   fileName    The file name to verify
+# -----------------------------------------------------------------------------
+function validateCompute() {
+	errorMessage=$(isValidFile $scriptName "$fileName")
+
+	# Display error if fileName parameter is missing or invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage "$scriptName $command FILE"
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validatePGP
+# Description:  Performs validation for the pgp command
+#
+# Parameters:
+#   fileName    The file name to verify
+#   sigFile     The PGP signature file to verify
+# -----------------------------------------------------------------------------
+function validatePGP() {
+	errorMessage=$(isValidFile $scriptName "$fileName")
+
+	# Display error if fileName parameter is missing or invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage "$scriptName $command FILE SIG_FILE"
+		printUsage
+
+		exit 1
+	fi
+
+	errorMessage=$(isValidFile 'verify' "$sigFile")
+
+	# Display error if signature file parameter is missing or invalid
+	if [ "$errorMessage" != '0' ]; then
+		echo "$errorMessage"
+		echo
+		printUsage "$scriptName $command $fileName SIG_FILE"
+		printUsage
+
+		exit 1
+	fi
+}
+
+# ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+# Function:     validateSHA256
+# Description:  Performs validation for the sha256 command
+#
+# Parameters:
+#   sha256Hash  The SHA256 hash to verify against
+#   fileName    The file name to verify (optional)
+# -----------------------------------------------------------------------------
+function validateSHA256() {
+
+	# Display error if sha256Hash parameter is missing
+	if [ -z "$sha256Hash" ]; then
+		printError $scriptName 'Missing SHA256HASH parameter'
+		echo
+		printUsage "$scriptName $command { FILE | SHA256HASH }"
+
+		exit 1
+	fi
+
+	if [ -f "$sha256Hash" ]; then
+		# Verify SHA256HASH file exists if passed as parameter
+		errorMessage=$(isValidFile $scriptName "$sha256Hash")
+
+		# Display error if sha256Hash parameter is invalid
+		if [ "$errorMessage" != '0' ]; then
+			echo "$errorMessage"
+			echo
+			printUsage "$scriptName $command { FILE | SHA256HASH }"
+
+			exit 1
+		fi
+	else
+		errorMessage=$(isValidFile $scriptName "$fileName")
+
+		# Display error if fileName parameter is missing or invalid
+		if [ "$errorMessage" != '0' ]; then
+			echo "$errorMessage"
+			echo
+			printUsage "$scriptName $command SHA256HASH FILE"
+
+			exit 1
+		fi
+	fi
 }
 
 ################################## Variables ##################################
@@ -102,33 +198,28 @@ EXEC_SHA256SUM=/usr/bin/sha256sum
 command=${1:-}
 
 ## Variables
-validCommands=('pgp' 'sha256' 'sign')
+export TMPDIR=${TMPDIR:-'/tmp'}
+
+validCommands=('compute' 'pgp' 'sha256' 'sign')
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Display usage if no parameters given
 if [ -z "$command" ]; then
-	printUsage 'verify { pgp | sha256 | sign }'
+	printUsage "$scriptName { compute | pgp | sha256 | sign }"
 	exit 1
 fi
 
 # Display error if invalid command
 if [ $(containsElement "$command" "${validCommands[@]}") != '0' ]; then
-	printError 'verify' "Invalid command: $command"
+	printError $scriptName "Invalid command: $command"
 	echo
-	printUsage 'verify { pgp | sha256 | sign }'
+	printUsage "$scriptName { compute | pgp | sha256 | sign }"
 
 	exit 1
 fi
 
-if [ "$command" == 'sha256' ]; then
-	# File is the second parameter
-	fileName="${2:-}"
-
-	# SHA256 Hash is the third parameter
-	sha256Hash=${3:-}
-
-elif [ "$command" == 'sign' ]; then
+if [ "$command" == 'sign' ]; then
 
 	if [ "${2:-}" == '-a' ]; then
 		asciiFormat='true'
@@ -142,16 +233,9 @@ elif [ "$command" == 'sign' ]; then
 		fileName="${2:-}"
 	fi
 
-elif [ "$command" == 'pgp' ]; then
-	# File is the second parameter
-	fileName="${2:-}"
+	errorMessage=$(isValidFile 'verify' "$fileName")
 
-	# Signature file is the third parameter
-	sigFile="${3:-}"
-
-	errorMessage=$(isValidFile 'verify' "$sigFile")
-
-	# Display error if signature file parameter is missing or invalid
+	# Display error if file parameter is missing or invalid
 	if [ "$errorMessage" != '0' ]; then
 		echo "$errorMessage"
 		echo
@@ -161,45 +245,34 @@ elif [ "$command" == 'pgp' ]; then
 	fi
 fi
 
-errorMessage=$(isValidFile 'verify' "$fileName")
-
-# Display error if file parameter is missing or invalid
-if [ "$errorMessage" != '0' ]; then
-	echo "$errorMessage"
-	echo
-	showMissingFilename
-
-	exit 1
-fi
-
 ################################### Actions ###################################
 
-if [ "$command" == 'pgp' ]; then
+if [ "$command" == 'compute' ]; then
+	fileName="${2:-}"
+	validateCompute
+
+	$EXEC_SHA256SUM "$fileName"
+
+elif [ "$command" == 'pgp' ]; then
+	fileName="${2:-}"
+	sigFile="${3:-}"
+	validatePGP
 
 	$EXEC_GPG --verify "$sigFile" "$fileName"
 
 elif [ "$command" == 'sha256' ]; then
+	sha256Hash="${2:-}"
+	fileName="${3:-}"
+	validateSHA256
 
-	if [ -z "$sha256Hash" ]; then
+	if [ -f "$sha256Hash" ]; then
 
-		# Compute SHA256 Hash for the given filename
-		$EXEC_SHA256SUM "$fileName"
+		$EXEC_SHA256SUM --check "$sha256Hash"
+
 	else
-		if [ -f "$sha256Hash" ]; then
-
-			if ! $EXEC_GREP -Fq "$fileName" "$sha256Hash"; then
-				printError 'verify' "Cannot verify SHA256 hash for '$fileName': No such entry in '$sha256Hash'"
-				echo
-				exit 1
-			fi
-
-			$EXEC_SHA256SUM --check "$sha256Hash"
-
-		else
-			echo "$sha256Hash"  "$fileName" > verify-sha256sum.txt
-			$EXEC_SHA256SUM --check verify-sha256sum.txt
-			$EXEC_RM verify-sha256sum.txt
-		fi
+		echo "$sha256Hash"  "$($EXEC_READLINK -f $fileName)" > "$TMPDIR/verify-sha256sum.txt"
+		$EXEC_SHA256SUM --check "$TMPDIR/verify-sha256sum.txt"
+		$EXEC_RM "$TMPDIR/verify-sha256sum.txt"
 	fi
 
 elif [ "$command" == 'sign' ]; then
@@ -209,6 +282,7 @@ elif [ "$command" == 'sign' ]; then
 	else
 		$EXEC_GPG --detach-sig -a "$fileName"
 	fi
+
 fi
 
 exit 0

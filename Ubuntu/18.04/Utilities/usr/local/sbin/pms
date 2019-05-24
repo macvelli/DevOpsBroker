@@ -349,24 +349,24 @@ elif [ $command == 'install' ]; then
 			# Check the Apt cache first for the package
 			mapfile -t pkgInfo < <($EXEC_APT_CACHE policy $name 2>/dev/null)
 
-			if [ ! -z "$pkgInfo" ]; then
+			if [ "$pkgInfo" ]; then
 				if [[ ! "${pkgInfo[1]}" =~ 'Installed: (none)'$ ]]; then
 					printInfo "Package '$name' already installed"
 					continue
 				else
-					pkgInfo=( ${pkgInfo[2]} )
+					unset IFS; pkgInfo=( ${pkgInfo[2]} ); IFS=$'\n\t'
 				fi
 			fi
 
 			# Check Snap next
-			mapfile -t snapInfo < <($EXEC_SNAP list $name 2>/dev/null)
+			mapfile -t snapInfo < <($EXEC_SNAP list $name 2>&1)
 
-			if [ "${snapInfo:-}" ]; then
+			if [ "${snapInfo}" != 'error: no matching snaps installed' ]; then
 				printInfo "Snap '$name' already installed"
 				continue
 			else
 				printInfo "Searching for Snap '$name'"
-				snapInfo=($($EXEC_SNAP find $name 2>/dev/null | $EXEC_GREP -E ^$name\\b))
+				unset IFS; snapInfo=($($EXEC_SNAP find $name 2>/dev/null | $EXEC_GREP -E ^$name\\b)); IFS=$'\n\t'
 			fi
 
 			# Take care of all possible situations
@@ -385,7 +385,7 @@ elif [ $command == 'install' ]; then
 
 			elif [ ! -z "$pkgInfo" ] && [ "${snapInfo:-}" ]; then
 				echo ${bold}
-				echo $name="$2"{purple}"Which $name version do you want to install?"${white}
+				echo ${purple}"Which $name version do you want to install?"${white}
 				select version in "${pkgInfo[1]} (APT)" "${snapInfo[1]} (Snap)"; do
 					echo
 					if [[ "$version" =~ '(APT)'$ ]]; then

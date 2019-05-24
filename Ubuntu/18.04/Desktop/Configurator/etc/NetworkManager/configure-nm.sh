@@ -133,6 +133,7 @@ function installNMScript() {
 ## Bash exec variables
 EXEC_NETTUNER=/usr/local/bin/nettuner
 EXEC_NMCLI=/usr/bin/nmcli
+EXEC_SPEED_TEST=/usr/bin/speedtest-cli
 
 ## Options
 NIC="${1:-$($EXEC_IP -4 route show default | $EXEC_SORT -k9 -n | $EXEC_HEAD -1 | $EXEC_AWK '{print $5}')}"
@@ -174,6 +175,13 @@ fi
 
 # ---------------------------- Network Information ----------------------------
 
+if [ ! -f /etc/devops/speedtest.info ]; then
+	printInfo 'Executing Internet speed test'
+	$EXEC_SPEED_TEST | tee /etc/devops/speedtest.info
+
+	printInfo 'Internet speed test finished'
+	echo
+fi
 # Internet Download speed
 INET_DL_SPEED=$($EXEC_AWK '/Download:/{ print $2 }' /etc/devops/speedtest.info)
 
@@ -206,7 +214,7 @@ if [ "$isWireless" == 'false' ] && [ ! -f /etc/NetworkManager/system-connections
 	printInfo "Modifying NetworkManager connection profile for '$NIC'"
 
 	# Load existing NetworkManager connection profile
-	connProfile=( $($EXEC_NMCLI --fields UUID,TYPE,DEVICE connection show --active | grep -F $NIC) )
+	unset IFS; connProfile=( $($EXEC_NMCLI --fields UUID,TYPE,DEVICE connection show --active | grep -F $NIC) ); FS=$'\n\t'
 
 	$EXEC_NMCLI connection modify uuid ${connProfile[0]} \
 		connection.id $NIC \

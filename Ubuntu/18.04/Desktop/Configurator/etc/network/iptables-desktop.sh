@@ -97,7 +97,8 @@ NIC="$1"
 IPv4_ADDRESS=''
 IPv4_GATEWAY=''
 IPv4_SUBNET=''
-IPv4_SUBNET_IGMP='224.0.0.0/24'
+IPv4_BROADCAST='255.255.255.255'
+IGMP_SUBNET='224.0.0.0/3'
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPTION Parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -233,7 +234,7 @@ echo
 
 printInfo 'Allow incoming IPv4 Subnet packets'
 $IPTABLES -t raw -A raw-${NIC}-pre -s $IPv4_SUBNET -j do_not_track
-$IPTABLES -t raw -A raw-${NIC}-pre -s $IPv4_SUBNET_IGMP -j do_not_track
+$IPTABLES -t raw -A raw-${NIC}-pre -s $IGMP_SUBNET -j do_not_track
 
 ## TCP
 printInfo 'Process incoming TCP traffic'
@@ -251,7 +252,7 @@ $IPTABLES -t raw -N raw-${NIC}-icmp-pre
 $IPTABLES -t raw -A raw-${NIC}-pre -p icmp -j raw-${NIC}-icmp-pre
 
 ## IGMP
-printInfo "DROP all incoming IGMP traffic not on $IPv4_SUBNET"
+printInfo "DROP all incoming IGMP traffic not on $IGMP_SUBNET"
 $IPTABLES -t raw -A raw-${NIC}-pre -p igmp -j igmp_drop
 
 ## ALL OTHERS
@@ -345,7 +346,7 @@ echo
 
 printInfo 'Allow outgoing IPv4 Subnet packets'
 $IPTABLES -t raw -A raw-${NIC}-out -d $IPv4_SUBNET -j do_not_track
-$IPTABLES -t raw -A raw-${NIC}-out -d $IPv4_SUBNET_IGMP -j do_not_track
+$IPTABLES -t raw -A raw-${NIC}-out -d $IGMP_SUBNET -j do_not_track
 
 ## TCP
 printInfo 'Process outgoing TCP traffic'
@@ -362,7 +363,7 @@ printInfo 'Allow outgoing ICMP traffic'
 $IPTABLES -t raw -A raw-${NIC}-out -p icmp -j do_not_track
 
 ## IGMP
-printInfo "DROP all outgoing IGMP traffic not on $IPv4_SUBNET"
+printInfo "DROP all outgoing IGMP traffic not on $IGMP_SUBNET"
 $IPTABLES -t raw -A raw-${NIC}-out -p igmp -j igmp_drop
 
 ## ALL OTHERS
@@ -490,7 +491,7 @@ echo
 printInfo "Process incoming IPv4 Subnet packets on $NIC"
 $IPTABLES -N filter-${NIC}-local-in
 $IPTABLES -A filter-${NIC}-in -s $IPv4_SUBNET -j filter-${NIC}-local-in
-$IPTABLES -A filter-${NIC}-in -s $IPv4_SUBNET_IGMP -j filter-${NIC}-local-in
+$IPTABLES -A filter-${NIC}-in -s $IGMP_SUBNET -j filter-${NIC}-local-in
 
 ## TCP
 printInfo 'Process incoming TCP traffic'
@@ -607,7 +608,7 @@ echo
 printInfo "Process outgoing IPv4 Subnet packets on $NIC"
 $IPTABLES -N filter-${NIC}-local-out
 $IPTABLES -A filter-${NIC}-out -d $IPv4_SUBNET -j filter-${NIC}-local-out
-$IPTABLES -A filter-${NIC}-out -d $IPv4_SUBNET_IGMP -j filter-${NIC}-local-out
+$IPTABLES -A filter-${NIC}-out -d $IGMP_SUBNET -j filter-${NIC}-local-out
 
 ## TCP
 printInfo 'Process outgoing TCP traffic'
@@ -683,10 +684,10 @@ printInfo 'ACCEPT outgoing UDP NTP request packets'
 $IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 123 -j ACCEPT
 
 printInfo 'ACCEPT outgoing UDP UPnP request packets'
-$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 1900 -d 239.255.255.250 -j ACCEPT
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 1900 -d $IPv4_BROADCAST -j ACCEPT
 
 printInfo 'ACCEPT outgoing UDP WS-Discovery request packets'
-$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 1124 -d 255.255.255.255 -j ACCEPT
+$IPTABLES -A filter-${NIC}-udp-out -p udp -m udp --dport 1124 -d $IPv4_BROADCAST -j ACCEPT
 
 printInfo 'REJECT all other outgoing UDP traffic'
 $IPTABLES -A filter-${NIC}-udp-out -j icmp_reject

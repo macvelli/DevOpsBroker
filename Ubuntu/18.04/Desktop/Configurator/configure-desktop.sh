@@ -342,6 +342,9 @@ installPackage '/sbin/ethtool' 'ethtool'
 # Install exfat
 installPackage '/sbin/mkfs.exfat' 'exfat-fuse exfat-utils'
 
+# Install ffmpeg
+installPackage '/usr/bin/ffmpeg' 'ffmpeg'
+
 # Install fio
 installPackage '/usr/bin/fio' 'fio'
 
