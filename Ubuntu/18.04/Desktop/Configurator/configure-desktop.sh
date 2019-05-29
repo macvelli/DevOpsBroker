@@ -409,6 +409,9 @@ installPackage '/usr/sbin/gparted' 'gparted'
 # Install gstreamer1.0-libav
 installPackage '/usr/share/doc/gstreamer1.0-libav/README' 'gstreamer1.0-libav'
 
+# Install hardinfo
+installPackage '/usr/bin/hardinfo' 'hardinfo'
+
 # Install htop
 installPackage '/usr/bin/htop' 'htop'
 
@@ -438,6 +441,9 @@ uninstallPackage '/usr/share/doc/libc6-dbg/copyright' 'libc6-dbg'
 
 # Install libcanberra-gtk-module
 installPackage '/usr/share/doc/libcanberra-gtk-module/copyright' 'libcanberra-gtk-module'
+
+# Install libgtk-3-dev
+installPackage '/usr/include/gtk-3.0/gtk/gtk.h' 'libgtk-3-dev'
 
 # Install libmagic-dev
 installPackage '/usr/include/magic.h' 'libmagic-dev'
